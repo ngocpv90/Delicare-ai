@@ -156,7 +156,7 @@ namespace AppDelicare.Tests.Agent
             // Hermes dùng vé gọi công cụ: người hỏi không có quyền màn → từ chối theo người hỏi (không theo quyền agent).
             var denied = await CallAsync(f, "VIVI", "bao_cao_dieu_hanh", new { }, ticket);
             denied.Status.Should().Be(403);
-            denied.Message.Should().Contain("Người hỏi không có quyền");
+            denied.Code.Should().Be(AgentCallResult.NoAssistantRight, "AI-23.1: người hỏi qua web cũng phải có quyền \"Dùng bot Trợ lý\" (kiểm trước quyền màn)");
             var tampered = await CallAsync(f, "VIVI", "bao_cao_dieu_hanh", new { }, ticket[..^2] + (ticket.EndsWith("00") ? "11" : "00"));
             tampered.Status.Should().Be(403);
             tampered.Message.Should().Contain("Phiên chat trên web");

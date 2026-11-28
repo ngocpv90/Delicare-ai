@@ -96,6 +96,7 @@ INSERT INTO @R VALUES
     (N'CEO', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'CEO', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/crm-contract', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/crm-price-policy', 1, 0, 0, 0, 0, 0, 0),
@@ -269,6 +270,7 @@ INSERT INTO @R VALUES
     (N'CEO-PMO', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'CEO-PMO', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/crm-contract', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/crm-price-policy', 1, 0, 0, 0, 0, 0, 0),
@@ -442,6 +444,7 @@ INSERT INTO @R VALUES
     (N'COO', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'COO', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/crm-contract', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/crm-price-policy', 1, 0, 0, 0, 0, 0, 0),
@@ -548,11 +551,11 @@ INSERT INTO @R VALUES
     (N'COO', N'#/knowledge?folder=99', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/knowledge?folder=bod', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/knowledge?folder=05', 1, 0, 0, 0, 1, 1, 0),
-    (N'COO', N'#/knowledge?folder=15', 1, 1, 1, 1, 1, 1, 0),
+    (N'COO', N'#/knowledge?folder=15', 1, 1, 1, 1, 1, 1, 0);
+INSERT INTO @R VALUES
     (N'COO', N'#/knowledge?folder=20-hd', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/knowledge?folder=40-hd', 1, 0, 0, 0, 1, 1, 0),
-    (N'COO', N'#/knowledge?folder=60-ct', 1, 0, 0, 0, 1, 1, 0);
-INSERT INTO @R VALUES
+    (N'COO', N'#/knowledge?folder=60-ct', 1, 0, 0, 0, 1, 1, 0),
     (N'COO', N'#/knowledge?folder=70-hs', 0, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/knowledge?folder=80-hdsd', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/adm-user', 0, 0, 0, 0, 0, 0, 0),
@@ -616,6 +619,7 @@ INSERT INTO @R VALUES
     (N'OPS-PLAN', N'#/ai-ban-tin-kho', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-PLAN', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-price-policy', 1, 0, 0, 0, 0, 0, 0),
@@ -789,6 +793,7 @@ INSERT INTO @R VALUES
     (N'OPS-SCM', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-SCM', N'#/ai-bot-tro-ly', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -962,6 +967,7 @@ INSERT INTO @R VALUES
     (N'OPS-WH', N'#/ai-ban-tin-kho', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-WH', N'#/ai-bot-tro-ly', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -1046,14 +1052,14 @@ INSERT INTO @R VALUES
     (N'OPS-WH', N'#/scm-location', 1, 1, 1, 1, 0, 0, 1),
     (N'OPS-WH', N'#/prod-line', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/prod-workstation', 0, 0, 0, 0, 0, 0, 0),
-    (N'OPS-WH', N'#/log-vehicle', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-WH', N'#/log-vehicle', 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'OPS-WH', N'#/adm-reference', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/adm-admin-unit', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/kpi-definition', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/knowledge', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/knowledge?folder=10', 0, 0, 0, 0, 0, 0, 0),
-    (N'OPS-WH', N'#/knowledge?folder=20', 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'OPS-WH', N'#/knowledge?folder=20', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/knowledge?folder=30', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/knowledge?folder=40', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-WH', N'#/knowledge?folder=45', 1, 0, 0, 0, 0, 0, 0),
@@ -1136,6 +1142,7 @@ INSERT INTO @R VALUES
     (N'OPS-SCM-HEAD', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-SCM-HEAD', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -1309,6 +1316,7 @@ INSERT INTO @R VALUES
     (N'OPS-KIT', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/ai-ban-tin-bep', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-KIT', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -1482,6 +1490,7 @@ INSERT INTO @R VALUES
     (N'OPS-LOG', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-LOG', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -1544,7 +1553,8 @@ INSERT INTO @R VALUES
     (N'OPS-LOG', N'#/log-execution', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/log-gps', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/log-pod', 1, 1, 1, 0, 0, 0, 0),
-    (N'OPS-LOG', N'#/log-container-return', 1, 1, 1, 0, 0, 0, 0),
+    (N'OPS-LOG', N'#/log-container-return', 1, 1, 1, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'OPS-LOG', N'#/log-return-inspection', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/log-packaging-ledger', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/log-packaging-type', 1, 1, 1, 0, 0, 0, 0),
@@ -1553,8 +1563,7 @@ INSERT INTO @R VALUES
     (N'OPS-LOG', N'#/hr-shift-assign', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/hr-attendance', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/hr-leave', 0, 0, 0, 0, 0, 0, 0),
-    (N'OPS-LOG', N'#/hr-swap', 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'OPS-LOG', N'#/hr-swap', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/wf-inbox', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/adm-orgunit', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/adm-company', 0, 0, 0, 0, 0, 0, 0),
@@ -1656,6 +1665,7 @@ INSERT INTO @R VALUES
     (N'OPS-POS', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-POS', N'#/ai-bot-tro-ly', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -1829,6 +1839,7 @@ INSERT INTO @R VALUES
     (N'OPS-MNT', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-MNT', N'#/ai-bot-tro-ly', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -2002,6 +2013,7 @@ INSERT INTO @R VALUES
     (N'SAL-SALES', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/ai-ban-tin-kd', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-SALES', N'#/ai-bot-tro-ly', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-customer', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-contract', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-price-policy', 1, 1, 1, 0, 0, 0, 0),
@@ -2042,7 +2054,8 @@ INSERT INTO @R VALUES
     (N'SAL-SALES', N'#/scm-stockcount', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/scm-consumption-var', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/scm-inv-policy', 0, 0, 0, 0, 0, 0, 0),
-    (N'SAL-SALES', N'#/prod-plan', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-SALES', N'#/prod-plan', 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'SAL-SALES', N'#/prod-order', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/prod-batch', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/prod-output', 0, 0, 0, 0, 0, 0, 0),
@@ -2054,8 +2067,7 @@ INSERT INTO @R VALUES
     (N'SAL-SALES', N'#/qc-temperature', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/qc-cleaning', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/qc-cleaning-result', 0, 0, 0, 0, 0, 0, 0),
-    (N'SAL-SALES', N'#/qc-supplier-issue', 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'SAL-SALES', N'#/qc-supplier-issue', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/qc-checklist', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/log-packing-order', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/log-packing-result', 0, 0, 0, 0, 0, 0, 0),
@@ -2176,6 +2188,7 @@ INSERT INTO @R VALUES
     (N'SAL-CON', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CON', N'#/ai-bot-tro-ly', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/crm-customer', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-CON', N'#/crm-contract', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-CON', N'#/crm-price-policy', 1, 1, 1, 1, 1, 1, 1),
@@ -2349,6 +2362,7 @@ INSERT INTO @R VALUES
     (N'SAL-HEAD', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/ai-ban-tin-kd', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-HEAD', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/crm-customer', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-HEAD', N'#/crm-contract', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-HEAD', N'#/crm-price-policy', 1, 1, 1, 1, 1, 1, 1),
@@ -2522,6 +2536,7 @@ INSERT INTO @R VALUES
     (N'SAL-CS', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CS', N'#/ai-bot-tro-ly', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -2540,7 +2555,8 @@ INSERT INTO @R VALUES
     (N'SAL-CS', N'#/sal-retail-order', 1, 1, 1, 0, 1, 1, 0),
     (N'SAL-CS', N'#/sal-retail-product', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
-    (N'SAL-CS', N'#/menu-assignment', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CS', N'#/menu-assignment', 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'SAL-CS', N'#/menu-change-request', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-recipe', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
@@ -2555,8 +2571,7 @@ INSERT INTO @R VALUES
     (N'SAL-CS', N'#/scm-gr', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/scm-supplier-return', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/scm-issue', 0, 0, 0, 0, 0, 0, 0),
-    (N'SAL-CS', N'#/scm-inv-balance', 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'SAL-CS', N'#/scm-inv-balance', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/scm-lot', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/scm-inv-txn', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/scm-reservation', 0, 0, 0, 0, 0, 0, 0),
@@ -2696,6 +2711,7 @@ INSERT INTO @R VALUES
     (N'FIN-ACC', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'FIN-ACC', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/crm-customer', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-contract', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-price-policy', 1, 0, 0, 0, 1, 1, 0),
@@ -2869,6 +2885,7 @@ INSERT INTO @R VALUES
     (N'FIN-HR', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'FIN-HR', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
@@ -3039,9 +3056,11 @@ INSERT INTO @R VALUES
     (N'FIN-IT', N'#/ai-cost', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/ai-ban-tin-sang', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/ai-ban-tin-chieu', 0, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'FIN-IT', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/crm-contract', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/crm-price-policy', 1, 0, 0, 0, 0, 0, 0),
@@ -3056,8 +3075,7 @@ INSERT INTO @R VALUES
     (N'FIN-IT', N'#/crm-billing', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/acc-amis-code', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/acc-amis-recon', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/acc-period', 1, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'FIN-IT', N'#/acc-period', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/sal-retail-order', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/sal-retail-product', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
@@ -3216,6 +3234,7 @@ INSERT INTO @R VALUES
     (N'QA', N'#/ai-ban-tin-kho', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/ai-ban-tin-bep', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/ai-ban-tin-kd', 0, 0, 0, 0, 0, 0, 0),
+    (N'QA', N'#/ai-bot-tro-ly', 1, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/crm-customer', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/crm-price-policy', 0, 0, 0, 0, 0, 0, 0),

@@ -5,7 +5,7 @@
   // Màn hình điều hướng (không phải bảng) – bổ sung vào menu
   FN['flow-e2e'] = { ph: '—', grp: 'Điều hành', fn: 'Luồng nghiệp vụ End-to-End', id: 'flow-e2e', name: 'Luồng nghiệp vụ E2E (9 luồng)', types: ['DB'], table: null, rel: [], st: 'NAV', note: '' };
   const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact', 'crm-location', 'scm-ingredient-cat', 'menu-dish-cat', 'scm-uom-conversion',
-    'ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost', 'ai-ban-tin-sang', 'ai-ban-tin-chieu', 'ai-ban-tin-kho', 'ai-ban-tin-bep', 'ai-ban-tin-kd', // AI-25.4: mục quyền nhận bản tin
+    'ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost', 'ai-ban-tin-sang', 'ai-ban-tin-chieu', 'ai-ban-tin-kho', 'ai-ban-tin-bep', 'ai-ban-tin-kd', 'ai-bot-tro-ly', // AI-25.4: mục quyền nhận bản tin; AI-23.1: Dùng bot Trợ lý
     'kpi-daily', 'kpi-monthly', 'cost-meal', 'dash-pl']); // UI-6.52 (D-139 a) / RPT-1: tab của Bảng điều hành – không lên sidebar, giữ dòng quyền // AI-21 (D-138 b): 5 mục là tab của Trung tâm Agent – không lên sidebar, giữ dòng quyền // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
@@ -519,12 +519,18 @@
     UI.modal({
       title: 'Tài khoản', sub: (u.userName || '') + (u.userGroupName ? ' · ' + u.userGroupName : ''), size: 'sm',
       body: `<div class="kv"><div><label>Họ tên</label><span>${esc(u.fullName || '–')}</span></div><div><label>Tên đăng nhập</label><span>${esc(u.userName || '–')}</span></div><div><label>Nhóm người dùng</label><span>${esc(u.userGroupName || (u.isAdmin ? 'Quản trị hệ thống' : '–'))}</span></div><div><label>Quản trị</label><span>${u.isAdmin ? UI.badge('Active') : 'Không'}</span></div></div>
-        <div class="grid mt">${Store.mode === 'demo' ? `<button class="btn" id="accRole">${I('users')} Đổi vai trò xem (DEMO)</button>` : ''}${UI.telegramLink && Store.isLive ? `<button class="btn" id="accTg">${I('msg')} Liên kết Telegram</button>` : ''}<button class="btn" id="accPwd">${I('key')} Đổi mật khẩu</button><button class="btn danger" id="accOut">${I('reset')} Đăng xuất</button></div>`,
+        <div class="grid mt">${Store.mode === 'demo' ? `<button class="btn" id="accRole">${I('users')} Đổi vai trò xem (DEMO)</button>` : ''}${UI.telegramLink && Store.isLive ? `<button class="btn" id="accTg">${I('msg')} Liên kết Telegram</button>` : ''}<button class="btn" id="accPwd">${I('key')} Đổi mật khẩu</button><button class="btn danger" id="accOut">${I('reset')} Đăng xuất</button></div><div id="accBot" class="mt"></div>`,
       onMount: (m, close) => {
         const r = m.querySelector('#accRole'); if (r) r.onclick = () => { close(); chooseRole(); };
         const tg = m.querySelector('#accTg'); if (tg) tg.onclick = () => { close(); UI.telegramLink(); };
         m.querySelector('#accPwd').onclick = () => { close(); changePassword(); };
         m.querySelector('#accOut').onclick = () => { close(); H.logout(); };
+        // AI-23.3 (D-142): khối Bot Trợ lý – chỉ người có quyền "Dùng bot Trợ lý"; chưa liên kết Telegram → hướng dẫn liên kết qua bot Vận hành (dùng chung).
+        if (Store.isLive) Store.query('Agent/GetMyAssistant').then(x => {
+          const d = x.ok && x.data, box = m.querySelector('#accBot'); if (!d || !d.allowed || !box) return;
+          box.innerHTML = `<div class="acc-bot"><b>Bot Trợ lý</b>${!d.active ? '<div class="small muted">Bot Trợ lý đang tạm dừng.</div>' : !d.link ? '<div class="small muted">Bot Trợ lý chưa có địa chỉ – liên hệ quản trị.</div>' : `<div class="ac-qr">${d.qrSvg || ''}</div><a class="btn primary" href="${esc(d.link)}" target="_blank" rel="noopener">${I('msg')} Mở bot @${esc(d.username)}</a>`}${d.linked ? '<div class="small muted">Tài khoản Telegram đã liên kết – hỏi Trợ lý bằng lời trên Telegram.</div>' : `<div class="small">Chưa liên kết Telegram: liên kết 1 lần qua bot Vận hành (dùng chung cho Vận hành, Điều hành, Trợ lý).</div>${UI.telegramLink ? `<button class="btn" id="accBotLink">${I('msg')} Liên kết Telegram</button>` : ''}`}</div>`;
+          const lk = box.querySelector('#accBotLink'); if (lk) lk.onclick = () => { close(); UI.telegramLink(); };
+        });
       }
     });
   }

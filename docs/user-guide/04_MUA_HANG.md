@@ -30,6 +30,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Điều hành › Bảng điều hành | `dash-exec` | — | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | — | X |
 | Điều hành › Giao việc | `ai-tasks` | S | S |
+| Điều hành › Dùng bot Trợ lý | `ai-bot-tro-ly` | — | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | X |
 | Mua hàng › Tính nhu cầu nguyên liệu | `scm-requirement` | S (IX) | S (IX) |

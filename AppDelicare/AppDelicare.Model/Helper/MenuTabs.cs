@@ -16,6 +16,7 @@ namespace AppDelicare.Model.Helper
             ["#/ai-schedule"] = ("#/ai-agents", "Trung tâm Agent"),
             ["#/ai-cost"] = ("#/ai-agents", "Trung tâm Agent"),
             // AI-25.4 (D-143): mục quyền nhận bản tin – nằm dưới Trung tâm Agent ở màn phân quyền (không mở quyền vào Trung tâm Agent).
+            ["#/ai-bot-tro-ly"] = ("#/ai-agents", "Trung tâm Agent"), // AI-23.1: Dùng bot Trợ lý
             ["#/ai-ban-tin-sang"] = ("#/ai-agents", "Trung tâm Agent"),
             ["#/ai-ban-tin-chieu"] = ("#/ai-agents", "Trung tâm Agent"),
             ["#/ai-ban-tin-kho"] = ("#/ai-agents", "Trung tâm Agent"),

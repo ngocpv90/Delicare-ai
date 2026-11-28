@@ -59,6 +59,15 @@ namespace AppDelicare.Tests.Agent
                 }
                 db.UserRole.AddRange(new UserRole { Id = Guid.NewGuid(), UserGroupId = gAgent, ObjectMenuId = menu, AllowAccess = true },
                     new UserRole { Id = Guid.NewGuid(), UserGroupId = gUser, ObjectMenuId = menu, AllowAccess = true });
+                // AI-23.1: người hỏi phải có quyền mục "Dùng bot Trợ lý" – cả 2 người hỏi mẫu đều có (Denied chỉ thiếu quyền màn Tồn kho).
+                Guid bot = db.ObjectMenu.FirstOrDefault(m => m.MetaLink == "#/ai-bot-tro-ly")?.Id ?? Guid.NewGuid(), gAsk = Guid.NewGuid();
+                if (!db.ObjectMenu.Any(m => m.MetaLink == "#/ai-bot-tro-ly"))
+                {
+                    db.ObjectMenu.Add(new ObjectMenu { Id = bot, Name = "Dùng bot Trợ lý", MetaLink = "#/ai-bot-tro-ly", LevelShow = 2, OrderShow = 1, IsActive = true });
+                }
+                db.UserGroup.Add(new UserGroup { Id = gAsk, Name = "TRO-LY-AI2", Code = "TRO-LY-AI2" });
+                db.UserClaim.AddRange(new UserClaim { Id = Guid.NewGuid(), UserId = Allowed, UserGroupId = gAsk }, new UserClaim { Id = Guid.NewGuid(), UserId = Denied, UserGroupId = gAsk });
+                db.UserRole.Add(new UserRole { Id = Guid.NewGuid(), UserGroupId = gAsk, ObjectMenuId = bot, AllowAccess = true });
                 return Task.CompletedTask;
             });
         }

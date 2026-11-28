@@ -78,7 +78,10 @@ namespace AppDelicare.Services.Implement
                         g.Any(r => r.AllowPrint), g.Any(r => r.AllowExport), g.Any(r => r.AllowImport)), StringComparer.OrdinalIgnoreCase);
                 result = new UserPermissions(user.IsAdmin, new HashSet<string>(groups, StringComparer.OrdinalIgnoreCase), menus);
             }
-            cache.Set(key, result, TimeSpan.FromMinutes(Math.Max(0, _options.CacheMinutes)));
+            if (_options.CacheMinutes > 0) // AI-23: 0 = không giữ (ToolGateway – đổi quyền trên ma trận có hiệu lực ngay ở bot)
+            {
+                cache.Set(key, result, TimeSpan.FromMinutes(_options.CacheMinutes));
+            }
             return Restrict(result, userId);
         }
 
