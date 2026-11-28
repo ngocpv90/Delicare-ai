@@ -16,6 +16,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 |---|---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X | X |
 | Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | Duyệt | Duyệt |
+| Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | Duyệt | Duyệt |
 | Kinh doanh › Khách hàng | `crm-customer` | — | X |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | — | X |
 | Bán lẻ › Đơn khách lẻ | `sal-retail-order` | X (IX) | Sửa (IX) |
@@ -50,6 +51,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 55 Giao vận | `knowledge?folder=55` | — | S |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X |
+| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S | S |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ca

@@ -9,5 +9,6 @@ gui_canh_bao
 ke_hoach_mua
 lay_su_kien
 ping
+propose_note_update
 propose_purchase_order
 tim_tri_thuc

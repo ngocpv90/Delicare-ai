@@ -51,6 +51,8 @@ Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent;
 - **Lịch chạy:** người có quyền Sửa màn Lịch chạy (CEO, COO, FIN-IT) bật / tắt từng việc bằng công tắc ở cột Trạng thái. Tệp lịch `agents/schedules.json` được ghi lại, Hermes đọc lại khi sinh cron. Việc chưa có công cụ (agent chưa bật) không bật được.
 - 4 luồng liên phòng (AGENTS §3): (1) chốt đơn → thiếu hụt → PROC đề xuất đơn mua → duyệt → WH chờ nhận; (4) sự cố ATTP: nhiệt độ lõi < 70°C / giao < 60°C → QA đề xuất giữ lô + cảnh báo, VIVI báo Ban GĐ. Luồng (2) khách báo thiếu suất và (3) hộp thất thoát cần agent CSKH / ACC – bật ở đợt 3.
 
+- **Việc agent theo dõi** (AI-12): xem ở Trợ lý AI › Việc agent theo dõi – chi tiết ở 16_KHO_TRI_THUC.md.
+
 ## 5. Đọc nhật ký agent
 
 - Lọc theo agent, kết quả, công cụ, khoảng ngày → **Lọc**; **Xem thêm** để tải trang sau.

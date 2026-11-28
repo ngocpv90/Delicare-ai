@@ -59,6 +59,7 @@ namespace AppDelicare.Messaging.Presentation
             ["DELIVERY_TEMP_LOW"] = "🌡 Nhiệt độ giao thấp",
             ["SHORTAGE_REPORTED"] = "🍱 Báo thiếu suất",
             ["RETAIL_ORDER_NEW"] = "🛒 Đơn khách lẻ mới",
+            ["KNOWLEDGE_REVIEW_DUE"] = "📚 Ghi chú cần rà soát",
             ["AGENT_ALERT"] = "🤖 Trợ lý AI cảnh báo",
             ["PURCHASE_DUE_NO_ORDER"] = "🛒 Kế hoạch mua – tới hạn đặt chưa có đơn mua",
             ["PURCHASE_SEND_FAILED"] = "📤 Đơn mua chưa gửi được cho NCC",

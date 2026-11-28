@@ -11,6 +11,7 @@ lay_su_kien
 ping
 propose_goods_receipt
 propose_issue
+propose_note_update
 propose_stock_count
 tim_tri_thuc
 truy_xuat_lo

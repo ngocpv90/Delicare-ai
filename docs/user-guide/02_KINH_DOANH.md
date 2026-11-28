@@ -16,6 +16,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Việc của tôi › Việc của tôi | `hr-my` | X | X | X | X |
 | Phê duyệt › Đơn đặt suất (sửa sau chốt) | `wf-inbox?type=crm-order` | — | — | Duyệt | — |
 | Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | — | — | Duyệt | — |
+| Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | — | — | Duyệt | — |
 | Điều hành › Bảng điều hành | `dash-exec` | — | — | X | — |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | — | — | X | — |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | — | — | X | — |
@@ -40,6 +41,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 55 Giao vận | `knowledge?folder=55` | — | — | X | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X | X | X |
+| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | — | — | S | — |
 <!-- MENU5:END -->
 
 Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơn sau giờ chốt, hợp đồng do Ban điều hành duyệt – xem `12_QUAN_LY_DUYET.md`).

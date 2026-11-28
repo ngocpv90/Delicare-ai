@@ -16,5 +16,11 @@ namespace AppDelicare.Model.Option
 
         /// <summary>Độ dài đoạn trích trả cho agent (ký tự).</summary>
         public int SnippetLength { get; set; } = 400;
+
+        /// <summary>AI-12: nhật ký agent (96) quá số ngày này được gộp thành tóm tắt tháng.</summary>
+        public int LogRetentionDays { get; set; } = 90;
+
+        /// <summary>AI-12: bản tin ngày (10 Ban GĐ/Bản tin) giữ số tháng này, cũ hơn chuyển Lưu trữ bản tin.</summary>
+        public int BriefKeepMonths { get; set; } = 13;
     }
 }

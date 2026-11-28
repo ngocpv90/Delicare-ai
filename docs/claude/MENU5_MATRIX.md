@@ -32,6 +32,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Phê duyệt › Mở lại đối soát | `wf-inbox?type=crm-recon-reopen` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Phê duyệt › Mở khóa kỳ | `wf-inbox?type=acc-period-unlock` | — | — | Duyệt | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | — | — | Duyệt | — | Duyệt | Duyệt | Duyệt | Duyệt | Duyệt | — | — | — | — | Duyệt | — | — | Duyệt | — | Duyệt |
+| Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | Duyệt | — | Duyệt | — | — | Duyệt | Duyệt | Duyệt | Duyệt | — | — | — | — | Duyệt | — | Duyệt | Duyệt | — | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |
@@ -128,29 +129,30 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Trợ lý AI › Trung tâm agent | `ai-agents` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 | Trợ lý AI › Nhật ký agent | `ai-agent-log` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 | Trợ lý AI › Luồng liên phòng | `ai-flow` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S | — | S | — | S | S | S | S | S | — | — | — | — | S | — | — | S | S | S |
 | Trợ lý AI › Lịch chạy | `ai-schedule` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào 114 mục · ô quyền  147
+  CEO           vào 116 mục · ô quyền  152
   CEO-PMO       vào 105 mục · ô quyền  111
-  COO           vào 124 mục · ô quyền  167
+  COO           vào 126 mục · ô quyền  172
   OPS-PLAN      vào  46 mục · ô quyền   93
-  OPS-SCM       vào  29 mục · ô quyền   67
-  OPS-WH        vào  26 mục · ô quyền   79
-  OPS-SCM-HEAD  vào  43 mục · ô quyền  135
-  OPS-KIT       vào  35 mục · ô quyền   59
-  OPS-LOG       vào  26 mục · ô quyền   49
+  OPS-SCM       vào  30 mục · ô quyền   70
+  OPS-WH        vào  28 mục · ô quyền   84
+  OPS-SCM-HEAD  vào  45 mục · ô quyền  140
+  OPS-KIT       vào  37 mục · ô quyền   64
+  OPS-LOG       vào  28 mục · ô quyền   54
   OPS-POS       vào  17 mục · ô quyền   33
   OPS-MNT       vào   8 mục · ô quyền   12
   SAL-SALES     vào  26 mục · ô quyền   48
   SAL-CON       vào  24 mục · ô quyền   72
-  SAL-HEAD      vào  35 mục · ô quyền  105
+  SAL-HEAD      vào  37 mục · ô quyền  110
   SAL-CS        vào  18 mục · ô quyền   26
-  FIN-ACC       vào  43 mục · ô quyền  134
-  FIN-HR        vào  17 mục · ô quyền   50
-  FIN-IT        vào 120 mục · ô quyền  241
-  QA            vào  39 mục · ô quyền   81
-  Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; ai-agent-cmd = OPS-WH, OPS-KIT, QA, OPS-SCM, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-HR, COO; log-load-short = COO, OPS-SCM-HEAD
+  FIN-ACC       vào  44 mục · ô quyền  136
+  FIN-HR        vào  19 mục · ô quyền   55
+  FIN-IT        vào 121 mục · ô quyền  244
+  QA            vào  41 mục · ô quyền   86
+  Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; ai-agent-cmd = OPS-WH, OPS-KIT, QA, OPS-SCM, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-HR, COO; kb-sop = CEO, COO, OPS-KIT, QA, OPS-WH, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-ACC, FIN-HR; log-load-short = COO, OPS-SCM-HEAD
 ```

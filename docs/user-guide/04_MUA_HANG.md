@@ -21,6 +21,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Phê duyệt › Phiếu kiểm kê – cấp 1 | `wf-inbox?type=scm-stockcount` | — | Duyệt |
 | Phê duyệt › Xếp xe chưa đủ hàng | `wf-inbox?type=log-load-short` | — | Duyệt |
 | Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | Duyệt | Duyệt |
+| Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | — | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | — | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | — | X |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X |
@@ -48,6 +49,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 60 Kế toán | `knowledge?folder=60` | — | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X |
+| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S | S |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

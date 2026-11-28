@@ -627,6 +627,18 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-12 – Kho tri thức: soạn / duyệt SOP, việc agent theo dõi (D-133)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Trưởng QA (uat.qa) | 45 ATTP → Ghi chú mới (SOP, nháp) → Gửi duyệt | Ghi chú Chờ duyệt, không còn nút Sửa; Phê duyệt › Duyệt SOP có yêu cầu |
+| 2 | Người duyệt khác có quyền Sửa 45 | Duyệt | Ghi chú Hiệu lực; người gửi không tự duyệt được |
+| 3 | uat.qa | Phiên bản mới → sửa → Gửi duyệt → duyệt | Bản mới Hiệu lực, bản cũ Lưu trữ (vẫn mở được) |
+| 4 | uat.qa | Nhập Word (.docx có tiêu đề, danh sách, bảng) | Ghi chú Nháp đúng cấu trúc; tệp PDF báo chưa hỗ trợ |
+| 5 | Bếp (uat.ops-kit) | Gửi duyệt SOP ở 45 ATTP | 403 – không có quyền Sửa thư mục |
+| 6 | IT | KNOW gọi propose_note_update một ghi chú 45 | Ghi chú chưa đổi; duyệt ở Lệnh của agent → đổi, nguồn human |
+| 7 | COO (uat.coo) | Trợ lý AI › Việc agent theo dõi → Giao lại / Xong | Việc đổi người phụ trách / chuyển Xong, lịch sử ghi lại |
+
 ## AI-11 – Cảnh báo chủ động, Luồng liên phòng, Lịch chạy (D-133)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

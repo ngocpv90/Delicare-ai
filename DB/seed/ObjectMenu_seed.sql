@@ -483,6 +483,7 @@ INSERT INTO @P VALUES
     (N'#/wf-inbox?type=crm-recon-reopen', 2, NULL, 0, -1, N'', N'#/group/approve', 9924, N'Mở lại đối soát', N'ACC', NULL),
     (N'#/wf-inbox?type=acc-period-unlock', 2, NULL, 0, -1, N'', N'#/group/approve', 9925, N'Mở khóa kỳ', N'ACC', NULL),
     (N'#/wf-inbox?type=ai-agent-cmd', 2, NULL, 0, -1, N'', N'#/group/approve', 9926, N'Lệnh của agent', N'AI', NULL),
+    (N'#/wf-inbox?type=kb-sop', 2, NULL, 0, -1, N'', N'#/group/approve', 9927, N'Duyệt SOP', N'AI', NULL),
     (N'#/group/01', 1, NULL, 100, 100, N'Tổng quan điều hành', NULL, 100, N'Điều hành', N'kpi', NULL),
     (N'#/dash-exec', 2, N'#/group/01', 101, 199, N'', N'#/group/01', 101, N'', N'', NULL),
     (N'#/kpi-daily', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 102, N'', N'', NULL),
@@ -630,7 +631,8 @@ INSERT INTO @P VALUES
     (N'#/ai-agents', 2, NULL, 0, -1, N'', N'#/group/14', 1061, N'Trung tâm agent', N'AI', NULL),
     (N'#/ai-agent-log', 2, NULL, 0, -1, N'', N'#/group/14', 1062, N'Nhật ký agent', N'AI', NULL),
     (N'#/ai-flow', 2, NULL, 0, -1, N'', N'#/group/14', 1063, N'Luồng liên phòng', N'AI', NULL),
-    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/14', 1064, N'Lịch chạy', N'AI', NULL);
+    (N'#/ai-tasks', 2, NULL, 0, -1, N'', N'#/group/14', 1064, N'Việc agent theo dõi', N'AI', NULL),
+    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/14', 1065, N'Lịch chạy', N'AI', NULL);
 INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), p.NewName, p.ShortName, p.Link, NULL, 1, p.NewOrder, 1, 0, @Now, @By, 0
 FROM @P p WHERE p.Lvl = 1 AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);
