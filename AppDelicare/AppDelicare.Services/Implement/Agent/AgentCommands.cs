@@ -41,6 +41,10 @@ namespace AppDelicare.Services.Implement.Agent
         /// <summary>Màn kiểm quyền Xem khi agent GỌI công cụ (mặc định = Screen; màn ẩn MENU-4 dùng màn cha, vd lô → scm-inv-balance).</summary>
         public string? ToolScreen { get; init; }
         public PermissionAction Action { get; init; } = PermissionAction.Add;
+        /// <summary>AI-19: lệnh của KHÁCH (CSKH – Zalo): chỉ chạy khi người hỏi là khách đã liên kết; máy chủ gắn mã khách vào tham số <c>_khach</c> (agent không tự điền được).</summary>
+        public bool CustomerScoped { get; init; }
+        /// <summary>AI-19: hạn xác nhận riêng (phút) – đề xuất của khách chờ KD / điều phối lâu hơn 15 phút mặc định.</summary>
+        public int? TtlMinutes { get; init; }
         public string InputSchemaJson { get; init; } = """{"type":"object","properties":{}}""";
         public required Func<IServiceProvider, JsonElement, Task<AgentPreview>> PrepareAsync { get; init; }
         /// <summary>Trả null = thành công (kèm thông điệp ở <c>out</c> message), chuỗi = lỗi tiếng Việt.</summary>
@@ -72,6 +76,7 @@ namespace AppDelicare.Services.Implement.Agent
         public async Task<AgentProposalModel> ProposeAsync(AgentCommandDef def, AgentToolContext ctx, JsonElement args)
         {
             string reason = AgentToolRegistry.Str(args, "ly_do") ?? throw new AgentToolException("Thiếu lý do đề xuất (ly_do) – người duyệt cần biết vì sao");
+            args = CustomerArgs(def, ctx, args);
             var preview = await def.PrepareAsync(services, args);
             string commandId = Guid.NewGuid().ToString("N");
             var proposal = new JsonObject
@@ -90,7 +95,7 @@ namespace AppDelicare.Services.Implement.Agent
                 throw new AgentToolException(error ?? "Không tạo được đề xuất");
             }
             // GAP-AI-EXP (tạm): hạn đề xuất theo phút (Agent:ProposalTtlMinutes) – ghi đè hạn theo giờ của bộ máy duyệt.
-            DateTime due = clock.Now.AddMinutes(Math.Max(1, options.CurrentValue.ProposalTtlMinutes));
+            DateTime due = clock.Now.AddMinutes(Math.Max(1, def.TtlMinutes ?? options.CurrentValue.ProposalTtlMinutes));
             var db = unitOfWork.DbContext;
             var entity = await db.ApprovalRequest.FirstAsync(a => a.Id == request.Id);
             entity.DueAt = due;
@@ -101,6 +106,22 @@ namespace AppDelicare.Services.Implement.Agent
             await db.SaveChangesAsync();
             unitOfWork.CommitTransaction();
             return new AgentProposalModel { RequestNo = request.RequestNo ?? string.Empty, ApprovalRequestId = request.Id, DueAt = due, Summary = preview.Summary, Warnings = preview.Warnings };
+        }
+
+        /// <summary>AI-19: tham số <c>_khach</c> luôn do máy chủ đặt theo người hỏi (khách đã liên kết Zalo) – giá trị agent gửi lên bị bỏ; lệnh của khách không có người hỏi là khách → từ chối.</summary>
+        public static JsonElement CustomerArgs(AgentCommandDef def, AgentToolContext ctx, JsonElement args)
+        {
+            var o = args.ValueKind == JsonValueKind.Object ? JsonNode.Parse(args.GetRawText())!.AsObject() : new JsonObject();
+            o.Remove(AgentCommandRegistry.CustomerArg);
+            if (def.CustomerScoped)
+            {
+                if (ctx.CustomerId is not { } customer)
+                {
+                    throw new AgentToolException("Lệnh này chỉ dùng khi khách hàng hỏi qua Zalo (người hỏi là khách đã liên kết)");
+                }
+                o[AgentCommandRegistry.CustomerArg] = customer.ToString();
+            }
+            return JsonSerializer.SerializeToElement(o);
         }
 
         /// <summary>Đề xuất quá hạn chưa ai duyệt → Đã hủy + quyết định hệ thống "Hết hạn" (GAP-AI-EXP tạm – không có trạng thái Expired). Trả số đề xuất đóng.</summary>
@@ -269,17 +290,36 @@ namespace AppDelicare.Services.Implement.Agent
                 Changes = JsonSerializer.Serialize(new { command = code, agent = p["agent"]?.ToString(), key, result, approvedBy = actorUserId, note }),
                 CreatedDate = clock.Now, CreatedBy = actorUserId, IsDeleted = false,
             });
+            await NotifyCustomerAsync(p, businessId, $"DELI-CARE đã xác nhận yêu cầu {request.RequestNo} của quý khách: {result}.", actorUserId);
             await db.SaveChangesAsync();
             return null;
         }
 
-        public Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note) => Task.FromResult<string?>(null);
+        public async Task<string?> RejectAsync(Guid businessId, Guid actorUserId, string note)
+        {
+            var (request, p) = await LoadAsync(businessId);
+            if (request != null && p != null && await NotifyCustomerAsync(p, businessId, $"Yêu cầu {request.RequestNo} của quý khách chưa được xác nhận: {note}. Vui lòng liên hệ nhân viên kinh doanh nếu cần.", actorUserId))
+            {
+                await unitOfWork.DbContext.SaveChangesAsync();
+            }
+            return null;
+        }
+
+        /// <summary>AI-19: đề xuất của KHÁCH (agent CSKH, người hỏi là tài khoản CUSTOMER liên kết Zalo) → nhắn kết quả cho khách qua Zalo. Khác → không làm gì.</summary>
+        private async Task<bool> NotifyCustomerAsync(JsonObject p, Guid businessId, string text, Guid by)
+        {
+            if (!string.Equals(p["agent"]?.ToString(), "CSKH", StringComparison.OrdinalIgnoreCase) || !Guid.TryParse(p["askedBy"]?.ToString(), out Guid asker))
+            {
+                return false;
+            }
+            return await AppDelicare.Services.Implement.CustomerChannel.CustomerNotifier.EnqueueAsync(unitOfWork.DbContext, asker, text, $"CUSTOMER_NOTICE:{businessId:N}", clock.Now, by);
+        }
     }
 
     /// <summary>AI-9 / AI-10: danh bạ lệnh ghi của agent (tên công cụ <c>propose_*</c>).</summary>
     public static partial class AgentCommandRegistry
     {
-        public static IReadOnlyList<AgentCommandDef> All => _all ??= [.. Core(), .. Ops(), .. KnowledgeCommands(), .. Wave3()];
+        public static IReadOnlyList<AgentCommandDef> All => _all ??= [.. Core(), .. Ops(), .. KnowledgeCommands(), .. Wave3(), .. CustomerCommands()];
         private static List<AgentCommandDef>? _all;
 
         public static AgentCommandDef? Find(string? code) => All.FirstOrDefault(c => string.Equals(c.Code, code?.Trim(), StringComparison.OrdinalIgnoreCase));

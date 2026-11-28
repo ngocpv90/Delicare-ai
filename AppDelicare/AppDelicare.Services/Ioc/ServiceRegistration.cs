@@ -49,6 +49,8 @@ namespace AppDelicare.Services.Ioc
                     string root = string.IsNullOrWhiteSpace(o.VaultPath) ? "App_Data/Knowledge" : o.VaultPath;
                     o.VaultPath = Path.GetFullPath(Path.IsPathRooted(root) ? root : Path.Combine(contentRootPath, root));
                 });
+            // AI-19 (D-06): Zalo OA khách hàng – bí mật chỉ ở biến môi trường (Zalo__AppSecret, Zalo__RefreshToken).
+            services.AddOptions<ZaloOptions>().Bind(configuration.GetSection(ZaloOptions.Section));
             services.AddScoped<IReferenceGuard, ReferenceGuard>();
             // BE3.2: cảm biến IoT (Iot:ApiKeys là bí mật – biến môi trường / user-secrets).
             services.Configure<IotOptions>(configuration.GetSection(IotOptions.Section));

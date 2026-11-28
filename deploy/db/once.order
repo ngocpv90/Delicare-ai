@@ -20,3 +20,4 @@ DB/scripts/SYNC1_dedupe_usergroups.sql            # DEPLOY-SYNC-1 (D-134): dọn
 DB/scripts/UI651_purchase_plan.sql                # UI-6.51 (D-137): hủy đề nghị mua Nháp trùng (nguyên liệu + ngày cần) trước kế hoạch mua tự động
 DB/scripts/AI10_activate_agents.sql               # AI-10 (D-133): bật agent đợt 2 SALES / PROC / LOG / HR (BotStatus Active) trên DB đã có seed đợt 1
 DB/scripts/AI16_activate_agents.sql               # AI-16 (D-133): bật agent đợt 3 PLAN / PKG / ACC (BotStatus Active) trên DB đã có seed đợt 1 + 2
+DB/scripts/AI19_activate_cskh.sql                 # AI-19 (D-133): bật agent đợt 4 CSKH (BotStatus Active) trên DB đã có seed đợt 1 – 3

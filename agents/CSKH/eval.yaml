@@ -1,0 +1,16 @@
+# Bộ câu nghiệm thu agent CSKH (AI-19, D-133). Chạy: node tools/agent-eval/run.mjs CSKH – cần khách thử đã liên kết Zalo (X-On-Behalf-Of zalo:<id>); không có thì các câu trả 403.
+agent: CSKH
+webUser: uat.sal-head
+cases:
+  - id: cskh-khong-nguoi-hoi
+    question: Đơn của tôi tuần này?
+    tool: khach_don_hang
+    args: {}
+    expect:
+      status: 400
+  - id: cskh-de-xuat-khong-khach
+    question: Tôi muốn phản ánh cơm nguội
+    tool: propose_complaint
+    args: { noi_dung: "Cơm nguội", ly_do: "thử" }
+    expect:
+      status: 400

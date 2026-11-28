@@ -627,6 +627,22 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-19 – Bot Zalo khách hàng + agent CSKH (D-133 đợt 4, D-06)
+
+Chuẩn bị (IT): Zalo OA đã xác thực; `.env`: `ZALO_ENABLED=true`, `ZALO_APP_ID`, `ZALO_APP_SECRET`, `ZALO_OA_SECRET_KEY`, `ZALO_REFRESH_TOKEN` (lần đầu), `MESSAGING_LINK_SIGNING_KEY`, `AGENT_KEY_CSKH`; webhook OA trỏ `https://<máy chủ>/zalo/ZALO_KH`; bật kênh ZALO_OA + bot ZALO_KH (Tích hợp › Kênh).
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | KD (uat.sal-head) | Khách 360 › Người liên hệ › Mã Zalo | Hộp mã (50 ký tự, hạn 72 giờ); thủ kho bấm → 403 |
+| 2 | Khách (Zalo thật) | Nhắn "chào" trước khi liên kết → nhắn mã | Trước: chỉ hướng dẫn gửi mã; sau: "Đã liên kết Zalo với …" + menu; gửi lại mã → "đã được dùng" |
+| 3 | Khách | 1 / 2 | Đơn 7 ngày và món theo đơn của chính khách; không có đơn khách khác |
+| 4 | Khách | 3 <số đơn của khách khác> | "Không tìm thấy đơn … của quý khách" |
+| 5 | Khách → KD | 3 <số đơn> TRUA=120 → KD duyệt ở Lệnh của agent | Trước duyệt đơn không đổi; sau duyệt số suất đổi (sau chốt: yêu cầu sửa sau chốt); khách nhận tin "đã xác nhận" |
+| 6 | Khách → CSKH | 4 5 thiếu canh / 5 Cơm nguội → bếp (uat.ops-kit) thử duyệt → CSKH (uat.sal-cs) duyệt | Bếp bị từ chối (cần quyền Thêm Phản ánh); CSKH duyệt → phản ánh nguồn Zalo (thiếu suất báo điều phối); khách nhận tin |
+| 7 | Khách | 6 <số đơn> → chọn món → chọn món thay | Đủ điều kiện → "Đã đổi"; còn lại "chờ duyệt"; tab Đổi món có yêu cầu nguồn Zalo |
+| 8 | Khách | Câu hỏi tự do ("ngày mai mấy giờ giao?") | Trợ lý CSKH trả lời theo đơn / ghi chú công khai; không lộ dữ liệu khách khác |
+| 9 | IT | Gửi webhook sai chữ ký | 401, không xử lý |
+
 ## AI-18 – Đồng bộ Obsidian máy cá nhân + CHỐT ĐỢT 3 (D-133)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

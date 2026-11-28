@@ -37,6 +37,11 @@ namespace AppDelicare.Messaging
             builder.Services.Configure<MessagingHostOptions>(builder.Configuration.GetSection(MessagingHostOptions.Section));
             builder.Services.Configure<TelegramOptions>(builder.Configuration.GetSection(TelegramOptions.Section));
             builder.Services.Configure<SendingOptions>(builder.Configuration.GetSection(SendingOptions.Section));
+            // AI-19 (D-06): Zalo OA – bot khách (mặc định tắt).
+            builder.Services.Configure<AppDelicare.Messaging.Channels.Zalo.ZaloOptions>(builder.Configuration.GetSection(AppDelicare.Messaging.Channels.Zalo.ZaloOptions.Section));
+            builder.Services.AddHttpClient<AppDelicare.Messaging.Channels.Zalo.IZaloClient, AppDelicare.Messaging.Channels.Zalo.ZaloClient>(c => c.Timeout = TimeSpan.FromSeconds(20));
+            builder.Services.AddSingleton<AppDelicare.Messaging.Channels.Zalo.ICustomerChannelApi, AppDelicare.Messaging.Channels.Zalo.CustomerChannelApi>();
+            builder.Services.AddHostedService<AppDelicare.Messaging.Channels.Zalo.ZaloOutboundPump>();
             builder.Services.AddSingleton(TimeProvider.System);
             builder.Services.AddHttpClient<IDelicareApiClient, DelicareApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30));
             builder.Services.AddHttpClient<ITelegramClient, TelegramClient>(c => c.Timeout = TimeSpan.FromSeconds(70));
@@ -115,6 +120,7 @@ namespace AppDelicare.Messaging
 
             var app = builder.Build();
             app.MapPost("/tg/{botCode}", TelegramWebhookEndpoint.HandleAsync);
+            app.MapPost("/zalo/{botCode}", AppDelicare.Messaging.Channels.Zalo.ZaloWebhookEndpoint.HandleAsync);
             app.MapGet("/health", (IOptionsMonitor<MessagingHostOptions> host, IOptionsMonitor<TelegramOptions> tg) => Results.Ok(new
             {
                 status = "Healthy",

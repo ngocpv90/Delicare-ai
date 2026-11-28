@@ -56,7 +56,7 @@ namespace AppDelicare.Tests.Agent
         public void Eval_and_schedule_tools_belong_to_their_agent()
         {
             string root = Repo();
-            foreach (string code in new[] { "VIVI", "WH", "KITCHEN", "QA", "KNOW", "SALES", "PROC", "LOG", "HR", "PLAN", "PKG", "ACC" })
+            foreach (string code in new[] { "VIVI", "WH", "KITCHEN", "QA", "KNOW", "SALES", "PROC", "LOG", "HR", "PLAN", "PKG", "ACC", "CSKH" })
             {
                 string file = Path.Combine(root, "agents", code, "eval.yaml");
                 File.Exists(file).Should().BeTrue(file);

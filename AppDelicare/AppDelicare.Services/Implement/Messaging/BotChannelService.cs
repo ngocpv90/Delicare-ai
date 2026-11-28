@@ -186,7 +186,9 @@ namespace AppDelicare.Services.Implement.Messaging
         public async Task<IResults<BotOutboundItemModel>> ClaimOutbound(BotClaimRequest request)
         {
             var db = unitOfWork.DbContext;
-            var bots = await RecipientResolver.ActiveBotsAsync(db);
+            // AI-19: bot khách Zalo (ZALO_KH) lấy tin theo mã bot; lấy chung (không mã bot) vẫn chỉ Telegram như cũ.
+            var bots = string.IsNullOrWhiteSpace(request.BotCode) ? await RecipientResolver.ActiveBotsAsync(db)
+                : await RecipientResolver.ActiveBotsAsync(db, default, MessagingCode.ProviderTelegram, MessagingCode.ProviderZalo);
             var channels = ChannelsFor(bots, request.BotCode);
             if (channels.Count == 0 || !TrySystemUser(out Guid systemUser))
             {

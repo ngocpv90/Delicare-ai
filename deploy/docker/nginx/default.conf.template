@@ -33,9 +33,26 @@ server {
     location ~* ^/api/BotChannel(/|$) {
         return 404;
     }
+    # AI-19 (D-06): API nội bộ bot Zalo khách – như BotChannel, chỉ trong mạng Docker.
+    location ~* ^/api/CustomerChannel(/|$) {
+        return 404;
+    }
 
     # BOT-1.3 (D-62): webhook Telegram → container messaging. Dùng resolver Docker + biến để nginx vẫn khởi động khi messaging chưa chạy
     # (khi đó /tg/ trả 502, Telegram tự gửi lại). messaging kiểm header X-Telegram-Bot-Api-Secret-Token.
+    # AI-19 (D-06): webhook Zalo OA (bot khách) → container messaging; messaging kiểm chữ ký X-ZEvent-Signature (mac = sha256(app_id + body + timestamp + OA secret)).
+    location /zalo/ {
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $delicare_messaging http://messaging:8080;
+        proxy_pass $delicare_messaging;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 1m;
+    }
+
     location /tg/ {
         resolver 127.0.0.11 valid=30s ipv6=off;
         set $delicare_messaging http://messaging:8080;

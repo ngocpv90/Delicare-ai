@@ -812,6 +812,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-MNT', N'#/knowledge?folder=80', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/knowledge?folder=99', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-SALES', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-customer', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-contract', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/crm-price-policy', 1, 1, 1, 0, 0, 0, 0),
@@ -838,6 +839,7 @@ INSERT INTO @Allow VALUES
     (N'SAL-SALES', N'#/knowledge?folder=80', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/knowledge?folder=99', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CON', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'SAL-CON', N'#/crm-customer', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-CON', N'#/crm-contract', 1, 1, 1, 1, 1, 1, 1),
     (N'SAL-CON', N'#/crm-price-policy', 1, 1, 1, 1, 1, 1, 1),
@@ -899,6 +901,7 @@ INSERT INTO @Allow VALUES
     (N'SAL-HEAD', N'#/knowledge?folder=99', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/ai-tasks', 1, 1, 1, 0, 0, 0, 0),
     (N'SAL-CS', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CS', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-order', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/crm-reconciliation', 1, 0, 0, 0, 0, 0, 0),
@@ -1181,7 +1184,8 @@ INSERT INTO @Once VALUES
     (N'SYNC1_dedupe_usergroups.sql'),
     (N'UI651_purchase_plan.sql'),
     (N'AI10_activate_agents.sql'),
-    (N'AI16_activate_agents.sql');
+    (N'AI16_activate_agents.sql'),
+    (N'AI19_activate_cskh.sql');
 INSERT INTO @Out
 SELECT N'Chuyển đổi – chưa chạy', o.FileName, N'chưa ghi nhận DelicareOnce (chạy Deploy-Database / db-init)' FROM @Once o
 WHERE NOT EXISTS (SELECT 1 FROM sys.extended_properties p WHERE p.class = 0 AND p.name = N'DelicareOnce:' + o.FileName);

@@ -16,12 +16,14 @@ namespace AppDelicare.Services.Implement.Messaging
     public static class RecipientResolver
     {
         /// <summary>Bot đang hoạt động: BotCode → IntegrationChannelId (BotConfiguration.BotStatus + IntegrationChannel.ChannelStatus = Active).</summary>
-        public static async Task<Dictionary<string, Guid>> ActiveBotsAsync(DatabaseContext db, CancellationToken ct = default)
+        public static async Task<Dictionary<string, Guid>> ActiveBotsAsync(DatabaseContext db, CancellationToken ct = default, params string[] providers)
         {
+            // AI-19: mặc định chỉ bot Telegram (nhân viên) như cũ; kênh khách Zalo phải xin rõ (providers).
+            string[] allowed = providers.Length == 0 ? [MessagingCode.ProviderTelegram] : providers;
             var rows = await (from b in db.BotConfiguration.AsNoTracking()
                               join c in db.IntegrationChannel.AsNoTracking() on b.IntegrationChannelId equals c.Id
                               where !b.IsDeleted && !c.IsDeleted && b.BotStatus == MessagingCode.StatusActive && c.ChannelStatus == MessagingCode.StatusActive
-                                    && c.ProviderCode == MessagingCode.ProviderTelegram
+                                    && allowed.Contains(c.ProviderCode!)
                               select new { b.BotCode, c.Id })
                              .ToListAsync(ct);
             return rows.GroupBy(r => r.BotCode, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);

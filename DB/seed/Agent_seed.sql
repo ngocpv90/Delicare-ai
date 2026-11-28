@@ -2,7 +2,7 @@
 -- Idempotent, CHỈ THÊM (khóa: ChannelCode / Id tài khoản / tên nhóm / BotCode / ExternalUserId / nhóm × menu) – không ghi đè công tắc (BotStatus) đã chỉnh trên màn.
 -- KHÔNG bí mật: SecretReference = TÊN biến môi trường giữ khóa agent (AGENT_KEY_<MÃ>) – khóa thật chỉ ở env / user-secrets của toolgateway.
 -- Tài khoản agent: INTERNAL, PassWord '!NO-LOGIN!' (không băm khớp), không admin; LoginService chặn đăng nhập web theo liên kết UserExternalIdentity kênh HERMES.
--- Quyền: CHỈ Xem, trên các màn vai trò người tương ứng được truy cập (ma trận Menu5). Đợt 1 bật VIVI, WH, KITCHEN, QA, KNOW; đợt 2 (AI-10) bật thêm SALES, PROC, LOG, HR (DB cũ: script 1 lần AI10_activate_agents.sql); đợt 3 (AI-16) bật PLAN, PKG, ACC (AI16_activate_agents.sql); còn lại Inactive.
+-- Quyền: CHỈ Xem, trên các màn vai trò người tương ứng được truy cập (ma trận Menu5). Đợt 1 bật VIVI, WH, KITCHEN, QA, KNOW; đợt 2 (AI-10) bật thêm SALES, PROC, LOG, HR (DB cũ: script 1 lần AI10_activate_agents.sql); đợt 3 (AI-16) bật PLAN, PKG, ACC (AI16_activate_agents.sql); đợt 4 (AI-19) bật CSKH (AI19_activate_cskh.sql) – đủ 13 agent.
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 SET QUOTED_IDENTIFIER ON;
@@ -30,7 +30,7 @@ INSERT INTO @A VALUES
     (N'PKG', N'Agent Hộp khay & vệ sinh', N'Hộp khay & vệ sinh', N'Active', '3856f089-1d8e-4c05-7c1f-5aa5eeb0d8ad'),
     (N'HR', N'Agent Nhân sự', N'Nhân sự', N'Active', '4ed89f5f-6d96-cb29-afd4-904b0b597cdc'),
     (N'ACC', N'Agent Kế toán', N'Kế toán', N'Active', 'e089ee58-cdd5-5fdb-df55-66ac121244a7'),
-    (N'CSKH', N'Agent Chăm sóc khách (Zalo)', N'CSKH', N'Inactive', '1dc51951-ccbc-d2b9-5177-d1bf9dddb040'),
+    (N'CSKH', N'Agent Chăm sóc khách (Zalo)', N'CSKH', N'Active', '1dc51951-ccbc-d2b9-5177-d1bf9dddb040'),
     (N'KNOW', N'Agent Thủ thư tri thức', N'Tri thức', N'Active', '29deb0aa-3f92-bd55-9a16-44dbbeedfd87');
 
 INSERT INTO [dbo].[User] (Id, UserName, PassWord, IsActive, IsAdmin, IsDefault, AccountType, CreatedDate, CreatedBy, IsDeleted)

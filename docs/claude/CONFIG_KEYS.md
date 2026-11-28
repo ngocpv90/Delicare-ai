@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **270 khóa** trong 13 section.
+Tổng: **277 khóa** trong 14 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -362,3 +362,15 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
 |---|---|---|---|---|
 | `SystemUsers:JobUserId` | string? | – | User.Id của tài khoản system (seed DB/seed/SystemUser_seed.sql). Trống = job không được ghi. | – |
+
+## Zalo
+
+| Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
+|---|---|---|---|---|
+| `Zalo:BotCode` | string | "ZALO_KH" | Mã bot khách (BotConfiguration.BotCode, kênh ProviderCode ZALO). | – |
+| `Zalo:AppId` | string? | – | App id của ứng dụng Zalo (không bí mật). | – |
+| `Zalo:AppSecret` | string? | – | Khóa bí mật ứng dụng – đặt bằng biến môi trường Zalo__AppSecret. | – |
+| `Zalo:RefreshToken` | string? | – | Token làm mới KHỞI TẠO (lần đầu sau khi cấp quyền OA) – biến môi trường Zalo__RefreshToken; sau đó dùng token lưu mã hóa trong DB. | – |
+| `Zalo:TokenUrl` | string | "https://oauth.zaloapp.com/v4/oa/access_token" | – | – |
+| `Zalo:LinkCodeHours` | int | 72 | Hạn mã liên kết khách (giờ) – KD gửi mã cho người liên hệ qua email / điện thoại. | – |
+| `Zalo:MaxReplyLength` | int | 1900 | Độ dài tối đa 1 tin trả lời (Zalo giới hạn 2.000 ký tự). | – |
