@@ -15,6 +15,8 @@ namespace AppDelicare.Services.Implement.Agent
     {
         public string Id { get; set; } = string.Empty;
         public string Agent { get; set; } = string.Empty;
+        /// <summary>AI-25.3: tên ngắn của agent (nhóm câu trên bot).</summary>
+        public string AgentName { get; set; } = string.Empty;
         public string Hoi { get; set; } = string.Empty;
         public List<string> Kenh { get; set; } = [];
         /// <summary>Ô nhập trước khi chạy: tham số → nhãn.</summary>
@@ -90,7 +92,7 @@ namespace AppDelicare.Services.Implement.Agent
             {
                 if (await CanAsync(actor.UserId, q))
                 {
-                    list.Add(new QuickItemModel { Id = q.Id, Agent = q.Agent, Hoi = q.Hoi, Kenh = q.Kenh, Nhap = q.Nhap, CoPhanTich = !string.IsNullOrWhiteSpace(q.PhanTich) });
+                    list.Add(new QuickItemModel { Id = q.Id, Agent = q.Agent, AgentName = AgentCenterService.ShortName.TryGetValue(q.Agent, out var n) ? n : q.Agent, Hoi = q.Hoi, Kenh = q.Kenh, Nhap = q.Nhap, CoPhanTich = !string.IsNullOrWhiteSpace(q.PhanTich) });
                 }
             }
             return Results<QuickItemModel>.Success(list, "OK");

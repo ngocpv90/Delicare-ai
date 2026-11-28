@@ -28,7 +28,7 @@ namespace AppDelicare.Messaging.Processing
         AppDelicare.Messaging.Audiences.Internal.VanHanh.AttpActions attp, AppDelicare.Messaging.Audiences.Internal.VanHanh.GiaoVanActions giaoVan, AppDelicare.Messaging.Audiences.Internal.VanHanh.DiemPhatActions diemPhat,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.PhanAnhActions phanAnh, AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions nhanSu,
         AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions traCuu, AppDelicare.Messaging.Audiences.Internal.VanHanh.ThaoTacActions thaoTac,
-        PanelController panels, CommandScopeSync commands)
+        PanelController panels, CommandScopeSync commands, HoiNhanhActions quick)
     {
         public async Task<DispatchResult> HandleAsync(BotInboundItemModel item, CancellationToken ct)
         {
@@ -268,6 +268,9 @@ namespace AppDelicare.Messaging.Processing
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.NhanSuActions.ReplyProxy:
                         await nhanSu.ReplyAsync(ctx, pending, ct);
                         break;
+                    case HoiNhanhActions.ReplyInput:
+                        await quick.ReplyAsync(ctx, pending, ct);
+                        break;
                     case AppDelicare.Messaging.Audiences.Internal.VanHanh.TraCuuActions.ReplyTrace:
                         await traCuu.ReplyAsync(ctx, pending, ct);
                         break;
@@ -329,6 +332,9 @@ namespace AppDelicare.Messaging.Processing
                         break;
                     case CallbackData.Kinds.Op:
                         await thaoTac.HandleAsync(ctx, data, ct);
+                        break;
+                    case HoiNhanhActions.Kind:
+                        await quick.HandleAsync(ctx, data, ct);
                         break;
                     case CallbackData.Kinds.Undo when data.Action == "apv":
                         await approvals.UndoAsync(ctx, data, ct);
