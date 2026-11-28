@@ -9,7 +9,11 @@ using static AppDelicare.Services.Implement.Knowledge.KnowledgeVault;
 
 namespace AppDelicare.Services.Implement.Knowledge
 {
-    public sealed record KnowledgeMaintenanceResult(int MergedLogs, int MonthFiles, int ArchivedBriefs, Dictionary<string, List<string>> OverdueByFolder);
+    public sealed record KnowledgeMaintenanceResult(int MergedLogs, int MonthFiles, int ArchivedBriefs, Dictionary<string, List<string>> OverdueByFolder)
+    {
+        /// <summary>AI-22.2 (§7.9 luật 6): tài liệu quá <c>retain_until</c> theo vùng – chỉ nhắc chủ vùng, KHÔNG tự xóa.</summary>
+        public Dictionary<string, List<string>> RetainDueByFolder { get; init; } = [];
+    }
 
     /// <summary>
     /// AI-12 (D-133 §7.8): bảo trì kho của KNOW – (1) ghi chú nghiệp vụ Hiệu lực quá <c>review_by</c> → nhắc chủ thư mục (1 tin / thư mục / tuần);
@@ -81,7 +85,10 @@ namespace AppDelicare.Services.Implement.Knowledge
             {
                 await unitOfWork.DbContext.SaveChangesAsync();
             }
-            return new KnowledgeMaintenanceResult(merged, months.Count, archived, overdue);
+            // (4) AI-22.2 (§7.9 luật 6): quá hạn lưu giữ → nhắc chủ vùng, không tự xóa.
+            var retain = All().Where(n => n.Status != "luu-tru" && ParseDate(n.Meta.GetValueOrDefault("retain_until")) is { } ru && ru <= today && FolderByCode(n.Folder) is { AgentWritable: false })
+                .GroupBy(n => n.Folder).ToDictionary(g => g.Key, g => g.Select(n => $"{n.Title} (hạn lưu giữ {ParseDate(n.Meta.GetValueOrDefault("retain_until")):dd/MM/yyyy})").ToList());
+            return new KnowledgeMaintenanceResult(merged, months.Count, archived, overdue) { RetainDueByFolder = retain };
         }
     }
 
@@ -107,6 +114,14 @@ namespace AppDelicare.Services.Implement.Knowledge
                 {
                     title = $"{items.Count} ghi chú {f.Dir} quá hạn rà soát", lines = items.Take(10).Select(x => "📄 " + x).ToList(),
                 }, $"{NotificationCatalog.KnowledgeReviewDue}:{folder}:{clock.Today:yyyyMMdd}", requireAdd: true);
+            }
+            foreach (var (folder, items) in r.RetainDueByFolder)
+            {
+                var f = FolderByCode(folder)!;
+                await BusinessNotifier.ToMenusAsync(notifications, unitOfWork.DbContext, NotificationCatalog.KnowledgeReviewDue, ["#/" + f.Screen], new
+                {
+                    title = $"{items.Count} tài liệu {f.Dir} hết hạn lưu giữ – xem xét lưu trữ (không tự xóa)", lines = items.Take(10).Select(x => "🗄 " + x).ToList(),
+                }, $"{NotificationCatalog.KnowledgeReviewDue}:retain:{folder}:{clock.Today:yyyyMMdd}", requireAdd: true);
             }
             int overdue = r.OverdueByFolder.Sum(x => x.Value.Count);
             return new JobOutcome(JobRunStatus.Succeeded, r.MergedLogs + r.ArchivedBriefs + overdue, now.Date,

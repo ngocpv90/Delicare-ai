@@ -432,6 +432,17 @@ public static partial class Seeds
                 G(role, EditR, [K(folder)]);
             }
         }
+        // AI-22.2 (D-141, §7.9 luật 1): vùng tài liệu gốc – người xem được tải file gốc (In + Xuất), người sửa được chuyển Lưu trữ (Xóa).
+        foreach (string role in m.Keys.ToList())
+        {
+            foreach (string area in new[] { "05", "15", "20-hd", "40-hd", "60-ct", "70-hs" })
+            {
+                if (m[role].TryGetValue(K(area), out var cur) && cur.A)
+                {
+                    G(role, cur.E ? new Right(true, false, false, true, true, true, false) : PrintR, [K(area)]);
+                }
+            }
+        }
         foreach (string role in StandardRoles)
         {
             G(role, ViewR, ["hr-my"]);

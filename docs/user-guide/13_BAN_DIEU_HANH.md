@@ -66,9 +66,12 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Tri thức › 60 Kế toán | `knowledge?folder=60` | X | X | X | S |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X |
 | Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — |
-| Tri thức › 05 Công văn đến / đi | `knowledge?folder=05` | X | S | X | — |
-| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | S | X | S | S |
-| Tri thức › 60 › Chứng từ gốc | `knowledge?folder=60-ct` | X | X | X | S |
+| Tri thức › 05 Công văn đến / đi | `knowledge?folder=05` | X (IX) | S (IX) | X (IX) | — |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | S (IX) | X (IX) | S (IX) | S (IX) |
+| Tri thức › 20 › Hợp đồng khách hàng | `knowledge?folder=20-hd` | X (IX) | X (IX) | X (IX) | X (IX) |
+| Tri thức › 40 › Hợp đồng nhà cung cấp | `knowledge?folder=40-hd` | X (IX) | X (IX) | X (IX) | X (IX) |
+| Tri thức › 60 › Chứng từ gốc | `knowledge?folder=60-ct` | X (IX) | X (IX) | X (IX) | S (IX) |
+| Tri thức › 70 › Hồ sơ cá nhân | `knowledge?folder=70-hs` | X (IX) | — | — | — |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

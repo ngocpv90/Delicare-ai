@@ -50,6 +50,10 @@ namespace AppDelicare.Services.Implement.Knowledge
         public string? Raw { get; set; }
         public string Hash { get; set; } = string.Empty;
         public bool CanEdit { get; set; }
+        /// <summary>AI-22.2: tài liệu có file gốc – tên gốc (hiển thị), được tải (quyền Xuất), được chuyển Lưu trữ (quyền Xóa).</summary>
+        public string? FileName { get; set; }
+        public bool CanDownload { get; set; }
+        public bool CanArchive { get; set; }
         public List<KnowledgeNoteHeadModel> ListBacklink { get; set; } = [];
     }
 
@@ -131,6 +135,11 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResult<KnowledgeSaveResultModel>> SubmitSop(KnowledgePathRequest request);
         Task<IResult<KnowledgeSaveResultModel>> NewVersion(KnowledgePathRequest request);
         Task<IResult<KnowledgeSaveResultModel>> Import(string? folderCode, string? type, string fileName, Stream file);
+        // AI-22.2 (D-141): tầng Lưu trữ – file gốc + phiếu mô tả, tải qua API có kiểm quyền Xuất, Lưu trữ thay xóa, nhật ký truy cập vùng hạn chế.
+        Task<IResult<KnowledgeSaveResultModel>> UploadFile(KnowledgeUploadRequest request, string fileName, Stream stream, long length);
+        Task<IResult<AppDelicare.Model.Model.FileContentModel>> DownloadFile(string? path);
+        Task<IResult<KnowledgeSaveResultModel>> Archive(KnowledgePathRequest request);
+        Task<IResults<KnowledgeAccessModel>> GetAccessLog(string? path);
         Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
         /// <summary>AI-21 (D-138 d): sổ việc theo ngày (thư mục 98) – mở / tự đóng / đã xử lý việc của Trung tâm Agent.</summary>
@@ -164,7 +173,12 @@ namespace AppDelicare.Services.Implement.Knowledge
             return a.Type == ActorType.Agent ? new KnowledgeCaller(a.UserId, a.AgentCode, null) : new KnowledgeCaller(a.UserId, null, null);
         }
 
-        private sealed record Rights(Func<string, bool> CanRead, Func<string, bool> CanEdit, Func<Note, bool> NoteVisible);
+        private sealed record Rights(Func<string, bool> CanRead, Func<string, bool> CanEdit, Func<Note, bool> NoteVisible)
+        {
+            /// <summary>AI-22.2: tải file gốc (AllowExport) / chuyển Lưu trữ (AllowDelete) – agent luôn false.</summary>
+            public Func<string, bool> CanExport { get; init; } = _ => false;
+            public Func<string, bool> CanArchive { get; init; } = _ => false;
+        }
 
         private async Task<Rights> RightsAsync(KnowledgeCaller c)
         {
@@ -216,11 +230,14 @@ namespace AppDelicare.Services.Implement.Knowledge
             }
             var me = c.UserId is { } id ? await permissions.GetAsync(id) : UserPermissions.None;
             // BOD + vùng cá nhân (AI-22.1, §7.9 luật 1): chỉ người được cấp RÕ mục – quyền admin KHÔNG tự mở (§7.2; PROPOSED – BA/PO CONFIRM).
-            bool Explicit(string folder, bool edit) => me.Menus.TryGetValue("#/" + KnowledgeVault.FolderByCode(folder)!.Screen, out var m) && m.Access && (!edit || m.Edit);
+            bool Explicit(string folder, bool edit) => Has(folder, m => !edit || m.Edit);
+            bool Has(string folder, Func<MenuRights, bool> pick) => me.Menus.TryGetValue("#/" + KnowledgeVault.FolderByCode(folder)!.Screen, out var m) && m.Access && pick(m);
             static bool Named(string folder) => folder == KnowledgeVault.Bod || folder == KnowledgeVault.Personal;
             bool R(string folder) => Named(folder) ? Explicit(folder, false) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.View);
             bool E(string folder) => Named(folder) ? Explicit(folder, true) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.Edit);
-            return new Rights(R, E, n => n.Folder.Length > 0 && R(n.Folder) && (n.Confidentiality != "bod" || R(KnowledgeVault.Bod)));
+            bool X(string folder) => Named(folder) ? Has(folder, m => m.Export) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.Export);
+            bool D(string folder) => Named(folder) ? Has(folder, m => m.Delete) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.Delete);
+            return new Rights(R, E, n => n.Folder.Length > 0 && R(n.Folder) && (n.Confidentiality != "bod" || R(KnowledgeVault.Bod))) { CanExport = X, CanArchive = D };
         }
 
         // ---------------- khung kho
@@ -307,6 +324,17 @@ namespace AppDelicare.Services.Implement.Knowledge
             if (includeRaw)
             {
                 m.Raw = File.ReadAllText(Path.Combine(Root, n.Path), Encoding.UTF8);
+            }
+            if (n.Meta.GetValueOrDefault("file") is { Length: > 0 })
+            {
+                m.FileName = n.Meta.GetValueOrDefault("ten_goc") ?? n.Meta.GetValueOrDefault("file");
+                m.CanDownload = caller.AgentCode == null && rights.CanExport(n.Folder);
+            }
+            m.CanArchive = caller.AgentCode == null && !n.Generated && n.Status != "luu-tru" && rights.CanArchive(n.Folder);
+            if (caller.AgentCode == null && KnowledgeVault.Restricted.Contains(n.Folder))
+            {
+                LogAccess(n.Path, n.Folder, "Xem", caller.UserId); // AI-22.2 (§7.9 luật 4)
+                await unitOfWork.DbContext.SaveChangesAsync();
             }
             m.ListBacklink = Backlinks(notes, n).Where(rights.NoteVisible).Select(x => Head(x)).ToList();
             return Result<KnowledgeNoteModel>.Success(m, "OK");

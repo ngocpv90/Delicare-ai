@@ -637,6 +637,17 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-22.2 – Tải tài liệu gốc / tải xuống / lưu trữ (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Kế toán (uat.fin-acc) | 60 › Chứng từ gốc → Tải tài liệu lên (PDF 1 MB) | Tài liệu hiện trong vùng, có Tệp gốc + số hiệu + hạn lưu giữ |
+| 2 | Kế toán | Tải tệp .exe / tệp 25 MB | Báo lỗi loại / dung lượng |
+| 3 | CEO | Mở tài liệu → Tải file gốc | Tải về đúng tệp, tên gốc |
+| 4 | QA (uat.qa) | Mở đường dẫn tài liệu chứng từ | Báo không có quyền |
+| 5 | Kế toán | Nhật ký truy cập | Có dòng Xem / Tải của CEO |
+| 6 | Kế toán | Lưu trữ tài liệu | Trạng thái Lưu trữ; không mất tệp |
+
 ## AI-22.1 – Kho tài liệu: phân quyền theo vùng (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

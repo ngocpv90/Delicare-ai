@@ -92,3 +92,11 @@ Kho lưu cả **tài liệu doanh nghiệp** (công văn, biên bản họp, h�
 - **Quản trị IT (admin) không tự thấy** 70 › Hồ sơ cá nhân và BOD – phải được cấp đích danh.
 - **Agent**: chỉ đọc vùng mà cả agent lẫn người hỏi đều được xem; hồ sơ cá nhân chỉ agent Nhân sự khi người hỏi có quyền; BOD không agent nào đọc; việc agent tự chạy theo lịch không đọc hợp đồng / chứng từ / hồ sơ cá nhân / công văn / biên bản họp.
 - **Obsidian máy cá nhân** không bao giờ tải về hợp đồng, chứng từ gốc, hồ sơ cá nhân, BOD.
+
+## AI-22.2 – Tải tài liệu gốc lên kho, tải xuống, lưu trữ (28/11/2026)
+
+- **Tải lên** (người có quyền Sửa vùng): mở vùng (vd **60 › Chứng từ gốc**) → **Tải tài liệu lên** → chọn tệp **PDF, Word (.docx), Excel (.xlsx), ảnh JPG / PNG ≤ 20 MB** → điền Loại, Số hiệu, Tên / trích yếu, Ngày văn bản, **Hạn lưu giữ**, Mã đối tượng (khách / NCC / nhân viên / chứng từ), Mô tả → **Tải lên**. Máy chủ tự đặt tên tệp; tên gốc chỉ để hiển thị.
+- **Tải file gốc**: chỉ người có quyền **Xuất** của vùng (mặc định: người xem vùng tài liệu). Không có đường dẫn trực tiếp tới tệp.
+- **Lưu trữ** (thay cho xóa – quyền **Xóa** của vùng): tài liệu không bị xóa, không còn trong kết quả tìm.
+- **Nhật ký truy cập**: mỗi lần xem / tải tài liệu ở **hợp đồng, chứng từ gốc, hồ sơ cá nhân, BOD** được ghi lại (ai, lúc nào, xem hay tải); người có quyền Sửa vùng bấm **Nhật ký truy cập** để xem.
+- **Hết hạn lưu giữ**: thứ Hai hằng tuần hệ thống nhắc chủ vùng danh sách tài liệu đã quá hạn lưu giữ – **không tự xóa**, chủ vùng quyết định chuyển Lưu trữ.

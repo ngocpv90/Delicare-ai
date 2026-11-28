@@ -87,7 +87,7 @@ namespace AppDelicare.Services.Implement.Knowledge
         };
 
         // ---------------- frontmatter (§7.5-3)
-        public static readonly string[] Types = ["sop", "su-co", "bai-hoc", "bao-cao", "quyet-dinh", "ho-so", "nhat-ky", "huong-dan"];
+        public static readonly string[] Types = ["sop", "su-co", "bai-hoc", "bao-cao", "quyet-dinh", "ho-so", "nhat-ky", "huong-dan", .. KnowledgeService.FileTypes.Where(t => t != "bao-cao")]; // AI-22.2: loại tài liệu gốc
         public static readonly string[] Statuses = ["nhap", "cho-duyet", "hieu-luc", "luu-tru"];
         public static readonly string[] Confidentialities = ["cong-khai", "noi-bo", "han-che", "bod"];
         public static readonly string[] Required = ["id", "type", "source", "owner", "status", "valid_from", "review_by", "confidentiality", "refs"];
@@ -230,6 +230,10 @@ namespace AppDelicare.Services.Implement.Knowledge
             if (c < 128)
             {
                 return char.ToLowerInvariant(c);
+            }
+            if (char.IsSurrogate(c))
+            {
+                return ' '; // AI-22.2: emoji (cặp surrogate) – Normalize trên nửa cặp ném lỗi
             }
             string d = c.ToString().Normalize(NormalizationForm.FormD);
             return char.ToLowerInvariant(d[0]);
