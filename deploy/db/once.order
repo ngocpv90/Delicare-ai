@@ -18,3 +18,4 @@ DB/scripts/UI636_employee_cleanup.sql             # UI-6.36 (D-117): nhân viên
 DB/scripts/UI643_usergroup_code.sql               # UI-6.43 (D-124): mã / tên tiếng Việt / khối nhóm quyền (sau migration 20261124_02)
 DB/scripts/SYNC1_dedupe_usergroups.sql            # DEPLOY-SYNC-1 (D-134): dọn nhóm quyền trùng mã do seed cũ khớp theo Name (xóa mềm nhóm trùng không có người dùng)
 DB/scripts/UI651_purchase_plan.sql                # UI-6.51 (D-137): hủy đề nghị mua Nháp trùng (nguyên liệu + ngày cần) trước kế hoạch mua tự động
+DB/scripts/AI10_activate_agents.sql               # AI-10 (D-133): bật agent đợt 2 SALES / PROC / LOG / HR (BotStatus Active) trên DB đã có seed đợt 1

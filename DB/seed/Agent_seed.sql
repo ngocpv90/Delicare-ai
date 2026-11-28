@@ -2,7 +2,7 @@
 -- Idempotent, CHỈ THÊM (khóa: ChannelCode / Id tài khoản / tên nhóm / BotCode / ExternalUserId / nhóm × menu) – không ghi đè công tắc (BotStatus) đã chỉnh trên màn.
 -- KHÔNG bí mật: SecretReference = TÊN biến môi trường giữ khóa agent (AGENT_KEY_<MÃ>) – khóa thật chỉ ở env / user-secrets của toolgateway.
 -- Tài khoản agent: INTERNAL, PassWord '!NO-LOGIN!' (không băm khớp), không admin; LoginService chặn đăng nhập web theo liên kết UserExternalIdentity kênh HERMES.
--- Quyền: CHỈ Xem, trên các màn vai trò người tương ứng được truy cập (ma trận Menu5). Đợt 1 bật VIVI, WH, KITCHEN, QA, KNOW; còn lại Inactive.
+-- Quyền: CHỈ Xem, trên các màn vai trò người tương ứng được truy cập (ma trận Menu5). Đợt 1 bật VIVI, WH, KITCHEN, QA, KNOW; đợt 2 (AI-10) bật thêm SALES, PROC, LOG, HR (DB cũ: script 1 lần AI10_activate_agents.sql); còn lại Inactive.
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 SET QUOTED_IDENTIFIER ON;
@@ -20,15 +20,15 @@ DECLARE @Ch UNIQUEIDENTIFIER = (SELECT TOP (1) Id FROM [dbo].[IntegrationChannel
 DECLARE @A TABLE (Code NVARCHAR(50), Name NVARCHAR(255), Audience NVARCHAR(100), Status NVARCHAR(30), UserId UNIQUEIDENTIFIER);
 INSERT INTO @A VALUES
     (N'VIVI', N'Vivi – Điều phối trung tâm', N'Ban điều hành', N'Active', 'ad14c304-d549-4811-0df3-234208cc0694'),
-    (N'SALES', N'Agent Kinh doanh & hợp đồng', N'Kinh doanh', N'Inactive', 'ec7567ee-2439-4b97-3624-9d41f6f1fd92'),
+    (N'SALES', N'Agent Kinh doanh & hợp đồng', N'Kinh doanh', N'Active', 'ec7567ee-2439-4b97-3624-9d41f6f1fd92'),
     (N'PLAN', N'Agent Kế hoạch & thực đơn', N'Kế hoạch', N'Inactive', 'c716b172-35d9-089a-2d42-908fabc87e52'),
-    (N'PROC', N'Agent Thu mua', N'Mua hàng', N'Inactive', '1e95a413-e30a-3e39-56db-3b1996fe859e'),
+    (N'PROC', N'Agent Thu mua', N'Mua hàng', N'Active', '1e95a413-e30a-3e39-56db-3b1996fe859e'),
     (N'WH', N'Agent Kho', N'Kho', N'Active', '5eebc6ff-213d-2562-9801-7bd5ce5ce24e'),
     (N'KITCHEN', N'Agent Bếp & sản xuất', N'Bếp', N'Active', '246e7a51-187a-3a2c-00ac-2cf4b1ef519c'),
     (N'QA', N'Agent ATTP & truy xuất', N'QA / ATTP', N'Active', 'becf69f3-ce2c-89b9-c9d4-32edaa715a94'),
-    (N'LOG', N'Agent Giao vận', N'Giao vận', N'Inactive', '78caa2eb-8297-f63d-d3c9-17153ff94c9c'),
+    (N'LOG', N'Agent Giao vận', N'Giao vận', N'Active', '78caa2eb-8297-f63d-d3c9-17153ff94c9c'),
     (N'PKG', N'Agent Hộp khay & vệ sinh', N'Hộp khay & vệ sinh', N'Inactive', '3856f089-1d8e-4c05-7c1f-5aa5eeb0d8ad'),
-    (N'HR', N'Agent Nhân sự', N'Nhân sự', N'Inactive', '4ed89f5f-6d96-cb29-afd4-904b0b597cdc'),
+    (N'HR', N'Agent Nhân sự', N'Nhân sự', N'Active', '4ed89f5f-6d96-cb29-afd4-904b0b597cdc'),
     (N'ACC', N'Agent Kế toán', N'Kế toán', N'Inactive', 'e089ee58-cdd5-5fdb-df55-66ac121244a7'),
     (N'CSKH', N'Agent Chăm sóc khách (Zalo)', N'CSKH', N'Inactive', '1dc51951-ccbc-d2b9-5177-d1bf9dddb040'),
     (N'KNOW', N'Agent Thủ thư tri thức', N'Tri thức', N'Active', '29deb0aa-3f92-bd55-9a16-44dbbeedfd87');

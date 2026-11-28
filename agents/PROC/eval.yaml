@@ -1,0 +1,22 @@
+# Bộ câu nghiệm thu agent PROC (AI-10, D-133). Chạy: node tools/agent-eval/run.mjs PROC
+agent: PROC
+webUser: uat.ops-scm
+cases:
+  - id: proc-ke-hoach-mua
+    question: Hôm nay phải đặt những gì?
+    tool: ke_hoach_mua
+    args: {}
+    expect:
+      status: 200
+  - id: proc-thieu-hut
+    question: Nguyên liệu nào thiếu trong 7 ngày tới?
+    tool: du_bao_thieu_hut
+    args: {}
+    expect:
+      status: 200
+  - id: proc-po-ncc-sai
+    question: Lập đơn mua NCC-KHONG-CO
+    tool: propose_purchase_order
+    args: { ma_ncc: NCC-KHONG-CO, dong: [{ ma_nl: X, so_luong: 1 }], ly_do: kiem thu }
+    expect:
+      status: 400

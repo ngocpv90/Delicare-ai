@@ -10,6 +10,7 @@ ke_hoach_ngay
 lay_su_kien
 nhiet_do_ngay
 ping
+propose_batch_event
 thuc_don_tuan
 tien_do_bep
 tien_do_bep_chi_tiet

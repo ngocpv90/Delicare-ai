@@ -279,7 +279,7 @@ namespace AppDelicare.Services.Implement.Agent
     /// <summary>AI-9 / AI-10: danh bạ lệnh ghi của agent (tên công cụ <c>propose_*</c>).</summary>
     public static partial class AgentCommandRegistry
     {
-        public static IReadOnlyList<AgentCommandDef> All => _all ??= [.. Core()];
+        public static IReadOnlyList<AgentCommandDef> All => _all ??= [.. Core(), .. Ops()];
         private static List<AgentCommandDef>? _all;
 
         public static AgentCommandDef? Find(string? code) => All.FirstOrDefault(c => string.Equals(c.Code, code?.Trim(), StringComparison.OrdinalIgnoreCase));

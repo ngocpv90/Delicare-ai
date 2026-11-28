@@ -1156,7 +1156,9 @@ INSERT INTO @Once VALUES
     (N'UI627_standardcost_cleanup.sql'),
     (N'UI636_employee_cleanup.sql'),
     (N'UI643_usergroup_code.sql'),
-    (N'SYNC1_dedupe_usergroups.sql');
+    (N'SYNC1_dedupe_usergroups.sql'),
+    (N'UI651_purchase_plan.sql'),
+    (N'AI10_activate_agents.sql');
 INSERT INTO @Out
 SELECT N'Chuyển đổi – chưa chạy', o.FileName, N'chưa ghi nhận DelicareOnce (chạy Deploy-Database / db-init)' FROM @Once o
 WHERE NOT EXISTS (SELECT 1 FROM sys.extended_properties p WHERE p.class = 0 AND p.name = N'DelicareOnce:' + o.FileName);

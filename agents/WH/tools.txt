@@ -8,5 +8,8 @@ get_ton_kho
 ghi_nhat_ky
 lay_su_kien
 ping
+propose_goods_receipt
+propose_issue
+propose_stock_count
 tim_tri_thuc
 truy_xuat_lo

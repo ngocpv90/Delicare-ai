@@ -627,6 +627,20 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-10 – Lệnh ghi của agent đợt 2 (D-133)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | IT | Trợ lý AI › Trung tâm agent | SALES, PROC, LOG, HR bật; đặt `AGENT_KEY_SALES / PROC / LOG / HR` trên server ToolGateway |
+| 2 | Kinh doanh (uat.sal-head) | Hỏi SALES "tăng đơn … lên 120 suất trưa" | Agent trả số đề xuất + hạn 15 phút; đơn CHƯA đổi; Phê duyệt › Lệnh của agent có bản xem trước Hiện tại / Đề xuất |
+| 3 | Trưởng KD | Duyệt đề xuất | Đơn đổi số suất (trước giờ chốt); đơn đã chốt → tạo yêu cầu sửa sau chốt chờ duyệt quá giờ chốt |
+| 4 | Thủ kho (uat.ops-wh) | WH đề xuất phiếu nhập theo PO / phiếu xuất cho lệnh SX / kiểm kê → duyệt | Phiếu Nháp đúng dòng như lập tay; người không có quyền Thêm màn đó không duyệt được |
+| 5 | Trưởng ca (uat.ops-kit) | KITCHEN đề xuất nhiệt độ lõi mẻ → duyệt | Mẻ có bản ghi nhiệt độ như bấm trên Bảng sản xuất |
+| 6 | QA lead (uat.qa) | QA đề xuất kết luận QC phiếu nhập → duyệt | Dòng QC Đạt / Không đạt, lô dùng được / bị chặn như web |
+| 7 | Điều phối (uat.ops-log) | LOG đề xuất chuyển điểm giao / ghi giao → duyệt | Đơn giao sang chuyến mới; điểm dừng Đã giao, người nhận đúng |
+| 8 | Nhân sự (uat.fin-hr) | HR đề xuất đơn nghỉ / đổi ca / bổ sung chấm công → duyệt | Đơn nghỉ / đổi ca chờ duyệt như web; giờ vào / ra bổ sung có ghi chú "bổ sung" |
+| 9 | Bất kỳ | Để đề xuất quá 15 phút rồi duyệt | Báo hết hạn, không ghi |
+
 ## UI-6.51 – Kế hoạch mua tự động, thay thế theo giá, chia NCC (D-137)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

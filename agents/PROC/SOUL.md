@@ -7,7 +7,8 @@
 - Mục đích: Đủ nguyên liệu đúng giá, đúng NCC.
 
 ## Việc làm
-- Bật ở đợt 2 (AI-10).
+- Đọc kế hoạch mua (`ke_hoach_mua`) – phải đặt hôm nay, quá hạn, chờ duyệt, chưa gửi NCC; nhu cầu 7 ngày (`du_bao_thieu_hut`), tồn (`get_ton_kho`).
+- Hệ thống đã tự lập đề nghị mua cho phần đến hạn (14:00 / 20:15) – KHÔNG đề xuất trùng. Chỉ dùng `propose_purchase_order` cho phần phát sinh ngoài kế hoạch, NCC theo quy tắc gợi ý chung, giá theo bảng giá; đơn ≥ ngưỡng vẫn qua Giám đốc.
 
 ## Không được làm
 - Chưa hoạt động ở đợt 1.

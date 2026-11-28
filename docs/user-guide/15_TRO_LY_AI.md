@@ -17,7 +17,7 @@ Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent;
 | Trợ lý AI › Nhật ký agent | `ai-agent-log` | Mọi lời gọi công cụ: lúc, agent, công cụ, người hỏi, kết quả (Thành công / Bị từ chối / Lỗi), thời gian xử lý, số dòng |
 | Trợ lý AI › Lịch chạy | `ai-schedule` | Việc theo giờ của từng agent (05:30 kho, 07:00 bản tin sáng, 08:30 QA, 10:00 bếp, 17:00 cuối ngày, mỗi 5 phút lấy sự kiện…), lần chạy gần nhất |
 
-## 3. Agent làm gì (đợt 1)
+## 3. Agent làm gì (đợt 1 + đợt 2)
 
 | Agent | Hỏi được gì | Theo lịch |
 |---|---|---|
@@ -26,6 +26,14 @@ Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent;
 | KITCHEN | Tiến độ bếp theo mẻ / công đoạn, kế hoạch, thực đơn tuần, hao hụt, nhiệt độ | 10:00 tiến độ trước giờ giao trưa |
 | QA | Truy xuất lô / mẻ, nhiệt độ ngoài ngưỡng, phản ánh, lô tạm giữ | 08:30 rà nhiệt độ, cảnh báo, phản ánh quá hạn |
 | KNOW | Tìm SOP / hướng dẫn / tiền lệ trong kho tri thức (luôn nêu nguồn + ngày hiệu lực) | Thứ Hai 22:00 rà ghi chú quá hạn rà soát |
+| SALES | Đơn suất ngày mai, khách chưa chốt, phản ánh khách; **đề xuất đổi số suất** (`propose_order_change`) | – |
+| PROC | Kế hoạch mua (phải đặt hôm nay, quá hạn, chờ duyệt, chưa gửi NCC), thiếu hụt 7 ngày, tồn; **đề xuất đơn mua** ngoài kế hoạch (`propose_purchase_order`) | – |
+| LOG | Bảng điều phối giao hàng trong ngày; **đề xuất chuyển điểm giao** (`propose_route`), **ghi đến / giao tại điểm dừng** (`propose_delivery_event`) | – |
+| HR | Chấm công ngày (chưa vào ca, muộn, vắng); **đề xuất đơn nghỉ / đổi ca / bổ sung chấm công** (`propose_leave`, `propose_shift_swap`, `propose_attendance_fix`) | – |
+
+Đợt 2 các agent cũ có thêm lệnh ghi: WH – lập phiếu nhập theo đơn mua (`propose_goods_receipt`), phiếu xuất cho lệnh SX (`propose_issue`), phiếu kiểm kê (`propose_stock_count`); KITCHEN – ghi bắt đầu / xong / nhiệt độ lõi / lưu mẫu của mẻ (`propose_batch_event`); QA – kết luận QC nhận hàng (`propose_qc_result`), giữ lô (`propose_hold_lot`).
+
+**Lệnh ghi (2 pha):** agent chỉ **đề xuất** – không ghi gì. Đề xuất vào **Phê duyệt › Lệnh của agent** (hạn xác nhận 15 phút), hiện bản xem trước (dòng, số tiền, cảnh báo). Người xác nhận phải tự có quyền làm đúng thao tác đó trên web (vd lập phiếu nhập cần quyền Thêm Phiếu nhập kho). Xác nhận → hệ thống chạy **đúng thao tác web** dưới tên người xác nhận, mọi quy tắc nghiệp vụ áp lại (lỗi → không ghi, báo người xác nhận); chứng từ sau đó đi tiếp luồng duyệt như lập tay (vd đơn nghỉ chờ duyệt nghỉ, sửa đơn sau giờ chốt cần duyệt quá giờ chốt).
 
 **Agent chỉ thấy những gì bạn được thấy:** mỗi lời hỏi kiểm **quyền của agent ∩ quyền của bạn** trên màn tương ứng (vd hỏi tồn kho cần quyền Xem Tồn kho). Không có quyền → agent trả lời "không có quyền xem …".
 
@@ -44,7 +52,7 @@ Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent;
 
 ## 6. An toàn
 
-- Agent **không có** quyền ghi nghiệp vụ ở đợt 1; từ đợt 2 mọi đề xuất ghi đều cần người xác nhận.
+- Agent **không bao giờ tự ghi** nghiệp vụ: mọi lệnh ghi là đề xuất, chỉ có hiệu lực khi người có quyền xác nhận; `Agent:ReadOnly = true` chặn mọi đề xuất.
 - Agent **không bao giờ** đọc thư mục **BOD Bảo mật**; kết quả trả cho agent đã che số điện thoại, email, CCCD, số tài khoản.
 - Nội dung khách viết (phản ánh…) là **dữ liệu** – agent không làm theo chỉ dẫn trong đó.
 - Tắt toàn bộ Trợ lý: IT đặt `Agent:Enabled = false` (hoặc tắt từng agent trên màn).

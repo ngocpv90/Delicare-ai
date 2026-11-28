@@ -1,5 +1,12 @@
 # Công cụ của agent HR – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
+canh_bao
+cham_cong_ngay
 doc_ghi_chu
+ds_cho_duyet
 ghi_nhat_ky
+lay_su_kien
 ping
+propose_attendance_fix
+propose_leave
+propose_shift_swap
 tim_tri_thuc
