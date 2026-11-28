@@ -31,6 +31,8 @@ namespace AppDelicare.Services.Implement.Knowledge
         /// <summary>AI-22.4: người xử lý (User.Id) + hạn xử lý yyyy-MM-dd → việc theo dõi 98.</summary>
         public Guid? HandlerId { get; set; }
         public string? HandlerDue { get; set; }
+        /// <summary>AI-22.5: ngày hết hạn hợp đồng (yyyy-MM-dd) – nhắc trước Knowledge:ContractExpiryNoticeDays.</summary>
+        public string? HetHan { get; set; }
     }
 
     /// <summary>AI-22.2: 1 dòng nhật ký truy cập tài liệu hạn chế (AuditChange EntityName <c>KnowledgeAccess</c>).</summary>
@@ -171,6 +173,7 @@ namespace AppDelicare.Services.Implement.Knowledge
                 ("refs", string.IsNullOrWhiteSpace(request.DoiTuong) ? "[]" : "[" + KnowledgeVault.FileSafe(Q(request.DoiTuong)) + "]"), ("title", Q(title)),
                 ("so_hieu", Q(request.SoHieu)), ("ngay", day.ToString("yyyy-MM-dd")), ("doi_tuong", Q(request.DoiTuong)), ("retain_until", retain?.ToString("yyyy-MM-dd") ?? string.Empty),
                 ("file", stem + ext.ToLowerInvariant()), ("ten_goc", Q(Path.GetFileName(fileName))), ("kich_thuoc", bytes.Length.ToString()),
+                .. (KnowledgeVault.ParseDate(request.HetHan) is { } hh ? new[] { ("het_han", hh.ToString("yyyy-MM-dd")) } : []),
                 .. (regNo != null ? new[] { ("so_vao_so", regNo), ("noi_gui_nhan", Q(request.NoiGuiNhan)), ("nguoi_xu_ly", handlerName ?? string.Empty), ("han_xu_ly", handlerDue?.ToString("yyyy-MM-dd") ?? string.Empty) } : []),
             ]);
             string body = $"\n# {Q(title)}\n\n{(string.IsNullOrWhiteSpace(request.Summary) ? "(chưa có mô tả)" : request.Summary!.Trim())}\n\n📎 Tệp gốc: {Q(Path.GetFileName(fileName))} – tải bằng nút **Tải file gốc** (cần quyền Xuất của vùng).\n";

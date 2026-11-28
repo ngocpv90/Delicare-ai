@@ -637,6 +637,16 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-22.5 – Tài liệu trên trang chi tiết + nhắc hết hạn (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | KD trưởng (uat.sal-head) | Khách hàng 360 → Tài liệu → Tải lên kho (hợp đồng, hết hạn sau 30 ngày) | Hiện trong khối Kho tài liệu, cột Hết hạn đỏ |
+| 2 | Kế toán (uat.fin-acc) | Cùng khách → Tài liệu | Thấy hợp đồng, không có nút Tải lên kho |
+| 3 | QA (uat.qa) | Cùng khách → Tài liệu | Không thấy hợp đồng |
+| 4 | Nhân sự (uat.fin-hr) | Nhân viên 360 → Tài liệu → Tải HĐLĐ | Chỉ Nhân sự thấy |
+| 5 | KD trưởng | 06:30 khi hợp đồng còn 30 / 7 / 1 ngày | Bot nhắc "hợp đồng sắp hết hạn" |
+
 ## AI-22.4 – Sổ công văn, biên bản họp, việc được giao (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

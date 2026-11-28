@@ -112,6 +112,12 @@ Kho lưu cả **tài liệu doanh nghiệp** (công văn, biên bản họp, h�
 - **Biên bản họp** (vùng **15 Họp & giao ban**): **Lập biên bản họp** → tên, ngày, chủ trì, thành phần, nội dung, kết luận, **việc giao** (việc, người, hạn). Số `BH-2026-001`; mỗi việc giao tự thành **việc theo dõi**.
 - **Việc tôi được giao** (nút trên đầu màn Kho tri thức): danh sách việc từ công văn / biên bản họp giao cho anh/chị → bấm **Xong** (hoặc **Mở lại**); người giao thấy ngay trên sổ. 07:00 hằng ngày bot nhắc việc **đến hạn ngày mai** hoặc **quá hạn**.
 
+## AI-22.5 – Tài liệu trên trang chi tiết + nhắc hợp đồng hết hạn (28/11/2026)
+
+- Trang chi tiết **Khách hàng, Hợp đồng, Nhà cung cấp, Nhân viên** → tab **Tài liệu**: dưới phần tệp đính kèm có khối **Kho tài liệu** – hợp đồng / hồ sơ gốc trong kho gắn mã bản ghi. Chỉ hiện tài liệu anh/chị được xem (vd hồ sơ nhân viên chỉ Nhân sự thấy).
+- **Tải lên kho** ngay tại trang (người có quyền Sửa vùng): khách hàng / hợp đồng → *20 › Hợp đồng khách hàng*, NCC → *40 › Hợp đồng NCC*, nhân viên → *70 › Hồ sơ cá nhân*. Nhập **Ngày hết hạn** để được nhắc.
+- **Nhắc hết hạn hợp đồng** (06:30): còn **30, 7, 1 ngày** → bot nhắc người phụ trách – hợp đồng khách đang hiệu lực (theo ngày hết hiệu lực trong hệ thống), hợp đồng NCC / lao động (theo ngày hết hạn trên tài liệu). Cột **Hết hạn** tô đỏ khi còn ≤ 30 ngày.
+
 ## Dùng màn Kho tài liệu & tri thức – `knowledge`
 
 Tìm, đọc, tải lên tài liệu theo vùng được cấp quyền (AI-22, D-141).

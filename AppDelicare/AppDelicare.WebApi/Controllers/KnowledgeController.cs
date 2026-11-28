@@ -124,6 +124,10 @@ namespace AppDelicare.WebApi.Controllers
         [HttpGet("GetMyTasks")]
         public Task<IActionResult> GetMyTasks([FromQuery] bool includeDone) => Run(nameof(GetMyTasks), () => _service.GetMyTasks(includeDone));
 
+        /// <summary>AI-22.5 (D-141 i): tài liệu kho gắn 1 khách hàng / hợp đồng / NCC / nhân viên (tab Tài liệu trang chi tiết) – theo quyền vùng; vùng tải lên mặc định.</summary>
+        [HttpGet("GetDocuments")]
+        public Task<IActionResult> GetDocuments([FromQuery] string? type, [FromQuery] Guid id) => Run(nameof(GetDocuments), () => _service.GetDocuments(type, id));
+
         /// <summary>AI-22.4: người được giao bấm Xong / mở lại việc của mình.</summary>
         [HttpPost("SetMyTask")]
         public Task<IActionResult> SetMyTask([FromBody] KnowledgeTaskSetRequest request) => Run(nameof(SetMyTask), () => _service.SetMyTask(request ?? new KnowledgeTaskSetRequest()));

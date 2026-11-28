@@ -34,5 +34,8 @@ namespace AppDelicare.Model.Option
 
         /// <summary>AI-22.3 (§7.11): thư mục nguồn Hướng dẫn sử dụng (docs/user-guide). Trống = tìm "docs/user-guide" đi ngược lên từ thư mục chạy (máy dev); Docker: /app/user-guide (mount chỉ đọc).</summary>
         public string? UserGuidePath { get; set; }
+
+        /// <summary>AI-22.5 (D-141 i): nhắc hợp đồng (khách / NCC / lao động) sắp hết hạn trước bao nhiêu ngày (thêm mốc 7 và 1 ngày).</summary>
+        public int ContractExpiryNoticeDays { get; set; } = 30;
     }
 }
