@@ -1156,3 +1156,5 @@ tr.bb-late td{background:#FFF5F4}
 .rp-cm { border: 1px solid #E4E9DC; background: #FAFCF6; border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
 .rp-c { line-height: 1.5; }
 .rp-c.warn { color: #8A5A00; } .rp-c.good { color: #2E6B12; }
+/* RETAIL-1 §8: ảnh nhỏ sản phẩm bán lẻ */
+.rp-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; vertical-align: middle; margin-right: 8px; border: 1px solid #E4E9DC; }

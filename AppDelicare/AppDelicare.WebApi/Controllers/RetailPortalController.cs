@@ -16,8 +16,23 @@ namespace AppDelicare.WebApi.Controllers
     /// Đơn ghi dưới tài khoản system (SystemUsers:JobUserId).
     /// </summary>
     [AllowAnonymous]
-    public class RetailPortalController(IRetailPortalService service, IRetailAccountService account) : BaseController
+    public class RetailPortalController(IRetailPortalService service, IRetailAccountService account, AppDelicare.Services.Implement.IRetailProductImageService image) : BaseController
     {
+        private readonly AppDelicare.Services.Implement.IRetailProductImageService _image = image;
+
+        /// <summary>RETAIL-1 §8: ảnh sản phẩm đang bán cho trang khách (công khai, chỉ ảnh đại diện của sản phẩm; cache 1 ngày – đổi ảnh đổi tham số v).</summary>
+        [HttpGet("ProductImage")]
+        public async Task<IActionResult> ProductImage(Guid id)
+        {
+            var f = await _image.GetPublicImage(id);
+            if (f == null)
+            {
+                return NotFound();
+            }
+            Response.Headers.CacheControl = "public, max-age=86400";
+            return File(f.Content, f.ContentType);
+        }
+
         private readonly IRetailPortalService _service = service;
         private readonly IRetailAccountService _account = account;
 

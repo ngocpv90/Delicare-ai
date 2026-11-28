@@ -44,6 +44,7 @@ export class PortalDataService {
       tags: list(p.tags),
       meals: list(p.mealTypes),
       icon: p.icon || 'restaurant',
+      imageUrl: p.imageUrl || undefined,
       tone: i % 2 ? 'orange' : 'green',
     }));
     const used = new Set(products.map((p) => p.categoryId));

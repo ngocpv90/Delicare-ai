@@ -42,6 +42,9 @@ namespace AppDelicare.Services.Implement
                 "Code:Số phụ lục,MealType:Loại suất,UnitPrice:Đơn giá mới,EffectiveFrom:Áp dụng từ,EffectiveTo:Đến ngày,Status,Name:Lý do", attachable: true),
             R<Forecast>("Dự báo suất ăn", "crm-forecast", "Status", "ForecastDate", "MealType,Note",
                 "ForecastDate:Ngày,CustomerId,ShiftId,MealType:Bữa,ForecastQuantity:Số suất dự báo,VersionNo,Status,Note"),
+            // RETAIL-1 §8: ảnh sản phẩm bán lẻ (nhóm photo) – quyền theo màn Sản phẩm bán lẻ.
+            R<RetailProduct>("Sản phẩm bán lẻ", "sal-retail-product", "Status", null, "Code,Name",
+                "Code:Mã,Name:Tên sản phẩm,CategoryCode:Nhóm,MealTypes:Bữa,Unit:Đơn vị,Price:Giá bán,SortOrder:Thứ tự,Status", attachable: true),
             R<Order>("Đơn đặt suất", "crm-order", "Status", "MealDate", "OrderNumber,Note",
                 "OrderNumber:Số đơn,OrderDate:Ngày đặt,MealDate,CustomerId,ContractId:Hợp đồng,TotalQuantity:Tổng suất,TotalAmount:Thành tiền,Status,Note",
                 attachable: true, children: [C<OrderLine>("OrderId")]),

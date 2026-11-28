@@ -30,6 +30,8 @@ export interface RetailCatalogDto {
     tags?: string[] | string;
     mealTypes?: string[] | string;
     icon?: string;
+    /** RETAIL-1 §8: ảnh sản phẩm (đường dẫn công khai). */
+    imageUrl?: string;
   }[];
 }
 

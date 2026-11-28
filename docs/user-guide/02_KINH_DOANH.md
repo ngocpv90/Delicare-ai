@@ -346,3 +346,9 @@ Phân hệ **💼 Kinh doanh** (bot Vận hành):
 - ⏰ **Khách chưa chốt** (`/chuachot`) – đơn ngày mai chưa xác nhận.
 - Thông báo: 🔴 19:00 còn khách chưa chốt; kết quả duyệt đơn / hợp đồng mình gửi.
 Tạo / sửa đơn chỉ làm trên web.
+
+## Bán lẻ – ảnh sản phẩm và doanh thu bán lẻ (RETAIL-1 §8, 28/11/2026)
+
+- **Bán lẻ › Sản phẩm bán lẻ** → **Thêm ảnh / Đổi ảnh** trên dòng sản phẩm (quyền Sửa): chọn ảnh **jpg / png ≤ 2 MB** → ảnh hiện ở danh sách và trên **trang khách lẻ** (thay biểu tượng). Sản phẩm **Ngừng bán** thì ảnh không còn trên trang khách.
+- **Bán lẻ › Đơn khách lẻ** → **Doanh thu**: chọn khoảng **ngày nhận** (tối đa 92 ngày) → Doanh thu (đơn **Hoàn tất**, gồm phí giao), Đang xử lý (Mới / Đã xác nhận / Đang giao – chưa tính doanh thu), Giá trị trung bình / đơn, Đơn hủy (% số đơn); biểu đồ theo ngày; bảng **theo món** (số lượng), **theo bữa**, **theo kênh**, **theo thanh toán**.
+- Chưa làm (cần anh quyết): thanh toán trực tuyến (chọn cổng thanh toán), đưa đơn lẻ vào kế hoạch sản xuất / tính nguyên liệu (cần nối sản phẩm bán lẻ ↔ món – GAP-RETAIL-01), đồng bộ AMIS (chờ ACC-7), OTP / quên mật khẩu (cần cổng SMS / Zalo ZNS).

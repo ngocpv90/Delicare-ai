@@ -627,6 +627,16 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## RETAIL-3 – Ảnh sản phẩm + doanh thu bán lẻ (RETAIL-1 §8, 28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | KD trưởng (uat.sal-head) | Sản phẩm bán lẻ → Thêm ảnh (png 300 KB) | Ảnh nhỏ hiện ở dòng; trang khách lẻ hiện ảnh món |
+| 2 | KD trưởng | Chọn ảnh 5 MB / tệp pdf | Báo lỗi, không đổi ảnh |
+| 3 | KD trưởng | Ngừng bán sản phẩm có ảnh | Trang khách không còn món / ảnh |
+| 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
+| 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
+
 ## RPT-1.4 – Nhận xét tự động + xuất Excel / PDF (D-140 h, 28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

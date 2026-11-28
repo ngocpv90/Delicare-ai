@@ -10,7 +10,11 @@ import { PortalProduct } from './portal.model';
   template: `
     <article class="pt-card pt-product">
       <div class="pt-product-img" [class.tone-orange]="product.tone === 'orange'">
-        <i class="material-icons">{{ product.icon }}</i>
+        @if (product.imageUrl) {
+          <img class="pt-product-photo" [src]="product.imageUrl" [alt]="product.name" loading="lazy" />
+        } @else {
+          <i class="material-icons">{{ product.icon }}</i>
+        }
         @if (product.tags.length) {
           <div class="pt-tags">
             @for (t of product.tags; track t) {
