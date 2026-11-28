@@ -8,6 +8,8 @@ namespace AppDelicare.Model.Model
         public string? GroupBy { get; set; }
         public Guid? CustomerId { get; set; }
         public Guid? ContractId { get; set; }
+        /// <summary>UI-6.52 (D-139 f): chi nhánh (gồm đơn vị con) – lọc khách thuộc chi nhánh.</summary>
+        public Guid? BranchId { get; set; }
     }
 
     public class MealMarginModel

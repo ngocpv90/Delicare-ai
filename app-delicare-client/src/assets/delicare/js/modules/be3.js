@@ -150,11 +150,16 @@
     return (el, f, p) => {
       if (!Store.isLive || ks.off) return base(el, f, p);
       const path = monthly ? 'KpiSnapshot/GetMonthly' : 'KpiSnapshot/GetDaily';
-      const params = { BranchId: Store.ctx.branch, DomainCode: ks.dom === 'ALL' ? '' : ks.dom };
+      // UI-6.52 (D-139 e): nhúng trong tab Bảng điều hành – mốc = ngày đang chọn (30 ngày kết thúc tại ngày chọn / 12 tháng kết thúc tại tháng của ngày chọn).
+      const embed = !!(p && p._embed), asOf = embed && p._date ? p._date : null;
+      const monthOf = d => d.slice(0, 7), monthAdd = (m, n) => { const [y, mo] = m.split('-').map(Number); const x = new Date(y, mo - 1 + n, 1); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); };
+      const params = Object.assign({ BranchId: Store.ctx.branch, DomainCode: ks.dom === 'ALL' ? '' : ks.dom },
+        asOf ? (monthly ? { FromMonth: monthAdd(monthOf(asOf), -11), ToMonth: monthOf(asOf) } : { From: U.addDays(asOf, -29), To: asOf }) : {});
       const admin = !!(window.DC_HOST && window.DC_HOST.user && window.DC_HOST.user.isAdmin);
-      el.innerHTML = APP.header(f, admin ? `<button class="btn primary" id="kRefresh">${I('reset')} Làm mới số liệu</button>` : '', { noNote: true, sub: `Chỉ tiêu ${monthly ? '12 tháng' : '30 ngày'} gần nhất do máy chủ tính. ${monthly ? 'Tháng đang chạy là số tới ngày làm mới.' : 'Ngày chưa làm mới thì để trống.'}` }) +
-        `<div class="row-flex mb">${DOMS.map(([k, l]) => `<button class="chip ${k === ks.dom ? 'active' : ''}" data-dom="${k}">${l}</button>`).join('')}<span class="small muted">· Đơn vị: ${Store.ctx.branch ? esc(Store.label('OrganizationUnit', Store.ctx.branch)) : 'Toàn công ty'}</span></div><div id="kBody"><div class="card panel empty">${I('chart')}<h2 class="mt">Đang tải KPI…</h2></div></div>`;
-      el.querySelectorAll('[data-dom]').forEach(b => b.onclick = () => { ks.dom = b.dataset.dom; APP.refresh(); });
+      const refreshBtn = admin ? `<button class="btn primary" id="kRefresh">${I('reset')} Làm mới số liệu</button>` : '';
+      el.innerHTML = (embed ? '' : APP.header(f, refreshBtn, { noNote: true, sub: `Chỉ tiêu ${monthly ? '12 tháng' : '30 ngày'} gần nhất do máy chủ tính. ${monthly ? 'Tháng đang chạy là số tới ngày làm mới.' : 'Ngày chưa làm mới thì để trống.'}` })) +
+        `<div class="row-flex mb" style="flex-wrap:wrap">${DOMS.map(([k, l]) => `<button class="chip ${k === ks.dom ? 'active' : ''}" data-dom="${k}">${l}</button>`).join('')}${embed && refreshBtn ? '<span style="flex:1"></span>' + refreshBtn : ''}<span class="small muted">· Đơn vị: ${Store.ctx.branch ? esc(Store.label('OrganizationUnit', Store.ctx.branch)) : 'Toàn công ty'}</span></div><div id="kBody"><div class="card panel empty">${I('chart')}<h2 class="mt">Đang tải KPI…</h2></div></div>`;
+      el.querySelectorAll('[data-dom]').forEach(b => b.onclick = () => { ks.dom = b.dataset.dom; if (embed) kpiLive(monthly, base)(el, f, p); else APP.refresh(); });
       const rb = el.querySelector('#kRefresh');
       if (rb) rb.onclick = () => {
         rb.disabled = true;
@@ -198,13 +203,16 @@
     if (p && (p.view === 'month' || p.view === 'day')) KV.set(p.view);
     const month = KV.get() === 'month';
     kpiLive(month, month && baseMonth ? baseMonth : baseDay)(el, f, p);
+    const embed = !!(p && p._embed), asOf = embed && p._date ? p._date : null;
     const h = el.querySelector('.page-heading');
-    if (h && !el.querySelector('[data-kv]')) {
-      h.insertAdjacentHTML('afterend', `<div class="mb"><div class="seg"><button class="seg-b ${month ? '' : 'on'}" data-kv="day">Theo ngày</button><button class="seg-b ${month ? 'on' : ''}" data-kv="month">Theo tháng</button></div>
-        <span class="small muted" style="margin-left:8px">${month ? '12 tháng gần nhất – tháng đang chạy tính đến hôm nay' : '30 ngày gần nhất'}</span></div>`);
-      el.querySelectorAll('[data-kv]').forEach(b => b.onclick = () => { KV.set(b.dataset.kv); APP.SCREENS['kpi-daily'](el, f, {}); });
+    if ((h || embed) && !el.querySelector('[data-kv]')) {
+      (h ? (x => h.insertAdjacentHTML('afterend', x)) : (x => el.insertAdjacentHTML('afterbegin', x)))( `<div class="mb"><div class="seg"><button class="seg-b ${month ? '' : 'on'}" data-kv="day">Theo ngày</button><button class="seg-b ${month ? 'on' : ''}" data-kv="month">Theo tháng</button></div>
+        <span class="small muted" style="margin-left:8px">${asOf ? (month ? '12 tháng kết thúc tháng ' + U.date(asOf).slice(3) : '30 ngày kết thúc ngày ' + U.date(asOf)) : month ? '12 tháng gần nhất – tháng đang chạy tính đến hôm nay' : '30 ngày gần nhất'}</span></div>`);
+      el.querySelectorAll('[data-kv]').forEach(b => b.onclick = () => { KV.set(b.dataset.kv); APP.kpiView(el, f, embed ? p : {}); });
     }
   });
+
+  APP.kpiView = APP.SCREENS['kpi-daily']; // UI-6.52: tab Chỉ số kinh doanh của Bảng điều hành gọi trực tiếp (route cũ #/kpi-daily chuyển hướng sang tab)
 
   // ---------- Kho tài liệu (#/adm-document): tải lên / tải xuống tệp đính kèm – docs/frontend-handoff/BE2.7.md ----------
   // Backend: tối đa 20 MB; chỉ nhận pdf, jpg, png, xlsx, docx. Tệp gửi multipart nên FormData đi thẳng qua Store.act (không qua objForm).

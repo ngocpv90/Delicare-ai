@@ -627,6 +627,19 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## UI-6.52 – Bảng điều hành 3 tab + bộ lọc lịch (D-139, 28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | CEO (uat.ceo) | Sidebar Điều hành | Bảng điều hành · Phê duyệt · Trung tâm Agent (không còn Chỉ số kinh doanh / Giá vốn & lãi gộp riêng) |
+| 2 | CEO | Bảng điều hành → chọn ngày 20/11 bằng lịch → về menu bấm lại Bảng điều hành | Lần mở lại về **hôm nay** |
+| 3 | CEO | Đổi ngày ở Tổng quan rồi bấm tab Chỉ số / Giá vốn | Cùng ngày; Chỉ số "30 ngày kết thúc ngày …"; Giá vốn đúng tháng của ngày đó; ô Ca mờ "Không chia theo ca" |
+| 4 | CEO | Chọn ngày quá hôm nay + 7 | Bị chặn (lịch không cho, gõ tay → báo và lùi về hôm nay + 7) |
+| 5 | CEO | Mở link cũ `#/kpi-daily?view=month`, `#/cost-meal?month=2026-10` | Mở tab Chỉ số (theo tháng) / tab Giá vốn tháng 10/2026 |
+| 6 | CEO | Đổi Đơn vị làm việc sang 1 chi nhánh → tab Giá vốn | Chỉ khách thuộc chi nhánh (gồm đơn vị con) |
+| 7 | Vai trò không có Giá vốn | Bảng điều hành | Không có tab Giá vốn; API MealCost/GetMargin 403 |
+| 8 | Mọi vai trò | Điện thoại 390 px | Thanh lọc xuống hàng, tab vuốt ngang, không tràn chữ |
+
 ## AI-21 – Trung tâm Agent: một màn 7 tab trong Điều hành (D-138, 28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

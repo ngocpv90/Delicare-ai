@@ -72,6 +72,7 @@ const SCRIPTS = [
   'modules/receive.js', // UI-6.50 (D-132): Nhận hàng theo NCC – thẻ NCC, ô tìm, form gộp nhiều đơn mua – sau kho.js
   'modules/acc.js', // ACC-1 (D-131): nhóm Kế toán – thanh chuyển nhanh, Khớp mã AMIS, bọc Bảng kê (crm-billing)
   'modules/retail.js', // RETAIL-1: nhóm Bán lẻ – Đơn khách lẻ, Sản phẩm bán lẻ (tách khỏi đơn doanh nghiệp) – sau acc.js
+  'modules/dash-tabs.js', // UI-6.52 (D-139): Bảng điều hành 3 tab – sau dashboard / be3 / cost-margin
   'modules/ai.js', // AI-6 (D-133): Trợ lý AI (Trung tâm agent, Nhật ký agent, Lịch chạy) + Kho tri thức – CUỐI danh sách
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';

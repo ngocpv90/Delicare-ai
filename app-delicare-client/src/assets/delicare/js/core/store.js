@@ -247,6 +247,7 @@
   const userCode = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
   // UI-6: trang chi tiết <screen>-detail dùng quyền màn gốc – thêm qua Store.permAlias (modules/detail-page.js).
+  const DASH_TABS = ['kpi-daily', 'cost-meal', 'dash-pl']; // UI-6.52 / RPT-1: mục quyền các tab của Bảng điều hành
   const AGENT_TABS = ['ai-tasks', 'ai-flow', 'ai-agent-log', 'ai-schedule', 'ai-cost']; // AI-21: mục quyền các tab của Trung tâm Agent
   const PERM_ALIAS = { 'crm-customer-360': 'crm-customer', 'scm-supplier-360': 'scm-supplier', 'adm-employee-360': 'adm-employee',
     // MENU-4.3 (D-75 e): bảng con không còn mục menu → quyền của màn cha (khớp máy chủ ScreenMap.ParentByClass).
@@ -474,6 +475,8 @@
         // APR-1.1: người đã gửi yêu cầu (không có quyền duyệt) vẫn vào màn Phê duyệt – tab "Tôi đã gửi" (modules/hr.js đặt DC_APR_SENT sau GetMySent).
         if (screen === 'wf-inbox' && !hp.access && window.DC_APR_SENT) return { access: true, approverOnly: true };
         // AI-21 (D-138 b): Trung tâm Agent – không có quyền Tổng quan (ai-agents) nhưng có quyền Xem 1 tab (Giao việc, Luồng, Nhật ký, Lịch, Chi phí) → vào màn, chỉ thấy tab đó + Chat.
+        // UI-6.52 (D-139): Bảng điều hành – không có quyền tab Tổng quan nhưng có quyền Chỉ số / Giá vốn / Kết quả kinh doanh → vào màn, chỉ thấy tab đó.
+        if (screen === 'dash-exec' && !hp.access && DASH_TABS.some(s => HOST.perm(s).access)) return { access: true, tabsOnly: true };
         if (screen === 'ai-agents' && !hp.access && AGENT_TABS.some(s => HOST.perm(s).access)) return { access: true, tabsOnly: true };
         return hp;
       }

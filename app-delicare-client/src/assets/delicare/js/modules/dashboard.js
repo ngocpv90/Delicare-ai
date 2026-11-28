@@ -10,12 +10,13 @@
   const dateOptions = date => Array.from({ length: 10 }, (_, i) => U.addDays(Store.ctx.date, i - 6)).map(d => `<option value="${d}" ${d === date ? 'selected' : ''}>${d === Store.ctx.date ? 'Hôm nay, ' : ''}${U.date(d)}</option>`).join('');
   const headActions = (date, sh, shifts) => `<select class="select" id="dDate">${dateOptions(date)}</select><select class="select" id="dShift"><option value="">Tất cả ca</option>${shifts.map(s => `<option value="${s.Id}" ${s.Id === sh ? 'selected' : ''}>${esc(s.Name)}</option>`).join('')}</select><a class="btn" href="#/flow-e2e">${I('flow')} 9 luồng nghiệp vụ</a>`;
   function bindFilters(el) {
+    if (!el.querySelector('#dDate')) return; // UI-6.52: nhúng trong tab – bộ lọc chung ở khung (dash-tabs.js)
     el.querySelector('#dDate').onchange = e => { st.date = e.target.value; APP.refresh(); };
     el.querySelector('#dShift').onchange = e => { st.shift = e.target.value; APP.refresh(); };
   }
   const pad2 = n => String(n || 0).padStart(2, '0');
   // Trả true khi đã vẽ (hoặc đang chờ) bằng số liệu server; false → backend chưa có API, vẽ cách cũ.
-  function renderLive(el, f, date, sh, shifts) {
+  function renderLive(el, f, date, sh, shifts, embed) {
     const key = [date, sh, Store.ctx.branch || ''].join('|');
     if ((ex.key !== key || Date.now() - ex.at > EX_TTL) && !ex.busy) {
       ex.busy = true;
@@ -27,7 +28,7 @@
       });
     }
     if (ex.failed) return false;
-    const head = APP.header(f, headActions(date, sh, shifts), { sub: 'Theo dõi toàn bộ hoạt động bếp trung tâm, kho, QC, giao nhận và nhân sự theo ngày / ca / đơn vị. Số liệu do máy chủ tính, làm mới sau 60 giây.' });
+    const head = embed ? '' : APP.header(f, headActions(date, sh, shifts), { sub: 'Theo dõi toàn bộ hoạt động bếp trung tâm, kho, QC, giao nhận và nhân sự theo ngày / ca / đơn vị. Số liệu do máy chủ tính, làm mới sau 60 giây.' });
     if (ex.key !== key || !ex.data) {
       el.innerHTML = head + (ex.key === key && ex.error ? `<div class="notice gap">${I('alert')}<div><b>Không tải được số liệu điều hành</b>${esc(ex.error)}</div></div>` : `<div class="card panel empty">${I('chart')}<h2 class="mt">Đang tải số liệu điều hành…</h2></div>`);
       bindFilters(el); return true;
@@ -67,11 +68,13 @@
     });
     return true;
   }
-  APP.register('dash-exec', (el, f) => {
+  APP.register('dash-exec', (el, f, p) => {
+    // UI-6.52 (D-139): khung 3 tab (dash-tabs.js) gọi với p._embed – ngày / ca lấy từ bộ lọc chung.
+    if (p && p._embed) { st.date = p._date; st.shift = p._shift || ''; }
     const date = st.date || Store.ctx.date; st.date = date;
     const shifts = Store.rows('Shift');
     const sh = st.shift;
-    if (Store.isLive && renderLive(el, f, date, sh, shifts)) return;
+    if (Store.isLive && renderLive(el, f, date, sh, shifts, !!(p && p._embed))) return;
     const orders = Store.rows('Order').filter(o => U.day(o.MealDate) === date && custOk(o.CustomerId));
     const lines = Store.rows('OrderLine').filter(l => orders.some(o => o.Id === l.OrderId) && (!sh || l.ShiftId === sh));
     const okOrders = orders.filter(ORDER_OK);

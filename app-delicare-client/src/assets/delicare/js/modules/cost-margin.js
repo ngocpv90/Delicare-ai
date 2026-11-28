@@ -5,7 +5,7 @@
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const nil = v => v === null || v === undefined;
-  const st = { month: null, tab: 'customer', data: {} };
+  const st = { month: null, tab: 'customer', data: {}, day: null };
   const ym = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   const shift = (m, n) => { const [y, mo] = m.split('-').map(Number); return ym(new Date(y, mo - 1 + n, 1)); };
   const monthName = m => { const [y, mo] = m.split('-'); return `Tháng ${+mo}/${y}`; };
@@ -14,9 +14,9 @@
   const bar = (pct, lim) => (nil(pct) ? '' : `<span class="cm-bar"><i class="${color(pct, lim)}" style="width:${Math.min(100, pct)}%"></i><b style="left:${Math.min(100, lim)}%"></b></span>`);
 
   function load(group, extra) {
-    const key = st.month + '|' + group + '|' + JSON.stringify(extra || {});
+    const key = st.month + '|' + (Store.ctx.branch || '') + '|' + group + '|' + JSON.stringify(extra || {});
     if (st.data[key]) return Promise.resolve(st.data[key]);
-    return Store.query('MealCost/GetMargin', Object.assign({ Month: st.month, GroupBy: group }, extra || {})).then(x => { if (x.ok) st.data[key] = x; return x; });
+    return Store.query('MealCost/GetMargin', Object.assign({ Month: st.month, GroupBy: group, BranchId: Store.ctx.branch || null }, extra || {})).then(x => { if (x.ok) st.data[key] = x; return x; });
   }
 
   function head(m) {
@@ -52,7 +52,7 @@
           host.innerHTML = days.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Ngày ăn</th><th class="num">Suất</th><th class="num">NL / suất</th><th>Tỷ lệ NL / DT</th><th>Nguồn giá</th></tr></thead><tbody>${days.map((d, i) => `<tr data-d="${i}" style="cursor:pointer"><td>${esc(U.date(d.date))}</td><td class="num">${U.num(d.meals)}</td><td class="num">${d.meals ? U.money(Math.round(d.cost / d.meals)) : '–'}</td><td>${pctTag(d.ratioPct, lim)}</td><td>${d.provisionalOrders ? UI.tag('Tạm tính giá chuẩn', 'orange') : UI.tag('Thực tế', 'green')}</td></tr>`).join('')}</tbody></table></div><div id="cmOrders" class="mt"></div>` : '<div class="muted small">Không có ngày nào</div>';
           host.querySelectorAll('[data-d]').forEach(tr => tr.onclick = () => {
             const d = U.day(days[+tr.dataset.d].date), out = host.querySelector('#cmOrders'); out.innerHTML = '<div class="muted small">Đang tải đơn…</div>';
-            Store.query('MealCost/GetList', { From: d, To: d }).then(y => {
+            Store.query('MealCost/GetList', { From: d, To: d, BranchId: Store.ctx.branch || null }).then(y => {
               const list = ((y.ok && y.list) || []).filter(o => !r.customerId || o.customerId === r.customerId);
               out.innerHTML = list.length ? list.map(o => `<div class="card panel mb"><div class="spread"><b>${esc(o.orderNumber || '')}</b><span class="small">${U.num(o.acceptedMeals)} suất · giá vốn ${U.money(o.totalActualCost)} · ${o.isFaultCost ? UI.tag('Chi phí lỗi', 'orange') : UI.tag('Suất bán', 'green')}</span></div>
                 <div class="table-wrap"><table class="table dc-table"><thead><tr><th>Món</th><th class="num">Phần</th><th class="num">Giá vốn / phần</th><th class="num">Giá vốn</th></tr></thead><tbody>${(o.listLine || []).flatMap(l => l.listDish || []).map(dd => `<tr><td>${esc(dd.dishName || '')}</td><td class="num">${U.num(dd.portions)}</td><td class="num">${nil(dd.costPerPortion) ? '–' : U.money(dd.costPerPortion)}</td><td class="num">${U.money(dd.totalActualCost)}</td></tr>`).join('')}</tbody></table></div></div>`).join('') : '<div class="muted small">Không có đơn</div>';
@@ -74,10 +74,12 @@
   function trendTab(box, m) {
     const days = (m.listDay || []).filter(d => d.revenue > 0), lim = m.thresholdPct || 55;
     if (!days.length) { box.innerHTML = '<div class="muted small">Chưa có dữ liệu theo ngày</div>'; return; }
-    const lbl = days.map(d => U.date(d.date).slice(0, 5)), v = days.map(d => d.ratioPct || 0);
+    // UI-6.52 (D-139 f): ngày đang chọn ở bộ lọc chung tô đậm (◆ trên nhãn + dòng ghi chú).
+    const lbl = days.map(d => U.date(d.date).slice(0, 5) + (st.day && U.day(d.date) === st.day ? ' ◆' : '')), v = days.map(d => d.ratioPct || 0);
+    const sel = st.day ? days.find(d => U.day(d.date) === st.day) : null;
     box.innerHTML = UI.combo(lbl, [{ name: 'Trong ngưỡng', type: 'bar', role: 'ok', values: v.map(x => (x <= lim ? x : 0)) }, { name: 'Vượt ngưỡng', type: 'bar', role: 'bad', values: v.map(x => (x > lim ? x : 0)) },
       { name: 'Ngưỡng ' + U.pct(lim), type: 'line', role: 'plan', values: v.map(() => lim) }], { title: 'Tỷ lệ nguyên liệu / doanh thu theo ngày (%)', unit: '%', stacked: true, labelHead: 'Ngày' })
-      + `<div class="small muted mt">${days.filter(d => d.ratioPct > lim).length} / ${days.length} ngày vượt ngưỡng ${U.pct(lim)}.</div>`;
+      + `<div class="small muted mt">${days.filter(d => d.ratioPct > lim).length} / ${days.length} ngày vượt ngưỡng ${U.pct(lim)}.${st.day ? ` · <b>◆ ${U.date(st.day)} (đang chọn): ${sel ? U.pct(sel.ratioPct || 0) + ' · ' + U.num(sel.meals || 0) + ' suất' : 'chưa có số'}</b>` : ''}</div>`;
   }
 
   function exportCsv(m) {
@@ -88,20 +90,23 @@
   }
 
   const base = APP.SCREENS['cost-meal'];
-  APP.register('cost-meal', (el, f, p) => {
+  const view = (el, f, p) => {
     if (!Store.isLive) return base && base(el, f, p);
+    // UI-6.52 (D-139 f): nhúng trong tab Bảng điều hành – tháng = tháng của ngày đang chọn, bỏ ◀ ▶ tháng riêng.
+    const embed = !!(p && p._embed);
+    if (embed && p._date) { st.month = p._date.slice(0, 7); st.day = p._date; } else st.day = null;
     if (!st.month) st.month = ym(new Date());
     if (p && ['customer', 'dish', 'trend'].includes(p.tab)) st.tab = p.tab;
     if (p && /^\d{4}-\d{2}$/.test(p.month || '')) st.month = p.month;
-    el.innerHTML = APP.header(f, `<button class="btn" id="cmXls">${I('export')} Xuất Excel</button>`, { noNote: true })
+    const xls = `<button class="btn" id="cmXls">${I('export')} Xuất Excel</button>`;
+    el.innerHTML = (embed ? `<div class="spread mb" style="flex-wrap:wrap;gap:8px"><div><b>${monthName(st.month)}</b>${st.month === ym(new Date()) ? ' <span class="small muted">(tính đến hôm nay)</span>' : ''}<div class="small muted">Biết suất ăn của từng khách / món đang lãi bao nhiêu sau nguyên liệu – để điều chỉnh giá hợp đồng hoặc thực đơn kịp thời.</div></div>${xls}</div>` : APP.header(f, xls, { noNote: true })
       + `<div class="small muted mb">Biết suất ăn của từng khách / món đang lãi bao nhiêu sau nguyên liệu – để điều chỉnh giá hợp đồng hoặc thực đơn kịp thời.</div>
-      <div class="card panel mb"><div class="fw-week"><button class="btn sm" id="cmPrev" aria-label="Tháng trước">◀</button><span>${monthName(st.month)}${st.month === ym(new Date()) ? ' <span class="small muted" style="font-weight:400">(tính đến hôm nay)</span>' : ''}</span><button class="btn sm" id="cmNext" aria-label="Tháng sau">▶</button></div></div>
-      <div id="cmHead"><div class="muted small">Đang tính…</div></div>
+      <div class="card panel mb"><div class="fw-week"><button class="btn sm" id="cmPrev" aria-label="Tháng trước">◀</button><span>${monthName(st.month)}${st.month === ym(new Date()) ? ' <span class="small muted" style="font-weight:400">(tính đến hôm nay)</span>' : ''}</span><button class="btn sm" id="cmNext" aria-label="Tháng sau">▶</button></div></div>`)
+      + `<div id="cmHead"><div class="muted small">Đang tính…</div></div>
       <div class="card panel"><div class="tabs mb">${[['customer', 'Theo khách hàng / hợp đồng'], ['dish', 'Theo món'], ['trend', 'Xu hướng theo ngày']].map(([k, l]) => `<button class="tab ${st.tab === k ? 'active' : ''}" data-cmt="${k}">${l}</button>`).join('')}</div><div id="cmBody"><div class="muted small">Đang tải…</div></div></div>`;
-    const go = n => { st.month = shift(st.month, n); APP.SCREENS['cost-meal'](el, f, {}); };
-    el.querySelector('#cmPrev').onclick = () => go(-1);
-    el.querySelector('#cmNext').onclick = () => go(1);
-    el.querySelectorAll('[data-cmt]').forEach(b => b.onclick = () => { st.tab = b.dataset.cmt; APP.SCREENS['cost-meal'](el, f, {}); });
+    const go = n => { st.month = shift(st.month, n); view(el, f, {}); };
+    if (!embed) { el.querySelector('#cmPrev').onclick = () => go(-1); el.querySelector('#cmNext').onclick = () => go(1); }
+    el.querySelectorAll('[data-cmt]').forEach(b => b.onclick = () => { st.tab = b.dataset.cmt; view(el, f, p); });
     const group = st.tab === 'dish' ? 'dish' : st.tab === 'trend' ? 'day' : 'customer';
     load(group).then(x => {
       if (!el.isConnected) return;
@@ -111,5 +116,7 @@
       (st.tab === 'dish' ? dishTab : st.tab === 'trend' ? trendTab : customerTab)(body, m);
       el.querySelector('#cmXls').onclick = () => (st.tab === 'customer' ? exportCsv(m) : load('customer').then(y => y.ok && exportCsv(y.data)));
     });
-  });
+  };
+  APP.register('cost-meal', view);
+  APP.costMealView = view; // UI-6.52: tab Giá vốn & lãi gộp của Bảng điều hành
 })();

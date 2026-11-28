@@ -21,8 +21,9 @@ using Microsoft.Extensions.Options;
 namespace AppDelicare.Services.Implement
 {
     public class MealCostService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IMealCostService
+        , IAuditChangeService auditChangeService, IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, IServiceProvider services) : IMealCostService
     {
+        private readonly IServiceProvider _services = services;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
@@ -447,8 +448,19 @@ namespace AppDelicare.Services.Implement
                 }
                 var orderIds = await db.MealCost.AsNoTracking().Where(m => !m.IsDeleted && (request.OrderId == null || m.OrderId == request.OrderId))
                     .Select(m => m.OrderId).Distinct().ToListAsync();
+                // UI-6.52 (D-139 f): chi nhánh (gồm đơn vị con) – khách thuộc chi nhánh.
+                IQueryable<Guid>? branchCustomers = null;
+                if (request.BranchId is { } bid && bid != Guid.Empty)
+                {
+                    var units = await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<ICommonService>(_services).GetUnitTree(bid);
+                    if (units == null)
+                    {
+                        return new Results<MealCostResultModel> { ResponseCode = Convert.ToInt32(HttpStatusCode.BadRequest), ResponseMessage = ConstantHelper.Message.AlertBranchNotFound };
+                    }
+                    branchCustomers = db.Customer.AsNoTracking().Where(c => c.BranchId != null && units.Contains(c.BranchId.Value)).Select(c => c.Id);
+                }
                 var orders = await db.Order.AsNoTracking()
-                    .Where(o => orderIds.Contains(o.Id) && (request.From == null || o.MealDate >= request.From.Value.Date)
+                    .Where(o => orderIds.Contains(o.Id) && (branchCustomers == null || branchCustomers.Contains(o.CustomerId)) && (request.From == null || o.MealDate >= request.From.Value.Date)
                         && (request.To == null || o.MealDate < request.To.Value.Date.AddDays(1)))
                     .OrderBy(o => o.MealDate).ThenBy(o => o.OrderNumber).ToListAsync();
                 var list = new List<MealCostResultModel>();
