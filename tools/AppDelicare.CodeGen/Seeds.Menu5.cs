@@ -65,6 +65,7 @@ public static partial class Seeds
             "wf-inbox?type=log-load-short", // UI-6.49 (6) (D-127 e): xếp xe khi chuyến chưa đủ thực đơn
             "wf-inbox?type=crm-recon-reopen", // ACC-3 (D-131 g): mở lại đối soát đã chốt
             "wf-inbox?type=acc-period-unlock", // ACC-4 (D-131 h): mở khóa kỳ kế toán
+            "wf-inbox?type=ai-agent-cmd", // AI-9 (D-133): lệnh ghi của agent (ghi 2 pha)
         ]),
         new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal"]), // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
@@ -159,6 +160,7 @@ public static partial class Seeds
         ["acc-voucher"] = ("Chứng từ kế toán", "ACC"),
         ["wf-inbox?type=crm-recon-reopen"] = ("Mở lại đối soát", "ACC"), // ACC-3 (D-131 g)
         ["wf-inbox?type=acc-period-unlock"] = ("Mở khóa kỳ", "ACC"), // ACC-4 (D-131 h)
+        ["wf-inbox?type=ai-agent-cmd"] = ("Lệnh của agent", "AI"), // AI-9 (D-133)
         ["acc-amis-code"] = ("Khớp mã AMIS", "ACC"),
         ["acc-amis-recon"] = ("Đối chiếu với AMIS", "ACC"),
         ["acc-period"] = ("Khóa kỳ", "ACC"),
@@ -448,6 +450,7 @@ public static partial class Seeds
         ("adm-user", ["FIN-IT"]), // HR-ACC-1.6 (D-82 f)
         ("crm-recon-reopen", ["COO"]), // ACC-3 (D-131 g): mở lại đối soát đã chốt
         ("acc-period-unlock", ["COO"]), // ACC-4 (D-131 h): mở khóa kỳ kế toán
+        ("ai-agent-cmd", ["OPS-WH", "OPS-KIT", "QA", "OPS-SCM", "OPS-SCM-HEAD", "SAL-HEAD", "OPS-LOG", "FIN-HR", "COO"]), // AI-9 (D-133): người xác nhận lệnh agent theo bảng §4 – mỗi lệnh còn kiểm quyền thao tác trên màn đích
         ("log-load-short", ["COO", "OPS-SCM-HEAD"]), // UI-6.49 (6) (D-127 e): chưa có nhóm trưởng điều phối → COO + Trưởng mua hàng & kho
     ];
 

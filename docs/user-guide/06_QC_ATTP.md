@@ -17,6 +17,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Phê duyệt › Kiểm tra hàng nhập | `wf-inbox?type=qc-inspection` | Duyệt |
 | Phê duyệt › Mẻ nấu | `wf-inbox?type=prod-batch` | Duyệt |
 | Phê duyệt › Giữ / thả lô | `wf-inbox?type=scm-lot` | Duyệt |
+| Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | S (IX) |

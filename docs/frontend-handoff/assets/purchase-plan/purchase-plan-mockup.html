@@ -1,0 +1,196 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kế hoạch mua – mô phỏng</title><style>
+:root{--line:#E6E9E4;--muted:#6b756e;--ink:#1E2620;--g:#6F9131;--g-bg:#EFF5E5;--o:#C2571A;--o-bg:#FDF0E6;--b:#2F64A0;--b-bg:#E6F1FB;--n-bg:#F2F4F1;--r:#B42318;--r-bg:#FDECEA}
+*{box-sizing:border-box}body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#F4F6F2;color:var(--ink);margin:0;padding:20px;max-width:1440px;margin:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+button{border:1px solid #d5dbd2;background:#fff;border-radius:10px;padding:0 12px;height:34px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+button.p{background:#7FA43A;border-color:#7FA43A;color:#fff;font-weight:600}button.o{background:#E8833A;border-color:#E8833A;color:#fff;font-weight:600}button.sm{height:26px;font-size:12px;padding:0 8px}
+button[disabled]{opacity:.45;cursor:not-allowed}
+h1{font-size:20px;margin:0}h3{font-size:15px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;border:1px solid #d5dbd2;border-radius:12px;overflow:hidden}.seg span{padding:8px 14px;font-size:13px;cursor:pointer;background:#fff}.seg span.on{background:#7FA43A;color:#fff;font-weight:600}
+.day{display:flex;align-items:center;gap:8px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 14px}.kpi .v{font-size:22px;font-weight:800}.kpi .s{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.step{flex:1;min-width:180px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;display:flex;gap:8px;align-items:center}
+.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.chip{display:inline-block;font-size:11px;font-weight:600;border-radius:20px;padding:2px 8px;white-space:nowrap}
+.c-ok{background:var(--g-bg);color:#3F5A17}.c-due{background:var(--o-bg);color:#8A3B0B}.c-bad{background:var(--r-bg);color:var(--r)}.c-n{background:var(--n-bg);color:var(--muted)}.c-b{background:var(--b-bg);color:#1F4C80}
+/* ma trận */
+table.m{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:1100px}
+table.m th,table.m td{border-bottom:1px solid var(--line);padding:6px;text-align:center;vertical-align:middle}
+table.m th{background:#FAFBF8;font-size:12px;color:var(--muted);font-weight:600}
+table.m th b{display:block;color:var(--ink);font-size:13px}
+table.m th.l,table.m td.l{text-align:left;position:sticky;left:0;background:#fff;z-index:1}table.m th.l{background:#FAFBF8}
+tr.rt td{background:#F7F9F4;font-weight:700}tr.rt td.l{background:#F7F9F4}
+.q{display:inline-block;min-width:58px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer}
+.q.done{background:var(--g-bg);border-color:#B9CB97;color:#3F5A17}
+.q.ready{background:#fff;border-color:#7FA43A;color:var(--ink)}
+.q.part{background:var(--o-bg);border-color:#F2B98A;color:#8A3B0B}
+.q.wait{background:var(--n-bg);border-style:dashed;color:var(--muted);cursor:default}
+.q.na{background:transparent;border-color:transparent;color:#b5bcb6;cursor:default;font-weight:400;font-size:12px}
+.q.short{background:var(--r-bg);border-color:#E9A8A1;color:var(--r)}
+.hint{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.pg{height:6px;border-radius:3px;background:var(--n-bg);overflow:hidden;margin-top:4px;width:90px}.pg i{display:block;height:100%;background:#7FA43A}
+.scroll{overflow-x:auto}
+/* điều phối */
+.board{display:grid;grid-template-columns:repeat(4,minmax(260px,1fr));gap:12px;overflow-x:auto}
+.col{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:260px}
+.col.un{background:#FFFCF8;border-color:#F2C6BF}
+.ch{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px}
+.ch b{font-size:14px}
+.load{height:8px;border-radius:4px;background:var(--n-bg);overflow:hidden;margin-top:6px}.load i{display:block;height:100%}
+.st{background:#fff;border:1px solid var(--line);border-left:4px solid #C9CFC6;border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px}
+.st.ok{border-left-color:#7FA43A}.st.wip{border-left-color:#E8833A}.st.lo{border-left-color:#5A8CC8}
+.st b{font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(20,30,20,.35);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}.ov.on{display:flex}
+.dlg{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:18px 20px}
+.in{height:38px;border:1px solid #d5dbd2;border-radius:10px;padding:0 10px;font-size:14px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#1E2620;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;display:none;z-index:10;max-width:92%}
+.note{background:var(--b-bg);color:#1F4C80;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){body{padding:10px}.card{padding:14px}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0}.tabs span{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}.tabs span.on{border-color:#7FA43A;color:var(--ink);font-weight:600}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cl{background:#FAFBF8;border:1px solid var(--line);border-radius:14px;padding:10px}.cl.red{background:#FFF9F8;border-color:#F2C6BF}
+.cl h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between}
+.pc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.pc b{font-size:13px}.pc .sub{display:block;color:var(--muted)}
+.shiftbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sh{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;cursor:pointer;background:#fff}.sh.on{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}.sh b{font-size:13px}
+table.g{border-collapse:separate;border-spacing:0;font-size:12px;width:100%}
+table.g th,table.g td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:center}
+table.g th{background:#FAFBF8;color:var(--muted);font-weight:600;font-size:11px}
+table.g td.l,table.g th.l{text-align:left;position:sticky;left:0;background:#fff;min-width:170px;z-index:1}table.g th.l{background:#FAFBF8}
+table.g tr.grp td{background:#F7F9F4;font-weight:700;text-align:left}
+.k{display:inline-block;min-width:22px;padding:2px 3px;border-radius:6px;font-weight:700;cursor:pointer}
+.k.ok{color:#3F5A17}.k.M{background:var(--o-bg);color:#8A3B0B}.k.V{background:var(--r-bg);color:var(--r)}.k.P{background:var(--b-bg);color:#1F4C80}.k.T{background:#FFF3CD;color:#7A5B00;outline:1px dashed #D9B44A}.k.R{background:#FDECEA;color:var(--r);outline:1px dashed #E9A8A1}.k.o{color:#c5cbc3;font-weight:400}
+td.we{background:#FBFBF9}
+.tot{font-weight:700}
+.fix{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.fx{border:1px solid #F2C6BF;background:#FFF9F8;border-radius:10px;padding:6px 10px;font-size:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.f.full{grid-column:1/-1}
+@media(max-width:700px){.cols{grid-template-columns:1fr}.fg{grid-template-columns:1fr}}
+
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;background:#FAFBF8;padding:8px;border-bottom:1px solid var(--line)}table.t td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.sub{display:block;font-size:12px;color:var(--muted)}
+.sp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sc{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}.sc.late{border-color:#F2C6BF;background:#FFF9F8}.sc.done{opacity:.6}
+.sc h4{margin:0 0 4px;font-size:14px}.sc .m{font-size:12px;color:var(--muted)}
+.dlg.xl{max-width:1200px;width:96vw}
+.in.sm{height:30px;font-size:12px;padding:0 8px}
+.na{color:#b5bcb6;font-size:12px}
+.po{font-size:11px;color:var(--muted)}
+tr.edit td{background:#FFFBEA}tr.bad td{background:#FFF6F5}
+.bar2{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#F7F9F4;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.bar2 .f label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.scan{border:2px dashed #B9CB97;border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;background:#F7FBF0;font-size:13px}
+.phone{width:360px;border:1px solid var(--line);border-radius:22px;padding:14px;background:#fff;margin:auto}
+.cam{height:200px;border-radius:14px;background:#1E2620;position:relative;display:grid;place-items:center;color:#cfd8c9;font-size:13px}
+.cam:after{content:"";position:absolute;inset:40px 70px;border:3px solid #7FA43A;border-radius:10px}
+
+.q.auto{background:var(--b-bg);border-color:#A9C6E8;color:#1F4C80}
+.q.appr{background:#FFF3CD;border-color:#E6CB7A;color:#7A5B00}
+.q.fut{background:#fff;border-style:dashed;color:var(--muted);font-weight:600}
+.subst{font-size:11px;color:#1F4C80;background:var(--b-bg);border-radius:6px;padding:1px 6px;margin-left:6px}
+.split{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.pn{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.box{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}
+.box h4{margin:0 0 8px;font-size:14px;display:flex;gap:8px;align-items:center}
+.box h4 .n{width:22px;height:22px;border-radius:50%;background:#7FA43A;color:#fff;display:grid;place-items:center;font-size:11px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{border:1px solid var(--line);border-radius:12px;padding:10px}.opt.win{border-color:#7FA43A;box-shadow:0 0 0 2px #E3EDD2}
+.big{font-size:20px;font-weight:800}
+.alloc{height:22px;border-radius:6px;overflow:hidden;display:flex;font-size:11px;color:#fff;font-weight:700;margin:4px 0}
+.alloc i{display:flex;align-items:center;justify-content:center;font-style:normal}
+.tgt{position:relative;height:8px;background:var(--n-bg);border-radius:4px;margin-top:4px}.tgt i{position:absolute;top:-3px;width:2px;height:14px;background:#1E2620}.tgt b{display:block;height:100%;border-radius:4px;background:#5A8CC8}
+tr.sb td{background:#F6FAFF}
+@media(max-width:1100px){.pn{grid-template-columns:1fr}}
+</style></head><body>
+<div id="pg"></div><div class="ov" id="ovD"><div class="dlg xl" id="dt"></div></div><div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);function toast(m){const t=$('toast');t.innerHTML=m;t.style.display='block';setTimeout(()=>t.style.display='none',3800)}function cl(i){$(i).classList.remove('on')}
+const D=['T7 28/11','CN 29/11','T2 30/11','T3 01/12','T4 02/12','T5 03/12','T6 04/12'];
+// trạng thái: done=đã đặt, auto=tự duyệt chờ gửi, appr=chờ duyệt, due=phải đặt hôm nay, late=quá hạn đặt, fut=chưa tới hạn, na=không cần
+const R=[
+ ['g','Thịt'],
+ ['Thịt lợn vai','kg','sub:Chuẩn · được thay bằng thịt mông',[['done',85,'Hà Nội 60 · Đông Anh 40'],['done',40,'Hà Nội'],['due',92,'Hà Nội 46 · Đông Anh 46',1],['fut',110,'đặt 29/11'],['fut',95,'đặt 30/11'],['fut',120,'đặt 01/12'],['fut',100,'đặt 02/12']]],
+ ['Thịt lợn mông','kg','sb:dùng thay thịt vai khi rẻ hơn ≥ 5%',[['done',30,'Hưng Yên'],['na'],['due',60,'Hưng Yên',1],['fut',45,'đặt 29/11'],['fut',40,'đặt 30/11'],['fut',0,'giữ thịt vai'],['fut',50,'đặt 02/12']]],
+ ['Thịt gà phi lê','kg','',[['done',70,'Gà Hòa Phát'],['na'],['appr',65,'vượt định mức 12% → Trưởng mua hàng'],['fut',80,'đặt 30/11'],['fut',60,''],['fut',75,''],['fut',70,'']]],
+ ['g','Thủy sản'],
+ ['Cá basa phi lê','kg','',[['done',50,'Biển Đông'],['na'],['late',40,'hạn đặt 27/11 – NCC cần 3 ngày'],['due',55,'Biển Đông · giao 3 ngày'],['fut',45,''],['fut',50,''],['fut',40,'']]],
+ ['g','Rau củ tươi'],
+ ['Rau muống','kg','',[['done',60,'Rau Đà Lạt'],['done',20,'Rau Đà Lạt'],['auto',65,'tự duyệt · gửi NCC 15:00'],['fut',70,'đặt 30/11'],['fut',55,''],['fut',60,''],['fut',65,'']]],
+ ['Cải thảo','kg','',[['done',45,'Rau Đà Lạt 30 · Vân Nội 15'],['na'],['auto',50,'Rau Đà Lạt 35 · Vân Nội 15 · gửi 15:00'],['fut',40,''],['fut',45,''],['fut',50,''],['fut',40,'']]],
+ ['g','Gạo & khô'],
+ ['Gạo tám thơm','kg','',[['na'],['na'],['done',600,'Minh Phát – đơn tuần'],['na'],['na'],['na'],['fut',600,'đặt 01/12']]],
+];
+const LB={done:'Đã đặt',auto:'Tự duyệt',appr:'Chờ duyệt',due:'Đặt hôm nay',late:'Quá hạn đặt',fut:'Dự kiến',na:''};
+const CL={done:'done',auto:'auto',appr:'appr',due:'part',late:'short',fut:'fut',na:'na'};
+function plan(){return `<div class="card"><div class="bar"><div><h1>Kế hoạch mua</h1><div class="small muted">Nhu cầu 7 ngày theo đơn đã chốt / đã xác nhận / dự báo – hệ thống tự tính lúc 14:00 và 20:15, tự lập đề nghị mua cho phần đến hạn đặt.</div></div>
+<div class="bar" style="gap:8px"><div class="day"><button>◀</button>Hôm nay T7 28/11<button>▶</button></div><button>Tính lại ngay</button><button class="p" onclick="toast('Đã lập 3 đơn mua cho phần đặt hôm nay: 2 tự duyệt (gửi NCC 15:00) · 1 chờ Trưởng mua hàng')">Đặt phần hôm nay (5)</button></div></div>
+<div class="kpis" style="grid-template-columns:repeat(5,minmax(0,1fr))"><div class="kpi"><div class="small muted">Phải đặt hôm nay</div><div class="v" style="color:#C2571A">5</div><div class="s">nguyên liệu · 37,9 tr</div></div><div class="kpi"><div class="small muted">Quá hạn đặt</div><div class="v" style="color:#B42318">1</div><div class="s">Cá basa – cần NCC giao gấp</div></div><div class="kpi"><div class="small muted">Chờ người duyệt</div><div class="v">1</div><div class="s">Thịt gà – vượt định mức</div></div><div class="kpi"><div class="small muted">Đơn mua chưa gửi NCC</div><div class="v">2</div><div class="s">tự gửi Zalo / email lúc 15:00</div></div><div class="kpi"><div class="small muted">Tiết kiệm nhờ thay thế · tháng 11</div><div class="v" style="color:#3F5A17">8,4 tr</div><div class="s">thịt mông thay thịt vai · 712 kg</div></div></div></div>
+<div class="card"><div class="legend"><span><i class="sw" style="background:var(--g-bg);border:1px solid #B9CB97"></i>Đã đặt</span><span><i class="sw" style="background:var(--b-bg);border:1px solid #A9C6E8"></i>Tự duyệt – chờ gửi NCC</span><span><i class="sw" style="background:#FFF3CD;border:1px solid #E6CB7A"></i>Chờ người duyệt</span><span><i class="sw" style="background:var(--o-bg);border:1px solid #F2B98A"></i>Phải đặt hôm nay</span><span><i class="sw" style="background:var(--r-bg);border:1px solid #E9A8A1"></i>Quá hạn đặt</span><span><i class="sw" style="border:1px dashed #b5bcb6"></i>Dự kiến – chưa tới hạn</span><span style="flex:1"></span><span>⇄ = có nguyên liệu thay thế · dòng dưới ô = chia NCC</span></div>
+<div class="scroll"><table class="m"><thead><tr><th class="l" style="min-width:230px">Nguyên liệu (theo ngày cần hàng)</th>${D.map((d,i)=>`<th>${i===2?'<b style="color:#C2571A">'+d+'</b>':'<b>'+d+'</b>'}${i===0?'hôm nay':''}</th>`).join('')}</tr></thead><tbody>
+${R.map(r=>r[0]==='g'?`<tr class="rt"><td class="l" colspan="8">${r[1]}</td></tr>`:`<tr class="${r[2].startsWith('sb')?'sb':''}"><td class="l"><b>${r[0]}</b> <span class="small muted">${r[1]}</span>${r[2].startsWith('sub')?'<span class="subst">⇄ thay thế</span>':''}${r[2]?'<span class="split">'+r[2].slice(r[2].indexOf(':')+1)+'</span>':''}</td>
+${r[3].map(c=>c[0]==='na'?'<td><span class="q na">–</span></td>':`<td><span class="q ${CL[c[0]]}" ${c[3]?'onclick="openD()"':''}>${c[1]}<span class="hint">${LB[c[0]]}</span></span>${c[2]?'<span class="split">'+c[2]+'</span>':''}</td>`).join('')}</tr>`).join('')}
+</tbody></table></div><div class="small muted" style="margin-top:8px">Bấm ô để xem cách hệ thống tính: công thức → chọn tỷ lệ thay thế theo giá dùng được → trừ tồn / đơn mua sắp về / đề nghị đang mở → chia NCC theo tỷ lệ và lũy kế tháng.</div></div>`}
+function det(){return `<div class="bar"><div><h3>Thịt lợn – cần ngày T2 30/11 · phải đặt hôm nay</h3><div class="small muted">NCC giao trước 1 ngày + dự phòng 1 ngày → hạn đặt T7 28/11. Hệ thống tự tính lúc 14:00.</div></div><button class="sm" onclick="cl('ovD')">✕</button></div>
+<div class="pn" style="margin-top:12px">
+<div class="box"><h4><span class="n">1</span>Nhu cầu theo công thức</h4><table class="t"><thead><tr><th>Món</th><th>Suất</th><th>Chuẩn</th><th>Thay thế được</th></tr></thead><tbody>
+<tr><td><b>Thịt kho tàu</b><span class="sub">12 kg / 100 suất</span></td><td>1.000</td><td>Thịt vai 120 kg</td><td>Thịt mông ≤ 50%</td></tr>
+<tr><td>↳ trong đó khách <b>chỉ dùng chuẩn</b><span class="sub">Công ty Hanel (theo hợp đồng)</span></td><td>170</td><td>Thịt vai 20 kg</td><td><span class="na">không thay</span></td></tr>
+<tr><td><b>Thịt rang cháy cạnh</b><span class="sub">8 kg / 100 suất</span></td><td>500</td><td>Thịt vai 40 kg</td><td><span class="na">công thức không cho thay</span></td></tr></tbody></table></div>
+<div class="box"><h4><span class="n">2</span>So giá trên 1 kg dùng được (đã trừ hao sơ chế)</h4><div class="cmp">
+<div class="opt"><div class="small muted">Thịt vai – chuẩn</div><div class="big">139.100 đ</div><div class="small">mua 128.000 đ/kg · hao 8%</div></div>
+<div class="opt win"><div class="small muted">Thịt mông – thay thế</div><div class="big" style="color:#3F5A17">127.300 đ</div><div class="small">mua 112.000 đ/kg · hao 12% · <b>rẻ hơn 8,5%</b></div></div></div>
+<div class="note" style="margin:10px 0 0">Rẻ hơn ≥ 5% (cấu hình) → dùng thịt mông <b>tới mức tối đa 50%</b> của Thịt kho tàu = <b>60 kg</b>. Tiết kiệm dự kiến <b>708.000 đ</b>. Chênh &lt; 5% thì giữ thịt vai để bếp không phải đổi liên tục.</div>
+<div class="bar" style="justify-content:flex-end;margin-top:8px;gap:8px"><button class="sm" onclick="toast('Ngày 30/11 dùng 100% thịt vai – ghi lý do, báo bếp trưởng')">Giữ 100% thịt vai ngày này</button><button class="sm">Đổi tỷ lệ…</button></div></div>
+<div class="box"><h4><span class="n">3</span>Trừ hàng đã có</h4><table class="t"><thead><tr><th></th><th>Thịt vai</th><th>Thịt mông</th></tr></thead><tbody>
+<tr><td>Cần (sau thay thế)</td><td>60 + 40 = <b>100</b></td><td><b>60</b></td></tr><tr><td>− Tồn khả dụng</td><td>8</td><td>0</td></tr><tr><td>− Đơn mua sắp về</td><td>0</td><td>0</td></tr><tr><td>− Đề nghị mua đang mở</td><td>0</td><td>0</td></tr><tr class="rt"><td>Phải mua</td><td>92 kg</td><td>60 kg</td></tr></tbody></table></div>
+<div class="box"><h4><span class="n">4</span>Chia nhà cung cấp</h4>
+<div class="small"><b>Thịt vai 92 kg</b> – tỷ lệ mục tiêu Thịt sạch Hà Nội 60% · HTX Đông Anh 40%</div>
+<div class="alloc"><i style="width:50%;background:#7FA43A">Hà Nội 46 kg</i><i style="width:50%;background:#5A8CC8">Đông Anh 46 kg</i></div>
+<table class="t"><thead><tr><th>NCC</th><th>Giá</th><th>Mục tiêu</th><th>Lũy kế tháng 11</th><th>Lần này</th></tr></thead><tbody>
+<tr><td><b>Thịt sạch Hà Nội</b><span class="sub">ưu tiên · giao 1 ngày</span></td><td>128.000</td><td>60%</td><td style="min-width:120px">68%<div class="tgt"><b style="width:68%;background:#7FA43A"></b><i style="left:60%"></i></div></td><td>46 kg</td></tr>
+<tr><td><b>HTX Đông Anh</b><span class="sub">tối thiểu 20 kg · giao 1 ngày</span></td><td>126.000</td><td>40%</td><td>32%<div class="tgt"><b style="width:32%"></b><i style="left:40%"></i></div></td><td>46 kg</td></tr></tbody></table>
+<div class="small muted" style="margin-top:6px">Đông Anh đang thiếu 8 điểm so mục tiêu → lần này bù lên 50% (bù tối đa ±15 điểm mỗi lần). Phần chia &lt; mức tối thiểu NCC thì dồn cho NCC còn lại.</div>
+<div class="small" style="margin-top:10px"><b>Thịt mông 60 kg</b> – Thịt sạch Hưng Yên 100% (chỉ 1 NCC)</div></div></div>
+<div class="box" style="margin-top:14px"><h4><span class="n">5</span>Kết quả – 3 đơn mua</h4><table class="t"><thead><tr><th>NCC</th><th>Nội dung</th><th>Thành tiền</th><th>Duyệt</th><th>Gửi NCC</th></tr></thead><tbody>
+<tr><td><b>Thịt sạch Hà Nội</b></td><td>Thịt vai 46 kg</td><td>5.888.000</td><td><span class="chip c-b">Tự duyệt – đúng định mức</span></td><td>Zalo 15:00</td></tr>
+<tr><td><b>HTX Đông Anh</b></td><td>Thịt vai 46 kg</td><td>5.796.000</td><td><span class="chip c-b">Tự duyệt – đúng định mức</span></td><td>Email 15:00</td></tr>
+<tr><td><b>Thịt sạch Hưng Yên</b></td><td>Thịt mông 60 kg</td><td>6.720.000</td><td><span class="chip c-b">Tự duyệt – thay thế trong giới hạn công thức</span></td><td>Zalo 15:00</td></tr></tbody></table>
+<div class="note" style="margin:10px 0 0">Kế hoạch sản xuất và phiếu xuất kho ngày 30/11 ghi rõ <b>Thịt kho tàu: thịt vai 60 kg + thịt mông 60 kg</b>; bếp nhận thông báo qua bot. Giá vốn suất ăn tính theo thực tế.</div>
+<div class="bar" style="justify-content:flex-end;gap:8px;margin-top:10px"><button onclick="cl('ovD')">Đóng</button><button class="sm">Sửa chia NCC…</button><button class="p" onclick="cl('ovD');toast('Đã lập 3 đơn mua · tự duyệt · tự gửi NCC lúc 15:00')">Đặt ngay</button></div></div>`}
+function openD(){$('dt').innerHTML=det();$('ovD').classList.add('on')}
+function recipe(){return `<div class="card"><div class="bar"><div><h1>Công thức – Thịt kho tàu</h1><div class="small muted">Phiên bản 3 · áp dụng từ 01/12/2026 · Bếp trưởng duyệt</div></div><div class="bar" style="gap:8px"><button>Lịch sử phiên bản</button><button class="p">Lưu và gửi duyệt</button></div></div>
+<table class="t" style="margin-top:14px"><thead><tr><th>Nguyên liệu</th><th>Định lượng / 100 suất</th><th>Hao sơ chế</th><th>Ghi chú</th><th></th></tr></thead><tbody>
+<tr><td><b>Thịt lợn vai</b> <span class="chip c-ok">chuẩn</span></td><td>12 kg</td><td>8%</td><td>thái miếng 3 cm</td><td></td></tr>
+<tr class="sb"><td style="padding-left:28px">⇄ <b>Thịt lợn mông</b> <span class="chip c-b">thay thế</span></td><td>dùng tối đa <input class="in sm" value="50" style="width:56px"> %</td><td>12%</td><td>dùng khi giá dùng được rẻ hơn ≥ 5%</td><td><button class="sm">✕</button></td></tr>
+<tr class="sb"><td style="padding-left:28px" colspan="5"><a class="small" href="#">+ Thêm nguyên liệu thay thế cho Thịt lợn vai</a></td></tr>
+<tr><td><b>Trứng vịt</b></td><td>100 quả</td><td>0%</td><td></td><td></td></tr>
+<tr><td><b>Nước dừa tươi</b></td><td>8 l</td><td>0%</td><td></td><td></td></tr>
+<tr><td><b>Nước mắm</b></td><td>0,6 l</td><td>0%</td><td></td><td></td></tr></tbody></table>
+<div class="note" style="margin-top:12px">Mức "tối đa %" do bếp trưởng quyết: <b>50%</b> = được trộn, <b>100%</b> = được thay hẳn, <b>0</b> / không khai = không bao giờ thay. Thay thế trong giới hạn này được <b>tự duyệt</b>; muốn vượt phải sửa công thức.</div></div>
+<div class="card"><h3>Khách chỉ dùng nguyên liệu chuẩn</h3><div class="small muted" style="margin:4px 0 10px">Theo hợp đồng – đơn của các khách này luôn tính theo nguyên liệu chuẩn, không thay thế.</div><span class="chip c-n">Công ty Hanel</span> <span class="chip c-n">Bệnh viện E – suất bệnh nhân</span> <a class="small" href="#">+ Thêm</a></div>`}
+function price(){return `<div class="card"><div class="bar"><div><h1>Nhà cung cấp – Thịt lợn vai</h1><div class="small muted">Bảng giá và tỷ lệ chia đơn theo nhà cung cấp</div></div><button class="p">+ Thêm NCC cho nguyên liệu</button></div>
+<table class="t" style="margin-top:14px"><thead><tr><th>NCC</th><th>Giá hiện hành</th><th>Giao trước</th><th>Mua tối thiểu</th><th>Ưu tiên</th><th>Tỷ lệ chia</th><th>Lũy kế tháng 11</th><th>Đúng hẹn 90 ngày</th></tr></thead><tbody>
+<tr><td><b>Thịt sạch Hà Nội</b></td><td>128.000 đ/kg</td><td>1 ngày</td><td>10 kg</td><td>★</td><td><input class="in sm" value="60" style="width:56px"> %</td><td>68% · 850 kg</td><td>97%</td></tr>
+<tr><td><b>HTX Đông Anh</b></td><td>126.000 đ/kg</td><td>1 ngày</td><td>20 kg</td><td></td><td><input class="in sm" value="40" style="width:56px"> %</td><td>32% · 400 kg</td><td>92%</td></tr>
+<tr><td><b>Thịt sạch Hưng Yên</b><span class="sub">chưa đạt đúng hẹn – tạm không chia</span></td><td>124.000 đ/kg</td><td>2 ngày</td><td>30 kg</td><td></td><td><input class="in sm" value="" placeholder="–" style="width:56px"> %</td><td>0%</td><td style="color:#B42318">81%</td></tr>
+<tr class="rt"><td colspan="5">Tổng tỷ lệ chia</td><td>100% ✓</td><td colspan="2"></td></tr></tbody></table>
+<div class="note" style="margin-top:12px">Để trống mọi ô tỷ lệ = như hiện nay (chọn 1 NCC: ưu tiên → rẻ nhất đạt chuẩn). Có tỷ lệ = hệ thống chia mỗi lần đặt và <b>bù lệch theo lũy kế tháng</b>; NCC bị loại (hết giá, không kịp, sự cố nặng) thì phần của NCC đó chia lại cho NCC còn lại.</div></div>`}
+function phone(){return `<div class="phone"><div class="bar"><b>Kế hoạch mua</b><span class="small muted">T7 28/11</span></div>
+<div class="kpis" style="grid-template-columns:1fr 1fr;margin:10px 0"><div class="kpi"><div class="small muted">Đặt hôm nay</div><div class="v" style="color:#C2571A">5</div></div><div class="kpi"><div class="small muted">Quá hạn</div><div class="v" style="color:#B42318">1</div></div></div>
+<table class="t"><tbody>
+<tr><td><b>Cá basa phi lê</b><span class="sub">cần 30/11 · NCC cần 3 ngày</span></td><td style="text-align:right"><span class="chip c-bad">Quá hạn · 40 kg</span></td></tr>
+<tr><td><b>Thịt lợn vai</b> <span class="subst">⇄</span><span class="sub">Hà Nội 46 · Đông Anh 46</span></td><td style="text-align:right"><span class="chip c-due">92 kg</span></td></tr>
+<tr><td><b>Thịt lợn mông</b><span class="sub">thay thịt vai · tiết kiệm 708 k</span></td><td style="text-align:right"><span class="chip c-due">60 kg</span></td></tr>
+<tr><td><b>Cá basa phi lê</b><span class="sub">cần 01/12</span></td><td style="text-align:right"><span class="chip c-due">55 kg</span></td></tr>
+<tr><td><b>Thịt gà phi lê</b><span class="sub">vượt định mức 12%</span></td><td style="text-align:right"><span class="chip c-n">Chờ duyệt</span></td></tr></tbody></table>
+<button class="p" style="width:100%;margin-top:10px">Đặt phần hôm nay (5)</button><div class="small muted" style="margin-top:6px;text-align:center">Đúng định mức → tự duyệt · tự gửi NCC 15:00</div></div>`}
+const h=location.hash;$('pg').innerHTML=h==='#recipe'?recipe():h==='#price'?price():h==='#phone'?phone():plan();if(h==='#detail')openD();
+</script></body></html>

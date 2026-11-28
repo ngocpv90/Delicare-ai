@@ -15,6 +15,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 |---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X |
 | Phê duyệt › Nghỉ & đổi ca | `wf-inbox?type=hr-leave` | Duyệt |
+| Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | Duyệt |
 | Nhân sự › Nhân viên | `adm-employee` | S (IX) |
 | Nhân sự › Phân ca | `hr-shift-assign` | S (IX) |
 | Nhân sự › Chấm công | `hr-attendance` | S (IX) |

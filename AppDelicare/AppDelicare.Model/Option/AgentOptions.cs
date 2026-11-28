@@ -26,6 +26,9 @@ namespace AppDelicare.Model.Option
         /// <summary>AI-7: mã nhóm (UserGroup.Code, cách nhau dấu phẩy) được hỏi Trợ lý qua bot; trống = mọi người đã liên kết. Người hỏi chưa liên kết luôn bị từ chối.</summary>
         public string? AskingGroups { get; set; }
 
+        /// <summary>AI-9: hạn xác nhận đề xuất ghi của agent (phút) – quá hạn đề xuất bị hủy, agent đề xuất lại.</summary>
+        public int ProposalTtlMinutes { get; set; } = 15;
+
         /// <summary>AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt.</summary>
         public string? HermesWebhookUrl { get; set; }
 
