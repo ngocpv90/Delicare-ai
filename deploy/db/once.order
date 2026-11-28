@@ -1,0 +1,18 @@
+# DELICARE – SCRIPT CHUYỂN ĐỔI DỮ LIỆU 1 LẦN (DEPLOY-SYNC-1, D-134 b) – chạy theo thứ tự thời gian, MỖI DB 1 LẦN.
+# Đọc bởi: deploy/db/Migrations.ps1 (Invoke-OnceScripts) và deploy/db/migrations.sh (run_once_scripts), sau nhóm Seed trong scripts.order.
+# Ghi nhận: extended property DelicareOnce:<tên file> (RUN | ADOPT). Chạy với -v DryRun=0. An toàn trên DB mới (không có dữ liệu cũ → 0 thay đổi).
+# DB đã chạy tay các script này (DB dev của anh): Deploy-Database.ps1 -AdoptOnce / ADOPT_ONCE=1 – chỉ ghi nhận, KHÔNG chạy lại
+# (chạy lại sẽ đổi dữ liệu nạp sau, vd REAL-1). Script mới: thêm vào CUỐI danh sách cùng commit (test DbScriptsDeclaredTests).
+DB/scripts/MA1_renumber_customer_supplier.sql     # MA-1.4 (D-63): loại khách cũ → mã chuẩn, đánh lại mã khách / NCC theo quy tắc
+DB/scripts/UI5_customer_catalogs.sql              # UI-5.3 (D-63 r): 4 trường danh mục khách về MÃ
+DB/scripts/REF1_normalize_catalog_codes.sql       # REF-1 (GAP-REF-01): cột mã danh mục tham chiếu về MÃ ReferenceLists
+DB/scripts/D82_link_employee_person.sql           # HR-ACC-1.2 (D-82 d): gắn Employee.PersonId dữ liệu cũ
+DB/scripts/UI617_dish_cleanup.sql                 # UI-6.17 (D-98): Món ăn – MealCategory / cột chữ tự do
+DB/scripts/UI619_supplier_material_cleanup.sql    # UI-6.19 (D-100): bảng giá NCC
+DB/scripts/UI620_ingredient_cleanup.sql           # UI-6.20 (D-101): nguyên liệu – StorageType mã chuẩn…
+DB/scripts/UI622_uom_pack.sql                     # UI-6.22 (D-103): quy đổi đơn vị gộp vào Đơn vị tính (dữ liệu; menu do Z_Menu_sync)
+DB/scripts/UI623_plan_dedupe.sql                  # UI-6.23 (D-104): 1 kế hoạch sản xuất / ngày
+DB/scripts/UI626_dishcategory_productionline.sql  # UI-6.26 (D-107): gán dây chuyền theo nhóm món (cột do migration 20261124_01)
+DB/scripts/UI627_standardcost_cleanup.sql         # UI-6.27 (D-108): giá thành chuẩn gõ tay song song
+DB/scripts/UI636_employee_cleanup.sql             # UI-6.36 (D-117): nhân viên – công ty / đơn vị
+DB/scripts/UI643_usergroup_code.sql               # UI-6.43 (D-124): mã / tên tiếng Việt / khối nhóm quyền (sau migration 20261124_02)

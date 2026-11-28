@@ -290,7 +290,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?ty
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=menu-change-request' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Yêu cầu đổi món', N'P3', N'#/wf-inbox?type=menu-change-request', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9905, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=crm-order' AND IsDeleted = 0)
-    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đơn đặt suất', N'P3', N'#/wf-inbox?type=crm-order', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9906, 1, 0, @Now, @SeedBy, 0);
+    INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đơn đặt suất (sửa sau chốt)', N'P3', N'#/wf-inbox?type=crm-order', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9906, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=scm-pr' AND IsDeleted = 0)
     INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'Đề nghị mua hàng', N'P4', N'#/wf-inbox?type=scm-pr', (SELECT TOP (1) Id FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/group/approve' AND IsDeleted = 0), 2, 9907, 1, 0, @Now, @SeedBy, 0);
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] WHERE MetaLink = N'#/wf-inbox?type=scm-po' AND IsDeleted = 0)
@@ -436,6 +436,7 @@ UPDATE [dbo].[ObjectMenu] SET Name = N'Chính sách giá', ModifiedDate = @Now, 
 UPDATE [dbo].[ObjectMenu] SET Name = N'Hợp đồng', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=crm-contract' AND IsDeleted = 0 AND Name IN (N'Hợp đồng suất ăn', N'Duyệt – Hợp đồng suất ăn');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Thực đơn tuần', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=menu-menu' AND IsDeleted = 0 AND Name IN (N'Thực đơn & phiên bản', N'Duyệt – Thực đơn & phiên bản');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Đơn đặt suất', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=crm-order' AND IsDeleted = 0 AND Name IN (N'Đơn đặt suất ăn', N'Duyệt – Đơn đặt suất ăn');
+UPDATE [dbo].[ObjectMenu] SET Name = N'Đơn đặt suất (sửa sau chốt)', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=crm-order' AND IsDeleted = 0 AND Name IN (N'Đơn đặt suất', N'Duyệt – Đơn đặt suất');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Kế hoạch sản xuất', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=prod-plan' AND IsDeleted = 0 AND Name IN (N'Kế hoạch sản xuất theo ngày/ca', N'Duyệt – Kế hoạch sản xuất theo ngày/ca');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Kiểm tra hàng nhập', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=qc-inspection' AND IsDeleted = 0 AND Name IN (N'Phiếu QC đầu vào', N'Duyệt – Phiếu QC đầu vào');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Tất cả yêu cầu duyệt', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=wf-inbox' AND IsDeleted = 0 AND Name IN (N'Hộp phê duyệt tập trung', N'Duyệt – Hộp phê duyệt tập trung');
@@ -503,6 +504,9 @@ INSERT INTO @P VALUES
     (N'#/acc-amis-code', 2, NULL, 0, -1, N'', N'#/group/02b', 253, N'Khớp mã AMIS', N'ACC', NULL),
     (N'#/acc-amis-recon', 2, NULL, 0, -1, N'', N'#/group/02b', 254, N'Đối chiếu với AMIS', N'ACC', NULL),
     (N'#/acc-period', 2, NULL, 0, -1, N'', N'#/group/02b', 255, N'Khóa kỳ', N'ACC', NULL),
+    (N'#/group/02c', 1, NULL, -1, -1, N'', NULL, 260, N'Bán lẻ', N'retail', NULL),
+    (N'#/sal-retail-order', 2, NULL, 0, -1, N'', N'#/group/02c', 261, N'Đơn khách lẻ', N'RETAIL', NULL),
+    (N'#/sal-retail-product', 2, NULL, 0, -1, N'', N'#/group/02c', 262, N'Sản phẩm bán lẻ', N'RETAIL', NULL),
     (N'#/group/03', 1, NULL, 300, 300, N'', NULL, 300, N'Thực đơn & Món ăn', N'menu', NULL),
     (N'#/menu-menu', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 301, N'', N'', NULL),
     (N'#/menu-assignment', 2, N'#/group/03', 301, 399, N'', N'#/group/03', 302, N'', N'', 0),

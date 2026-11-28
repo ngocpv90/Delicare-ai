@@ -130,3 +130,27 @@ mig_drift() {
   "${SQL[@]}" -d "$DB_NAME" -h -1 -W -i "$TMP_DIR/drift.sql" | tr -d '\r' | grep -E '^(TABLE|COLUMN) ' > "$TMP_DIR/drift.txt" || true
   wc -l < "$TMP_DIR/drift.txt" | tr -d ' '
 }
+
+# ---- DEPLOY-SYNC-1 (D-134): script CHUYỂN ĐỔI DỮ LIỆU 1 LẦN (deploy/db/once.order) – cùng cơ chế ghi nhận với migration ----
+# Ghi nhận: extended property DelicareOnce:<tên file> = <RUN|ADOPT>|<giờ UTC>|sha256:<16 ký tự>. Chạy theo thứ tự trong once.order, với -v DryRun=0.
+# ADOPT_ONCE=1: CHỈ ghi nhận, không chạy (DB đã chạy tay các script này – vd DB dev của anh: chạy lại sẽ đổi dữ liệu nạp sau).
+ONCE_PREFIX="DelicareOnce:"
+once_files() { tr -d '\r' < "$REPO/deploy/db/once.order" | sed 's/#.*//; s/[[:space:]]*$//' | sed '/^$/d'; }
+run_once_scripts() {
+  local rel name v
+  [ -f "$REPO/deploy/db/once.order" ] || return 0
+  while IFS= read -r rel; do
+    [ -f "$REPO/$rel" ] || die "once.order: không thấy file $rel"
+    name="${ONCE_PREFIX}$(basename "$rel")"
+    v=$("${SQL[@]}" -d "$DB_NAME" -h -1 -W -Q "SET NOCOUNT ON; SELECT CAST(value AS nvarchar(400)) FROM sys.extended_properties WHERE class = 0 AND name = N'$(mig_sql_str "$name")'" | tr -d '\r' | sed '/^[[:space:]]*$/d' | head -1)
+    [ -z "$v" ] || continue
+    if [ "${ADOPT_ONCE:-0}" = "1" ]; then
+      echo "  = Ghi nhận (ADOPT) chuyển đổi $rel"
+      MIG_PREFIX="$ONCE_PREFIX" mig_record "$REPO/$rel" ADOPT
+    else
+      "${SQL[@]}" -d "$DB_NAME" -v DryRun=0 -i "$REPO/$rel" >/dev/null || die "Lỗi khi chạy chuyển đổi $rel"
+      MIG_PREFIX="$ONCE_PREFIX" mig_record "$REPO/$rel" RUN
+      echo "  + Chuyển đổi 1 lần: $rel"
+    fi
+  done < <(once_files)
+}

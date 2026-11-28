@@ -47,7 +47,11 @@ param(
     [SecureString] $AdminPassword,
     [switch] $ListOnly,
     [switch] $ListMigrations,
-    [switch] $MigrationsOnly
+    [switch] $MigrationsOnly,
+    # DEPLOY-SYNC-1 (D-134): DB đã chạy tay các script chuyển đổi (deploy/db/once.order) → chỉ ghi nhận, không chạy lại.
+    [switch] $AdoptOnce,
+    # Bỏ bước tự kiểm CHECK_menu_permission.sql (chỉ khi gỡ lỗi).
+    [switch] $SkipCheck
 )
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
@@ -97,7 +101,8 @@ if ($TrustServerCertificate) { $auth += "-C" }
 if (-not $AdminPassword -and $env:DELICARE_ADMIN_PASSWORD) { $AdminPassword = ConvertTo-SecureString $env:DELICARE_ADMIN_PASSWORD -AsPlainText -Force }
 
 function Invoke-Sql([string] $db, [string] $file) {
-    $sqlArgs = @("-S", $Server, "-d", $db, "-b", "-I", "-f", "65001", "-i", $file) + $auth
+    # D-134: -v DryRun=0 – script cấu hình hội tụ / chuyển đổi 1 lần dùng biến $(DryRun); script khác không dùng thì không ảnh hưởng.
+    $sqlArgs = @("-S", $Server, "-d", $db, "-b", "-I", "-f", "65001", "-v", "DryRun=0", "-i", $file) + $auth
     & sqlcmd @sqlArgs
     if ($LASTEXITCODE -ne 0) { throw "Lỗi khi chạy $file (exit $LASTEXITCODE)" }
 }
@@ -163,6 +168,13 @@ try {
         }
     }
     Write-Host "  + Stored procedure: $spCount file"
+
+    # DEPLOY-SYNC-1 (D-134): chuyển đổi dữ liệu 1 lần → tự kiểm menu / quyền (lệch → dừng với danh sách).
+    Invoke-OnceScripts -Adopt:$AdoptOnce
+    if (-not $SkipCheck) {
+        Invoke-Sql $Database (Join-Path $root "DB/scripts/CHECK_menu_permission.sql")
+        Write-Host "  = CHECK menu / quyền: 0 lệch"
+    }
     Write-Host "== Xong."
 } finally {
     $env:SQLCMDPASSWORD = $oldSqlcmdPassword

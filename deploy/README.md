@@ -202,6 +202,26 @@ Lần cập nhật gần nhất: **2026-11-17 – BE3.7** (T23 + BE3.1–BE3.5: 
 
 **Dữ liệu thử [DEMO] cho máy FE / server test:** `node tools/seed-demo/seed-demo.mjs --base <địa chỉ API> --password <mật khẩu admin>` – chạy lại toàn luồng `full-flow.http` qua API, mỗi lần 1 bộ mới (xem `tools/seed-demo/README.md`).
 
+## 9b. Cập nhật máy FE / server test – menu, quyền, dữ liệu cấu hình (DEPLOY-SYNC-1, D-134)
+
+Mọi DB (máy anh, máy FE, server test, DB mới) có **cùng** menu + quyền chỉ bằng quy trình dưới – **không chạy tay script nào**. Luôn dùng nhánh **`main`** (không dùng `develop` / `release/pilot`).
+
+**Windows (localdb / SQL Server):**
+```powershell
+git checkout main; git pull origin main
+./deploy/db/Deploy-Database.ps1 -Server "(localdb)MSSQLLocalDB" -Database AppDelicare   # DB mới: thêm -CreateDatabase -CreateSchemaIfEmpty -AdminPassword (Read-Host -AsSecureString)
+# build lại API + FE (dotnet build; npm run build hoặc ng serve) → đăng xuất, đăng nhập lại, Ctrl + F5
+```
+**Docker:** `git pull origin main` → `docker compose run --rm db-init` → `docker compose up -d --build` → đăng nhập lại, Ctrl + F5.
+
+Quy trình chạy: migration → SP + seed (`deploy/db/scripts.order`; cuối nhóm Seed là cấu hình **hội tụ**: `Z_Menu_sync.sql` → `D79_permission_matrix.sql` → `Agent_seed.sql`) → chuyển đổi dữ liệu 1 lần (`deploy/db/once.order`, ghi nhận `DelicareOnce:<file>`) → **CHECK** (`DB/scripts/CHECK_menu_permission.sql`). Cuối log phải có **`CHECK menu / quyền: 0 lệch`**; có lệch thì quy trình dừng và in từng dòng lệch.
+
+- DB đã chạy tay các script chuyển đổi từ trước (DB dev của anh): lần đầu thêm `-AdoptOnce` (Docker: `ADOPT_ONCE=1`) – chỉ ghi nhận, không chạy lại (chạy lại sẽ đổi dữ liệu nạp sau).
+- So 2 DB có sidebar giống hệt: `sqlcmd … -i DB/scripts/CHECK_sidebar_fingerprint.sql` trên cả hai, so cột Băm.
+- Danh sách + phân loại mọi script: `docs/claude/DB_SCRIPTS_INVENTORY.md`.
+
+Lần cập nhật gần nhất (DEPLOY-SYNC-1, 2026-11-28): DB dev của anh (`-AdoptOnce`, CHECK 0), staging `AppDelicare_Staging` (9 migration + 13 chuyển đổi, CHECK 0), DB thử trạng thái trước MENU-5 và DB mới tinh – cả 4 cùng dấu vân tay sidebar 10 vai trò.
+
 ## 10. Production Linux + Docker (T48.4, D-60)
 
 **Thành phần** (`deploy/docker/docker-compose.production.yml`): `nginx` (build Angular từ `app-delicare-client` + HTTPS + chuyển `/api`, `/Import` → `api`), `api` (AppDelicare.WebApi), `job` (AppDelicare.Job – **đúng 1 bản**), `db-init` (chạy tay). **SQL Server không nằm trong compose production** – server / container riêng có ổ dữ liệu + backup.

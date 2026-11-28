@@ -147,6 +147,11 @@ if (Layer("security"))
     Write(Path.Combine(root, "DB", "seed", "UserRole_seed.sql"), Seeds.UserRoleSeed5(), true);
     Write(Path.Combine(root, "DB", "scripts", "D79_menu_regroup.sql"), Seeds.Menu5RegroupScript(screens, menuOrder), true);
     Write(Path.Combine(root, "DB", "scripts", "D79_permission_matrix.sql"), Seeds.PermissionMatrixScript(), true);
+    // DEPLOY-SYNC-1 (D-134): menu hội tụ (seed cuối) + CHECK menu / quyền / script chuyển đổi 1 lần (deploy/db/once.order).
+    Write(Path.Combine(root, "DB", "seed", "Z_Menu_sync.sql"), Seeds.MenuSyncScript(screens), true);
+    string onceOrder = Path.Combine(root, "deploy", "db", "once.order");
+    var once = File.Exists(onceOrder) ? File.ReadAllLines(onceOrder).Select(l => l.Split('#')[0].Trim()).Where(l => l.Length > 0).Select(Path.GetFileName).Cast<string>() : [];
+    Write(Path.Combine(root, "DB", "scripts", "CHECK_menu_permission.sql"), Seeds.CheckScript(screens, once), true);
     // AI-2 (D-133): danh tính 13 agent – cùng ma trận Menu5 (chỉ Xem theo vai trò người tương ứng).
     Write(Path.Combine(root, "DB", "seed", "Agent_seed.sql"), Seeds.AgentSeed(), true);
     // FIX-1.4 (D-92, D-93): menu dự phòng FE cùng nguồn Menu5Groups (grp, fn, menuOrder, menuGroups) – test CatalogMenuTests so khớp.

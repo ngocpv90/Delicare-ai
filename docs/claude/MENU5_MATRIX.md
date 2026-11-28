@@ -46,6 +46,8 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Kế toán › Khớp mã AMIS | `acc-amis-code` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — | X | — |
 | Kế toán › Đối chiếu với AMIS | `acc-amis-recon` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — | X | — |
 | Kế toán › Khóa kỳ | `acc-period` | X (IX) | X | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — | X | — |
+| Bán lẻ › Đơn khách lẻ | `sal-retail-order` | X (IX) | X | X (IX) | X (IX) | — | — | — | X (IX) | Sửa (IX) | S (IX) | — | S (IX) | — | Q (IX) | S (IX) | X (IX) | — | X | — |
+| Bán lẻ › Sản phẩm bán lẻ | `sal-retail-product` | X (IX) | X | X (IX) | — | — | — | — | — | — | X | — | X | — | Q (IX) | X | X (IX) | — | X | — |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | X | X | Q | X | — | X | X | — | X | — | X | X | X | X | — | — | X | X |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | X | X | Q | X | — | X | X | — | — | — | — | — | — | — | — | — | X | X |
 | Thực đơn & Món ăn › Món ăn | `menu-dish` | X | X | X | Q | — | — | — | X | — | — | — | X | X | X | X | — | — | X | X |
@@ -79,16 +81,16 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Nhân sự › Chấm công | `hr-attendance` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | X (IX) | S (IX) | X | — |
 | Nhân sự › Nghỉ & đổi ca | `hr-leave` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | S (IX) | X | — |
 | Nhân sự › Hộp phê duyệt | `wf-inbox` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
-| Danh mục hệ thống › Công ty & đơn vị | `adm-orgunit` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | X | X | — |
+| Danh mục hệ thống › Công ty & đơn vị | `adm-orgunit` | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | Q (IX) | — |
 | Danh mục hệ thống › Chức vụ | `adm-position` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | Q | X | — |
 | Danh mục hệ thống › Ca làm việc | `hr-shift` | X | X | X | — | — | — | — | X | — | — | — | — | — | — | — | — | Q | X | — |
 | Danh mục hệ thống › Đơn vị tính | `scm-uom` | X | X | X | — | Q | — | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Danh mục hệ thống › Kho & vị trí | `scm-warehouse` | X | X | X | — | X | Q | Q | — | — | — | — | — | — | — | — | — | — | X | — |
 | Danh mục hệ thống › Dây chuyền & trạm bếp | `prod-line` | X | X | X | Q | — | — | — | X | — | — | S | — | — | — | — | — | — | X | — |
 | Danh mục hệ thống › Xe giao hàng | `log-vehicle` | X | X | X | — | — | — | — | — | Q | — | — | — | — | — | — | — | — | X | — |
-| Danh mục hệ thống › Danh mục dùng chung | `adm-reference` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
-| Danh mục hệ thống › Địa giới hành chính | `adm-admin-unit` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
-| Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
+| Danh mục hệ thống › Danh mục dùng chung | `adm-reference` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
+| Danh mục hệ thống › Địa giới hành chính | `adm-admin-unit` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
+| Danh mục hệ thống › Danh mục chỉ số | `kpi-definition` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
 | Tri thức › Kho tri thức | `knowledge` | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X |
 | Tri thức › 10 Ban GĐ | `knowledge?folder=10` | S | X | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Tri thức › 20 Kinh doanh & Hợp đồng | `knowledge?folder=20` | X | X | X | — | — | — | — | — | X | — | — | X | X | S | X | X | — | — | — |
@@ -129,24 +131,24 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào 114 mục · ô quyền  141
-  CEO-PMO       vào 107 mục · ô quyền  113
-  COO           vào 125 mục · ô quyền  161
-  OPS-PLAN      vào  45 mục · ô quyền   91
+  CEO           vào 113 mục · ô quyền  144
+  CEO-PMO       vào 105 mục · ô quyền  111
+  COO           vào 122 mục · ô quyền  162
+  OPS-PLAN      vào  46 mục · ô quyền   93
   OPS-SCM       vào  28 mục · ô quyền   65
   OPS-WH        vào  25 mục · ô quyền   77
   OPS-SCM-HEAD  vào  42 mục · ô quyền  133
-  OPS-KIT       vào  33 mục · ô quyền   55
-  OPS-LOG       vào  24 mục · ô quyền   44
-  OPS-POS       vào  15 mục · ô quyền   27
+  OPS-KIT       vào  34 mục · ô quyền   57
+  OPS-LOG       vào  25 mục · ô quyền   47
+  OPS-POS       vào  17 mục · ô quyền   33
   OPS-MNT       vào   8 mục · ô quyền   12
-  SAL-SALES     vào  24 mục · ô quyền   42
+  SAL-SALES     vào  26 mục · ô quyền   48
   SAL-CON       vào  24 mục · ô quyền   72
-  SAL-HEAD      vào  32 mục · ô quyền   89
-  SAL-CS        vào  16 mục · ô quyền   20
-  FIN-ACC       vào  41 mục · ô quyền  128
+  SAL-HEAD      vào  34 mục · ô quyền  103
+  SAL-CS        vào  18 mục · ô quyền   26
+  FIN-ACC       vào  43 mục · ô quyền  134
   FIN-HR        vào  16 mục · ô quyền   48
-  FIN-IT        vào 117 mục · ô quyền  212
+  FIN-IT        vào 119 mục · ô quyền  238
   QA            vào  38 mục · ô quyền   79
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; log-load-short = COO, OPS-SCM-HEAD
 ```

@@ -111,6 +111,7 @@ namespace AppDelicare.WebApi.Security
             ["QcInspectionLine"] = "qc-inspection-line",
             ["Recipe"] = "menu-recipe",
             ["RecipeLine"] = "menu-recipe-line",
+            ["RetailCustomer"] = "sal-retail-order",
             ["RetailOrder"] = "sal-retail-order",
             ["RetailOrderLine"] = "sal-retail-order",
             ["RetailProduct"] = "sal-retail-product",

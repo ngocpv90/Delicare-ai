@@ -42,6 +42,8 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Kế toán › Khớp mã AMIS | `acc-amis-code` | X (IX) | X | X (IX) | Q (IX) |
 | Kế toán › Đối chiếu với AMIS | `acc-amis-recon` | X (IX) | X | X (IX) | Q (IX) |
 | Kế toán › Khóa kỳ | `acc-period` | X (IX) | X | X (IX) | Q (IX) |
+| Bán lẻ › Đơn khách lẻ | `sal-retail-order` | X (IX) | X | X (IX) | X (IX) |
+| Bán lẻ › Sản phẩm bán lẻ | `sal-retail-product` | X (IX) | X | X (IX) | X (IX) |
 | Mua hàng › Đơn mua hàng | `scm-po` | X | X | X | X (IX) |
 | Kho › Nhận hàng | `scm-gr` | X | X | X | X (IX) |
 | Kho › Trả hàng NCC | `scm-supplier-return` | X | X | X | X (IX) |

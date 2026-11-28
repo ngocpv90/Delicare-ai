@@ -172,3 +172,7 @@ DB/seed/Integration_Telegram_seed.sql
 DB/seed/ObjectMenu_crm_order_week_seed.sql
 # RETAIL-1 (2026-11-27, D-134): menu "Bán lẻ" (#/sal-retail-order, #/sal-retail-product) + quyền nhóm – chỉ thêm, không sửa quyền đã có
 DB/seed/ObjectMenu_retail_seed.sql
+# ---- Cấu hình HỘI TỤ (DEPLOY-SYNC-1, D-134): luôn chạy cuối nhóm Seed, mọi DB về cùng menu / quyền (nguồn CodeGen Seeds.Menu5.cs) ----
+DB/seed/Z_Menu_sync.sql
+DB/scripts/D79_permission_matrix.sql
+DB/seed/Agent_seed.sql
