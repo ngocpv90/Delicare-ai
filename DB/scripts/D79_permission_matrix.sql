@@ -382,6 +382,7 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/ai-tasks', 1, 1, 1, 0, 0, 0, 0),
     (N'COO', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-PLAN', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/dash-exec', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/kpi-monthly', 1, 0, 0, 0, 0, 0, 0),
@@ -532,9 +533,9 @@ INSERT INTO @Allow VALUES
     (N'OPS-SCM-HEAD', N'#/ai-tasks', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/wf-inbox?type=kb-sop', 1, 0, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/sal-retail-order', 1, 0, 0, 0, 1, 0, 0);
+    (N'OPS-KIT', N'#/wf-inbox?type=kb-sop', 1, 0, 1, 0, 0, 0, 0);
 INSERT INTO @Allow VALUES
+    (N'OPS-KIT', N'#/sal-retail-order', 1, 0, 0, 0, 1, 0, 0),
     (N'OPS-KIT', N'#/menu-menu', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/menu-recipe', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/menu-dish', 1, 0, 0, 0, 0, 0, 0),
@@ -597,6 +598,7 @@ INSERT INTO @Allow VALUES
     (N'OPS-LOG', N'#/knowledge?folder=99', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/ai-tasks', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-POS', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-order-week', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/crm-order', 1, 0, 0, 0, 0, 0, 0),

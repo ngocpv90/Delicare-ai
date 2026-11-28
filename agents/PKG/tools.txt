@@ -1,6 +1,16 @@
 # Công cụ của agent PKG – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
 bao_chi_phi
+canh_bao
 doc_ghi_chu
+ds_cho_duyet
 ghi_nhat_ky
+gui_canh_bao
+hop_khay
+lay_su_kien
+lo_ve_sinh
 ping
+propose_cleaning_step
+propose_container_loss_charge
+propose_container_return
+propose_note_update
 tim_tri_thuc

@@ -7,6 +7,7 @@ get_lo_can_date
 ghi_nhat_ky
 gui_canh_bao
 lay_su_kien
+lo_ve_sinh
 nhiet_do_ngay
 phan_anh_khach
 ping

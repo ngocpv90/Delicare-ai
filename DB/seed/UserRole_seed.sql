@@ -553,7 +553,7 @@ INSERT INTO @R VALUES
     (N'OPS-PLAN', N'#/wf-inbox?type=crm-recon-reopen', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/wf-inbox?type=acc-period-unlock', 0, 0, 0, 0, 0, 0, 0);
 INSERT INTO @R VALUES
-    (N'OPS-PLAN', N'#/wf-inbox?type=ai-agent-cmd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-PLAN', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/wf-inbox?type=kb-sop', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/dash-exec', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
@@ -1502,7 +1502,7 @@ INSERT INTO @R VALUES
     (N'OPS-POS', N'#/wf-inbox?type=log-load-short', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/wf-inbox?type=crm-recon-reopen', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/wf-inbox?type=acc-period-unlock', 0, 0, 0, 0, 0, 0, 0),
-    (N'OPS-POS', N'#/wf-inbox?type=ai-agent-cmd', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-POS', N'#/wf-inbox?type=ai-agent-cmd', 1, 0, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/wf-inbox?type=kb-sop', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/dash-exec', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/kpi-daily', 0, 0, 0, 0, 0, 0, 0),

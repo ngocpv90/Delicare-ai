@@ -1,0 +1,34 @@
+# Bộ câu nghiệm thu agent PLAN (AI-16, D-133). Chạy: node tools/agent-eval/run.mjs PLAN
+agent: PLAN
+webUser: uat.ops-plan
+cases:
+  - id: plan-ke-hoach
+    question: Kế hoạch sản xuất 7 ngày tới thế nào?
+    tool: ke_hoach_ngay
+    args: {}
+    expect:
+      status: 200
+  - id: plan-thuc-don
+    question: Thực đơn tuần này?
+    tool: thuc_don_tuan
+    args: {}
+    expect:
+      status: 200
+  - id: plan-thieu-hut
+    question: Ngày mai thiếu nguyên liệu gì?
+    tool: du_bao_thieu_hut
+    args: {}
+    expect:
+      status: 200
+  - id: plan-tinh-lai-thieu-ngay
+    question: Tính lại kế hoạch giúp tôi
+    tool: propose_production_plan
+    args: { ly_do: "thiếu ngày" }
+    expect:
+      status: 400
+  - id: plan-doi-mon-sai-ly-do
+    question: Đổi món MON-A sang MON-B trưa mai
+    tool: propose_menu_change
+    args: { ngay: "2099-01-01", buoi: TRUA, mon_cu: MON-A, mon_moi: MON-B, ma_ly_do: KHAC, ly_do: "thử" }
+    expect:
+      status: 400

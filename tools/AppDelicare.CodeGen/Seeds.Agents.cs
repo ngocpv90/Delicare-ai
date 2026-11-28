@@ -12,22 +12,25 @@ namespace AppDelicare.CodeGen;
 public static partial class Seeds
 {
     /// <summary>Mã · tên · phòng ban (TargetAudience) · vai trò người soi quyền Xem · bật ở Đợt 1.</summary>
-    public static readonly (string Code, string Name, string Audience, string? Mirror, bool Wave1)[] Agents = // Wave1 = bật sẵn (đợt 1 + đợt 2 AI-10)
+    public static readonly (string Code, string Name, string Audience, string? Mirror, bool Wave1)[] Agents = // Wave1 = bật sẵn (đợt 1 + đợt 2 AI-10 + đợt 3 AI-16)
     [
         ("VIVI", "Vivi – Điều phối trung tâm", "Ban điều hành", "CEO", true),
         ("SALES", "Agent Kinh doanh & hợp đồng", "Kinh doanh", "SAL-HEAD", true),
-        ("PLAN", "Agent Kế hoạch & thực đơn", "Kế hoạch", "OPS-PLAN", false),
+        ("PLAN", "Agent Kế hoạch & thực đơn", "Kế hoạch", "OPS-PLAN", true),
         ("PROC", "Agent Thu mua", "Mua hàng", "OPS-SCM", true),
         ("WH", "Agent Kho", "Kho", "OPS-WH", true),
         ("KITCHEN", "Agent Bếp & sản xuất", "Bếp", "OPS-KIT", true),
         ("QA", "Agent ATTP & truy xuất", "QA / ATTP", "QA", true),
         ("LOG", "Agent Giao vận", "Giao vận", "OPS-LOG", true),
-        ("PKG", "Agent Hộp khay & vệ sinh", "Hộp khay & vệ sinh", "OPS-KIT", false),
+        ("PKG", "Agent Hộp khay & vệ sinh", "Hộp khay & vệ sinh", "OPS-KIT", true),
         ("HR", "Agent Nhân sự", "Nhân sự", "FIN-HR", true),
-        ("ACC", "Agent Kế toán", "Kế toán", "FIN-ACC", false),
+        ("ACC", "Agent Kế toán", "Kế toán", "FIN-ACC", true),
         ("CSKH", "Agent Chăm sóc khách (Zalo)", "CSKH", "SAL-CS", false),
         ("KNOW", "Agent Thủ thư tri thức", "Tri thức", null, true),
     ];
+
+    /// <summary>AI-16: màn Xem thêm ngoài vai trò soi (PKG soi Bếp – OPS-KIT – nhưng cần Sổ hộp khay để biết khách đang giữ bao nhiêu hộp).</summary>
+    public static readonly Dictionary<string, string[]> AgentExtraScreens = new() { ["PKG"] = ["log-packaging-ledger"] };
 
     /// <summary>Id tài khoản agent cố định (MD5 "delicare-agent-&lt;MÃ&gt;") – test / script tham chiếu được.</summary>
     public static Guid AgentUserId(string code) => new(MD5.HashData(Encoding.UTF8.GetBytes("delicare-agent-" + code.ToUpperInvariant())));
@@ -46,7 +49,7 @@ public static partial class Seeds
             -- Idempotent, CHỈ THÊM (khóa: ChannelCode / Id tài khoản / tên nhóm / BotCode / ExternalUserId / nhóm × menu) – không ghi đè công tắc (BotStatus) đã chỉnh trên màn.
             -- KHÔNG bí mật: SecretReference = TÊN biến môi trường giữ khóa agent (AGENT_KEY_<MÃ>) – khóa thật chỉ ở env / user-secrets của toolgateway.
             -- Tài khoản agent: INTERNAL, PassWord '!NO-LOGIN!' (không băm khớp), không admin; LoginService chặn đăng nhập web theo liên kết UserExternalIdentity kênh HERMES.
-            -- Quyền: CHỈ Xem, trên các màn vai trò người tương ứng được truy cập (ma trận Menu5). Đợt 1 bật VIVI, WH, KITCHEN, QA, KNOW; đợt 2 (AI-10) bật thêm SALES, PROC, LOG, HR (DB cũ: script 1 lần AI10_activate_agents.sql); còn lại Inactive.
+            -- Quyền: CHỈ Xem, trên các màn vai trò người tương ứng được truy cập (ma trận Menu5). Đợt 1 bật VIVI, WH, KITCHEN, QA, KNOW; đợt 2 (AI-10) bật thêm SALES, PROC, LOG, HR (DB cũ: script 1 lần AI10_activate_agents.sql); đợt 3 (AI-16) bật PLAN, PKG, ACC (AI16_activate_agents.sql); còn lại Inactive.
             SET NOCOUNT ON;
             SET XACT_ABORT ON;
             SET QUOTED_IDENTIFIER ON;
@@ -94,7 +97,7 @@ public static partial class Seeds
 
             DECLARE @R TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(400));
             """);
-        var rows = Agents.SelectMany(a => AgentScreens(a.Mirror).Select(s => $"    (N'AGENT_{a.Code}', {Sql("#/" + s)})")).ToList();
+        var rows = Agents.SelectMany(a => AgentScreens(a.Mirror).Concat(AgentExtraScreens.GetValueOrDefault(a.Code) ?? []).Distinct().Select(s => $"    (N'AGENT_{a.Code}', {Sql("#/" + s)})")).ToList();
         if (rows.Count > 0)
         {
             foreach (var chunk in rows.Chunk(400))

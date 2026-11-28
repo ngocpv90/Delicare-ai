@@ -18,7 +18,7 @@ Viết theo code AI-1 … AI-15 (D-133, cập nhật 28/11/2026). Trợ lý AI g
 | Trợ lý AI › Nhật ký agent | `ai-agent-log` | Mọi lời gọi công cụ: lúc, agent, công cụ, người hỏi, kết quả (Thành công / Bị từ chối / Lỗi), thời gian xử lý, số dòng |
 | Trợ lý AI › Lịch chạy | `ai-schedule` | Việc theo giờ của từng agent (05:30 kho, 07:00 bản tin sáng, 08:30 QA, 10:00 bếp, 17:00 cuối ngày, mỗi 5 phút lấy sự kiện…), lần chạy gần nhất |
 
-## 3. Agent làm gì (đợt 1 + đợt 2)
+## 3. Agent làm gì (đợt 1 + đợt 2 + đợt 3)
 
 | Agent | Hỏi được gì | Theo lịch |
 |---|---|---|
@@ -30,9 +30,14 @@ Viết theo code AI-1 … AI-15 (D-133, cập nhật 28/11/2026). Trợ lý AI g
 | SALES | Đơn suất ngày mai, khách chưa chốt, phản ánh khách; **đề xuất đổi số suất** (`propose_order_change`) | – |
 | PROC | Kế hoạch mua (phải đặt hôm nay, quá hạn, chờ duyệt, chưa gửi NCC), thiếu hụt 7 ngày, tồn; **đề xuất đơn mua** ngoài kế hoạch (`propose_purchase_order`) | – |
 | LOG | Bảng điều phối giao hàng trong ngày; **đề xuất chuyển điểm giao** (`propose_route`), **ghi đến / giao tại điểm dừng** (`propose_delivery_event`) | – |
-| HR | Chấm công ngày (chưa vào ca, muộn, vắng); **đề xuất đơn nghỉ / đổi ca / bổ sung chấm công** (`propose_leave`, `propose_shift_swap`, `propose_attendance_fix`) | – |
+| HR | Chấm công ngày (chưa vào ca, muộn, vắng); **đề xuất đơn nghỉ / đổi ca / bổ sung chấm công** (`propose_leave`, `propose_shift_swap`, `propose_attendance_fix`) | 07:15 người chưa vào ca |
+| PLAN (đợt 3) | Kế hoạch sản xuất 7 ngày, thực đơn tuần, nhu cầu / thiếu hụt nguyên liệu, giá vốn & lãi gộp; **đề xuất tính lại kế hoạch ngày** (`propose_production_plan` – như nút Tính lại kế hoạch), **đề xuất đổi món** trên thực đơn đã công bố (`propose_menu_change` – yêu cầu đổi món đi tiếp như web: tự duyệt khi đủ 4 điều kiện, còn lại chờ duyệt đổi món) | 20:40 tóm tắt thiếu hụt sau MRP |
+| PKG (đợt 3) | Hộp / khay khách đang giữ, quá hạn trả, tỷ lệ thất thoát, lô vệ sinh trong ngày; **đề xuất ghi khách trả hộp** (`propose_container_return`), **ghi 1 bước vệ sinh khay** (`propose_cleaning_step`, đúng thứ tự 6 bước VS-KHAY), **ghi hộp thất thoát** (`propose_container_loss_charge`) | 16:00 khách giữ hộp quá hạn / vượt ngưỡng |
+| ACC (đợt 3) | **Chỉ đọc:** chứng từ kế toán tháng, đối chiếu AMIS, giá vốn & lãi gộp, hộp khay khách giữ. Không lập / sửa / xuất chứng từ, không thay MISA. Đề xuất duy nhất: ghi hộp thất thoát của khách vượt ngưỡng (`propose_container_loss_charge`) – bảng kê thanh toán tự tính phí theo cấu hình | Ngày 2 hằng tháng 08:30 tóm tắt lệch AMIS + khách vượt ngưỡng hộp |
 
 Đợt 2 các agent cũ có thêm lệnh ghi: WH – lập phiếu nhập theo đơn mua (`propose_goods_receipt`), phiếu xuất cho lệnh SX (`propose_issue`), phiếu kiểm kê (`propose_stock_count`); KITCHEN – ghi bắt đầu / xong / nhiệt độ lõi / lưu mẫu của mẻ (`propose_batch_event`); QA – kết luận QC nhận hàng (`propose_qc_result`), giữ lô (`propose_hold_lot`).
+
+Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa Kế hoạch sản xuất; đổi món – quyền Sửa Thực đơn tuần; trả hộp / thất thoát – quyền Thêm Sổ hộp khay (giao vận / điểm phát); bước vệ sinh – quyền Thêm màn Vệ sinh hộp / khay (bếp / QA).
 
 **Lệnh ghi (2 pha):** agent chỉ **đề xuất** – không ghi gì. Đề xuất vào **Phê duyệt › Lệnh của agent** (hạn xác nhận 15 phút), hiện bản xem trước (dòng, số tiền, cảnh báo). Người xác nhận phải tự có quyền làm đúng thao tác đó trên web (vd lập phiếu nhập cần quyền Thêm Phiếu nhập kho). Xác nhận → hệ thống chạy **đúng thao tác web** dưới tên người xác nhận, mọi quy tắc nghiệp vụ áp lại (lỗi → không ghi, báo người xác nhận); chứng từ sau đó đi tiếp luồng duyệt như lập tay (vd đơn nghỉ chờ duyệt nghỉ, sửa đơn sau giờ chốt cần duyệt quá giờ chốt).
 

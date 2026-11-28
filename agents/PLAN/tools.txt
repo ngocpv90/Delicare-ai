@@ -1,7 +1,18 @@
 # Công cụ của agent PLAN – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
 bao_chi_phi
+canh_bao
 doc_ghi_chu
+ds_cho_duyet
+du_bao_thieu_hut
 get_ton_kho
 ghi_nhat_ky
+gia_von_lai_gop
+gui_canh_bao
+ke_hoach_ngay
+lay_su_kien
 ping
+propose_menu_change
+propose_note_update
+propose_production_plan
+thuc_don_tuan
 tim_tri_thuc

@@ -82,7 +82,7 @@ namespace AppDelicare.Services.Implement.Agent
             },
             new AgentToolDef
             {
-                Name = "ds_cho_duyet", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR"],
+                Name = "ds_cho_duyet", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR", "PLAN", "PKG", "ACC"],
                 Description = "Các yêu cầu đang chờ NGƯỜI HỎI duyệt (theo quyền duyệt của người hỏi): loại, số, người gửi, hạn, quá hạn.",
                 InputSchemaJson = Schema(("loai", "string", "Mã loại duyệt (vd PURCHASE_ORDER) – trống = mọi loại")),
                 RunAsync = async (ctx, a) => ctx.AskingUserId == null ? new { note = "Không xác định được người hỏi – không có danh sách chờ duyệt cá nhân", items = Array.Empty<object>() }
@@ -90,7 +90,7 @@ namespace AppDelicare.Services.Implement.Agent
             },
             new AgentToolDef
             {
-                Name = "canh_bao", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR"],
+                Name = "canh_bao", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR", "PLAN", "PKG", "ACC"],
                 Description = "Cảnh báo đang mở (như chuông cảnh báo): tồn dưới tối thiểu, lô cận hạn / giữ, nhiệt độ vượt ngưỡng, phản ánh quá hạn, duyệt chờ, thiếu người ca…",
                 InputSchemaJson = Schema(),
                 RunAsync = async (ctx, _) =>
@@ -132,7 +132,7 @@ namespace AppDelicare.Services.Implement.Agent
             },
             new AgentToolDef
             {
-                Name = "du_bao_thieu_hut", ScreenId = "scm-requirement", Agents = ["VIVI", "WH", "KITCHEN", "PROC"],
+                Name = "du_bao_thieu_hut", ScreenId = "scm-requirement", Agents = ["VIVI", "WH", "KITCHEN", "PROC", "PLAN"],
                 Description = "Nhu cầu nguyên liệu N ngày tới (mặc định 7) so tồn lũy kế: thiếu gì, ngày nào phải đặt (như màn Nhu cầu nguyên liệu 7 ngày).",
                 InputSchemaJson = Schema(("tu_ngay", "string", "Từ ngày (trống = ngày mai)"), ("so_ngay", "integer", "Số ngày (mặc định 7, tối đa 14)")),
                 RunAsync = async (ctx, a) => Data(await Svc<IMaterialRequirementService>(ctx).GetHorizon(new MaterialHorizonRequest
@@ -171,14 +171,14 @@ namespace AppDelicare.Services.Implement.Agent
             },
             new AgentToolDef
             {
-                Name = "ke_hoach_ngay", ScreenId = "prod-plan", Agents = ["VIVI", "KITCHEN"],
+                Name = "ke_hoach_ngay", ScreenId = "prod-plan", Agents = ["VIVI", "KITCHEN", "PLAN"],
                 Description = "Kế hoạch sản xuất các ngày (như màn Kế hoạch 7 ngày tới): trạng thái từng ngày, bị giữ lại, thiếu nguyên liệu.",
                 InputSchemaJson = Schema(("tu_ngay", "string", "Từ ngày (trống = hôm nay)"), ("den_ngay", "string", "Đến ngày (trống = 6 ngày sau)")),
                 RunAsync = async (ctx, a) => Data(await Svc<IProductionPlanService>(ctx).GetDays(new ProductionPlanDaysRequest { From = Date(ctx, a, "tu_ngay"), To = Date(ctx, a, "den_ngay", 6) })),
             },
             new AgentToolDef
             {
-                Name = "thuc_don_tuan", ScreenId = "menu-menu", Agents = ["KITCHEN"],
+                Name = "thuc_don_tuan", ScreenId = "menu-menu", Agents = ["KITCHEN", "PLAN"],
                 Description = "Thực đơn tuần (như màn Thực đơn tuần): món theo ngày × buổi × lựa chọn.",
                 InputSchemaJson = Schema(("tuan", "string", "Một ngày trong tuần cần xem (trống = tuần này)")),
                 RunAsync = async (ctx, a) => Data(await Svc<IMenuService>(ctx).GetWeek(new MenuWeekRequest { WeekStart = Date(ctx, a, "tuan") })),
@@ -224,7 +224,7 @@ namespace AppDelicare.Services.Implement.Agent
             // ---------------- AI-4 – nguồn sự kiện (Hermes cron 5 phút)
             new AgentToolDef
             {
-                Name = "lay_su_kien", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "KNOW", "SALES", "PROC", "LOG", "HR"],
+                Name = "lay_su_kien", ScreenId = null, Agents = ["VIVI", "WH", "KITCHEN", "QA", "KNOW", "SALES", "PROC", "LOG", "HR", "PLAN", "PKG", "ACC"],
                 Description = "Sự kiện mới từ mốc since: sự cố gấp, duyệt mới / quá hạn, job đã chạy / lỗi, phản ánh mới, cảnh báo đang mở. Gọi lần sau với since = next. Mỗi sự kiện có key ổn định – đừng xử lý trùng.",
                 InputSchemaJson = Schema(("since", "string", "Mốc yyyy-MM-ddTHH:mm:ss (giờ VN) – lấy từ next lần trước; trống = 24 giờ qua")),
                 RunAsync = async (ctx, a) =>

@@ -14,7 +14,7 @@ namespace AppDelicare.Services.Implement.Agent
         [
             new AgentCommandDef
             {
-                Code = "propose_note_update", Title = "Sửa / thêm ghi chú kho tri thức", Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR", "KNOW"],
+                Code = "propose_note_update", Title = "Sửa / thêm ghi chú kho tri thức", Agents = ["VIVI", "WH", "KITCHEN", "QA", "SALES", "PROC", "LOG", "HR", "PLAN", "PKG", "ACC", "KNOW"],
                 Screen = "knowledge", ToolScreen = string.Empty, Action = PermissionAction.View,
                 Description = "Đề xuất SỬA (hoặc thêm mới) 1 ghi chú ở thư mục nghiệp vụ: đường dẫn + toàn bộ nội dung markdown mới (giữ frontmatter; source: human sau khi duyệt). "
                     + "Chủ thư mục xác nhận; SOP / quyết định sau đó vẫn phải Gửi duyệt SOP mới có hiệu lực.",

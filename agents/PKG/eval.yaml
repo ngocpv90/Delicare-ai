@@ -1,0 +1,28 @@
+# Bộ câu nghiệm thu agent PKG (AI-16, D-133). Chạy: node tools/agent-eval/run.mjs PKG
+agent: PKG
+webUser: uat.ops-log
+cases:
+  - id: pkg-hop-khay
+    question: Khách nào đang giữ nhiều hộp nhất?
+    tool: hop_khay
+    args: {}
+    expect:
+      status: 200
+  - id: pkg-vuot-nguong
+    question: Khách nào vượt ngưỡng thất thoát?
+    tool: hop_khay
+    args: { chi_vuot_nguong: true }
+    expect:
+      status: 200
+  - id: pkg-ve-sinh
+    question: Hôm nay vệ sinh khay tới đâu?
+    tool: lo_ve_sinh
+    args: {}
+    expect:
+      status: 200
+  - id: pkg-tra-hop-phieu-sai
+    question: Khách trả 20 hộp theo phiếu PG-KHONG-CO
+    tool: propose_container_return
+    args: { so_phieu_giao: PG-KHONG-CO, so_tra: 20, ly_do: "tài xế báo" }
+    expect:
+      status: 400

@@ -128,11 +128,15 @@
       "agent": "PLAN",
       "cron": "40 20 * * *",
       "at": "20:40",
-      "title": "Tóm tắt thiếu hụt sau MRP",
-      "tools": [],
+      "title": "Tóm tắt thiếu hụt ngày mai sau MRP 20:30 → cảnh báo Mua hàng nếu phải đặt gấp",
+      "tools": [
+        "du_bao_thieu_hut",
+        "ke_hoach_ngay",
+        "gui_canh_bao"
+      ],
       "coreJob": "Mrp",
-      "wave": 2,
-      "enabled": false
+      "wave": 3,
+      "enabled": true
     },
     { "id": "proc-plan",
       "agent": "PROC",
@@ -186,6 +190,33 @@
       ],
       "coreJob": "MarkAbsent",
       "wave": 2,
+      "enabled": true
+    },
+    { "id": "pkg-overdue",
+      "agent": "PKG",
+      "cron": "0 16 * * *",
+      "at": "16:00",
+      "title": "Khách giữ hộp quá hạn / vượt ngưỡng thất thoát → cảnh báo giao vận",
+      "tools": [
+        "hop_khay",
+        "gui_canh_bao"
+      ],
+      "coreJob": null,
+      "wave": 3,
+      "enabled": true
+    },
+    { "id": "acc-month",
+      "agent": "ACC",
+      "cron": "30 8 2 * *",
+      "at": "08:30 ngày 2",
+      "title": "Tóm tắt đối chiếu AMIS tháng trước + khách vượt ngưỡng thất thoát hộp → cảnh báo Kế toán",
+      "tools": [
+        "doi_chieu_amis",
+        "hop_khay",
+        "gui_canh_bao"
+      ],
+      "coreJob": null,
+      "wave": 3,
       "enabled": true
     }
   ]
