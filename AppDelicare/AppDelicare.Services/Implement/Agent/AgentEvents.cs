@@ -96,7 +96,7 @@ namespace AppDelicare.Services.Implement.Agent
     public class AgentIncidentService(IUnitOfWork unitOfWork, IClock clock, ICurrentActor currentActor, IOptionsMonitor<AgentOptions> options) : IAgentIncidentService
     {
         public const string Operation = "agent_event";
-        private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(3) };
+        private static readonly HttpClient Http = new() { Timeout = Timeout.InfiniteTimeSpan }; // thời hạn theo Agent:WebhookTimeoutSeconds (mỗi lần gửi)
         private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web) { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
         public static string KeyFor(NotificationRequest r) => "INC:" + (string.IsNullOrWhiteSpace(r.IdempotencyKey) ? r.Template + ":" + Guid.NewGuid().ToString("N") : r.IdempotencyKey.Trim());
@@ -131,7 +131,9 @@ namespace AppDelicare.Services.Implement.Agent
                 {
                     try
                     {
-                        using var res = await Http.PostAsync(o.HermesWebhookUrl, new StringContent(json, System.Text.Encoding.UTF8, "application/json"), ct);
+                        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                        cts.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(o.WebhookTimeoutSeconds, 1, 60)));
+                        using var res = await Http.PostAsync(o.HermesWebhookUrl, new StringContent(json, System.Text.Encoding.UTF8, "application/json"), cts.Token);
                         status = (int)res.StatusCode;
                         logStatus = res.IsSuccessStatusCode ? "Sent" : "Failed";
                     }

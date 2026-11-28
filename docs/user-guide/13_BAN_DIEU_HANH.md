@@ -179,3 +179,10 @@ Tab thứ 4 của **Bảng điều hành**, chỉ **CEO, COO, FIN-IT, Kế toán
 - **Số AMIS tháng**: xem các chỉ tiêu, chi tiết khoản mục từng tài khoản, **dòng chưa phân loại** (đang tính vào "khác").
 - **Quy tắc phân loại**: bảng *Tài khoản + từ khóa trong diễn giải (không dấu, nguyên từ, cách nhau |) hoặc TK đối ứng → khoản mục*; dòng sổ lấy quy tắc đầu tiên khớp. Kế toán thêm / sửa / xóa dòng → **Lưu quy tắc** → nhập lại sổ để phân loại lại.
 - Lớp **Tạm tính** được chụp hằng đêm 23:30 (job *Kết quả kinh doanh – số tạm tính*) để có lịch sử khi chưa có số AMIS.
+
+### Báo cáo kết quả kinh doanh đầy đủ (RPT-1.3)
+
+- Ngay dưới các thẻ chỉ số: khung **Báo cáo kết quả kinh doanh** – công tắc **Tháng | Lũy kế năm** và **Chính thức · AMIS | Tạm tính**.
+- **Chính thức**: bảng KQKD theo bố cục báo cáo kế toán – Doanh thu bán hàng (theo bữa) · Giá vốn hàng bán (Nguyên vật liệu trực tiếp theo nhóm, Nhân công trực tiếp, Chi phí sản xuất chung theo khoản mục) · **Lợi nhuận gộp** · **Chi phí bán hàng & quản lý** (bán hàng, quản lý doanh nghiệp) · **Lợi nhuận thuần** · Thu nhập / chi phí khác · **Lợi nhuận trước thuế** · ROA / ROE theo tháng; cột % doanh thu, tháng trước. Bảng **theo quý** (quý chưa đủ 3 tháng ghi số tháng). **12 biểu đồ xu hướng** 12 tháng (doanh thu, giá vốn, lợi nhuận gộp, chi phí, lợi nhuận thuần / trước thuế, % giá vốn / doanh thu, các biên lợi nhuận, ROA, ROE). **Cơ cấu giá vốn** tháng (biểu đồ tròn + bảng).
+- **Tạm tính**: biểu đồ 12 tháng các số Delicare tự tính (doanh thu, nguyên vật liệu, lãi gộp theo NVL, % NVL / DT, bao bì, số suất) – chụp hằng đêm.
+- Lịch sử 01 – 08/2026 đã nạp sẵn từ báo cáo kế toán (công cụ `tools/rpt1`, IT chạy một lần); từ tháng 9 Kế toán **Nhập sổ AMIS** mỗi tháng.

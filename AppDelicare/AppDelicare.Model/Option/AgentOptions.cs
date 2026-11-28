@@ -32,6 +32,9 @@ namespace AppDelicare.Model.Option
         /// <summary>AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt.</summary>
         public string? HermesWebhookUrl { get; set; }
 
+        /// <summary>Thời hạn chờ webhook Hermes (giây) – quá hạn thì bỏ qua, nghiệp vụ vẫn chạy.</summary>
+        public int WebhookTimeoutSeconds { get; set; } = 3;
+
         /// <summary>AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục app-delicare-agents).</summary>
         public string SchedulesFile { get; set; } = "app-delicare-agents/schedules.json";
 

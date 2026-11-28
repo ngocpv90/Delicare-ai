@@ -128,7 +128,7 @@ namespace AppDelicare.Services.Implement
             R("621", "lon|heo|ba chi|nac vai|suon|chan gio", "Thịt lợn"), R("621", "bo ", "Thịt bò"), R("621", "trau", "Thịt trâu"), R("621", "ga |vit|canh ga|dui ga|uc ga", "Thịt gia cầm"),
             R("621", "ca |tom|muc|ngao|hai san", "Thủy hải sản"), R("621", "trung", "Trứng"), R("621", "gao", "Gạo"), R("621", "cha |gio ", "Giò chả"),
             R("621", "muoi|hat nem|mi chinh|duong|nuoc mam|dau an|dau hao|tuong|bot canh|tieu|toi |hanh kho", "Gia vị"), R("621", "chuoi|cam |tao|dua hau|buoi|thanh long|hoa qua", "Hoa quả"),
-            R("621", "sua|banh|xoi|xuc xich", "Bữa sáng mua sẵn"), R("621", "rau|cai|bi |cu |qua", "Rau củ quả"), R("621", "bot|mien|bun|pho|dau xanh", "Đồ khô"),
+            R("621", "sua|banh|xoi|xuc xich", "Đồ ăn sáng mua sẵn"), R("621", "rau|cai|bi |cu |qua", "Rau củ quả"), R("621", "bot|mien|bun|pho|dau xanh", "Đồ khô"),
             C("627", "2141", "Khấu hao TSCĐ"), C("627", "3383", "BHXH"), C("627", "153", "Đũa, thìa, hộp…"),
             R("627", "dien", "Điện"), R("627", "nuoc sach|nuoc", "Nước sạch"), R("627", "gas", "Gas"), R("627", "ve sinh|rua|nuoc tay|khau trang", "Đồ dùng vệ sinh"), R("627", "dung cu|thiet bi", "Dụng cụ"),
             C("641", "334", "Lương"), C("641", "2141", "Khấu hao TSCĐ"), R("641", "xang|dau", "Xăng dầu"), R("641", "quang cao|mkt|marketing|chup anh|quay phim|in an", "Marketing"), R("641", "tiep khach|cong tac", "Tiếp khách, công tác"),
@@ -419,9 +419,9 @@ namespace AppDelicare.Services.Implement
                 if (sa != null)
                 {
                     o[Prefix + "NET_OPERATING"] = rev.Value - cogs.Value - sa.Value;
-                    if (ti != null && te != null)
+                    // 711 / 811 không phát sinh → AMIS không xuất sổ → tính 0 (đủ 6 TK chính là tính LN trước thuế).
                     {
-                        decimal pbt = rev.Value - cogs.Value - sa.Value + ti.Value - te.Value;
+                        decimal pbt = rev.Value - cogs.Value - sa.Value + (ti ?? 0) - (te ?? 0);
                         o[Prefix + "PROFIT_BEFORE_TAX"] = pbt;
                         decimal? Avg(string k) => v.TryGetValue($"{Prefix}{k}_END", out var e) && v.TryGetValue($"{Prefix}{k}_BEGIN", out var b) && e + b != 0 ? (e + b) / 2 : null;
                         if (Avg("TOTAL_ASSETS") is { } ta) o[Prefix + "ROA"] = Math.Round(pbt / ta * 100m, 2);
