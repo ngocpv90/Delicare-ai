@@ -1152,3 +1152,7 @@ tr.bb-late td{background:#FFF5F4}
 .rp-charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 8px 0; }
 .rp-ch { border: 1px solid #EEF1E9; border-radius: 12px; padding: 10px 12px; min-width: 0; }
 .rp-empty { height: 150px; display: flex; align-items: center; justify-content: center; }
+/* RPT-1.4: nhận xét tự động */
+.rp-cm { border: 1px solid #E4E9DC; background: #FAFCF6; border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.rp-c { line-height: 1.5; }
+.rp-c.warn { color: #8A5A00; } .rp-c.good { color: #2E6B12; }

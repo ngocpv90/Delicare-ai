@@ -186,3 +186,9 @@ Tab thứ 4 của **Bảng điều hành**, chỉ **CEO, COO, FIN-IT, Kế toán
 - **Chính thức**: bảng KQKD theo bố cục báo cáo kế toán – Doanh thu bán hàng (theo bữa) · Giá vốn hàng bán (Nguyên vật liệu trực tiếp theo nhóm, Nhân công trực tiếp, Chi phí sản xuất chung theo khoản mục) · **Lợi nhuận gộp** · **Chi phí bán hàng & quản lý** (bán hàng, quản lý doanh nghiệp) · **Lợi nhuận thuần** · Thu nhập / chi phí khác · **Lợi nhuận trước thuế** · ROA / ROE theo tháng; cột % doanh thu, tháng trước. Bảng **theo quý** (quý chưa đủ 3 tháng ghi số tháng). **12 biểu đồ xu hướng** 12 tháng (doanh thu, giá vốn, lợi nhuận gộp, chi phí, lợi nhuận thuần / trước thuế, % giá vốn / doanh thu, các biên lợi nhuận, ROA, ROE). **Cơ cấu giá vốn** tháng (biểu đồ tròn + bảng).
 - **Tạm tính**: biểu đồ 12 tháng các số Delicare tự tính (doanh thu, nguyên vật liệu, lãi gộp theo NVL, % NVL / DT, bao bì, số suất) – chụp hằng đêm.
 - Lịch sử 01 – 08/2026 đã nạp sẵn từ báo cáo kế toán (công cụ `tools/rpt1`, IT chạy một lần); từ tháng 9 Kế toán **Nhập sổ AMIS** mỗi tháng.
+
+### Nhận xét tự động + xuất file (RPT-1.4)
+
+- Đầu khung **Báo cáo kết quả kinh doanh**: **Nhận xét tự động** (✓ tốt · ⚠ cần chú ý · • thông tin): doanh thu tăng / giảm so tháng trước và cùng kỳ, giá vốn tăng nhanh hơn doanh thu, % giá vốn / doanh thu, lợi nhuận trước thuế và biên lợi nhuận, **3 khoản chi phí tăng mạnh nhất**. Chưa có số AMIS → nhận xét theo số tạm tính (doanh thu, % NVL / doanh thu, nhóm NVL tăng mạnh).
+- Ngưỡng ở cấu hình `BusinessRules:Pl` (IT / Kế toán đề xuất chỉnh): doanh thu đổi ≥ 5 % mới nêu; giá vốn nhanh hơn doanh thu ≥ 2 điểm %; khoản chi phí tăng ≥ 20 % và ≥ 10 triệu; biên lợi nhuận trước thuế < 5 %; % NVL / doanh thu (tạm tính) > 55 %.
+- **Xuất Excel** / **In PDF** (người có quyền Xuất – CEO, COO, FIN-IT, Kế toán): báo cáo KQKD tháng + lũy kế (% doanh thu), nhận xét, thẻ chỉ số, trang 2 theo quý; tên tệp `Ket-qua-kinh-doanh-<yyyy-MM>`.
