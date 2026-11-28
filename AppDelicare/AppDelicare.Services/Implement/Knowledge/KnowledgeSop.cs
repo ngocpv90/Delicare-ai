@@ -252,10 +252,16 @@ namespace AppDelicare.Services.Implement.Knowledge
         // ---------------- việc agent theo dõi (98)
         private static readonly Regex TaskLine = new(@"^- (Hạn|Người phụ trách|Trạng thái):\s*(.*)$", RegexOptions.Multiline);
 
-        public async Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone)
+        public Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone) => GetTasksCore(includeDone, mine: false);
+
+        /// <summary>AI-22.4: người được giao (frontmatter assignee_id) thấy việc của mình kể cả không có quyền thư mục 98.</summary>
+        private static bool AssignedTo(Note n, Guid? user) => user is { } u && Guid.TryParse(n.Meta.GetValueOrDefault("assignee_id"), out var a) && a == u;
+
+        private async Task<IResults<KnowledgeTaskModel>> GetTasksCore(bool includeDone, bool mine)
         {
-            var rights = await RightsAsync(WebCaller());
-            var list = All().Where(n => n.Folder == "98" && !IsTaskLedger(n.Path) && rights.NoteVisible(n)).Select(n =>
+            var caller = WebCaller();
+            var rights = await RightsAsync(caller);
+            var list = All().Where(n => n.Folder == "98" && !IsTaskLedger(n.Path) && (mine ? AssignedTo(n, caller.UserId) : rights.NoteVisible(n) || AssignedTo(n, caller.UserId))).Select(n =>
             {
                 var lines = TaskLine.Matches(n.Body).ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value.Trim());
                 string st = Slug(lines.GetValueOrDefault("Trạng thái") ?? "đang theo dõi");
@@ -277,7 +283,7 @@ namespace AppDelicare.Services.Implement.Knowledge
             var caller = WebCaller();
             var rights = await RightsAsync(caller);
             var n = All().FirstOrDefault(x => x.Folder == "98" && string.Equals(x.Path, request.Path, StringComparison.OrdinalIgnoreCase));
-            if (n == null || !rights.NoteVisible(n))
+            if (n == null || !(rights.NoteVisible(n) || AssignedTo(n, caller.UserId))) // AI-22.4: người được giao bấm Xong việc của mình
             {
                 return Status<KnowledgeSaveResultModel>(404, "Không có việc này");
             }

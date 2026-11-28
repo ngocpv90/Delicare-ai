@@ -234,6 +234,14 @@ Chấm công hợp lệ khi nằm trong bán kính bếp (GPS), hoặc quét QR 
 | `NV` | Nhân viên | Employee.EmployeeCode / Code (= tên đăng nhập) | chỉ nhân viên mới |
 | `SPL` | Sản phẩm bán lẻ (RETAIL-1) | RetailProduct.Code | bảng mới 2026-11-27; seed [DEMO] dev SPL-00001…
 
+**Sổ văn thư trong Kho tài liệu (AI-22.4, D-141 i – Quyết định tự chọn QĐ-AI224-1):** số **theo năm** (đúng thông lệ văn thư, số quay về 1 mỗi năm), máy chủ cấp khi vào sổ, đếm từ phiếu mô tả trong kho (không bảng đếm), khóa theo vùng chống trùng. Không tiền tố nào là phần đầu của tiền tố khác.
+
+| Tiền tố | Đối tượng | Dạng | Ghi chú |
+|---|---|---|---|
+| `VD` | Công văn đến (vùng 05) | `VD-YYYY-NNNN` | frontmatter `so_vao_so` |
+| `VI` | Công văn đi (vùng 05) | `VI-YYYY-NNNN` | frontmatter `so_vao_so` |
+| `BH` | Biên bản họp giao ban (vùng 15) | `BH-YYYY-NNN` | frontmatter `so_vao_so` |
+
 **Chứng từ (dạng B)**
 
 | Tiền tố | Mẫu | Chứng từ | Ghi vào cột | Trước D-63 |

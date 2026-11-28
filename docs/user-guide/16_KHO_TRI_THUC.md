@@ -106,6 +106,12 @@ Kho lưu cả **tài liệu doanh nghiệp** (công văn, biên bản họp, h�
 - **Nhật ký truy cập**: mỗi lần xem / tải tài liệu ở **hợp đồng, chứng từ gốc, hồ sơ cá nhân, BOD** được ghi lại (ai, lúc nào, xem hay tải); người có quyền Sửa vùng bấm **Nhật ký truy cập** để xem.
 - **Hết hạn lưu giữ**: thứ Hai hằng tuần hệ thống nhắc chủ vùng danh sách tài liệu đã quá hạn lưu giữ – **không tự xóa**, chủ vùng quyết định chuyển Lưu trữ.
 
+## AI-22.4 – Sổ công văn, biên bản họp, việc được giao (28/11/2026)
+
+- **Sổ công văn** (vùng **05 Công văn**, Hành chính sửa – Ban GĐ xem): **Vào sổ công văn đến / đi** → chọn tệp, số / ký hiệu, ngày, nơi gửi (nhận), trích yếu; tùy chọn **người xử lý + hạn**. Hệ thống cấp **số vào sổ theo năm**: `VD-2026-0001` (đến), `VI-2026-0001` (đi). Sổ hiện cột Việc giao: Đang xử lý / Quá hạn / Xong.
+- **Biên bản họp** (vùng **15 Họp & giao ban**): **Lập biên bản họp** → tên, ngày, chủ trì, thành phần, nội dung, kết luận, **việc giao** (việc, người, hạn). Số `BH-2026-001`; mỗi việc giao tự thành **việc theo dõi**.
+- **Việc tôi được giao** (nút trên đầu màn Kho tri thức): danh sách việc từ công văn / biên bản họp giao cho anh/chị → bấm **Xong** (hoặc **Mở lại**); người giao thấy ngay trên sổ. 07:00 hằng ngày bot nhắc việc **đến hạn ngày mai** hoặc **quá hạn**.
+
 ## Dùng màn Kho tài liệu & tri thức – `knowledge`
 
 Tìm, đọc, tải lên tài liệu theo vùng được cấp quyền (AI-22, D-141).

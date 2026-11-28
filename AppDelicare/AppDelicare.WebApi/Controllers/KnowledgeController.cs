@@ -108,6 +108,26 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("HelpFeedback")]
         public Task<IActionResult> HelpFeedback([FromBody] KnowledgeHelpFeedbackRequest request) => Run(nameof(HelpFeedback), () => _service.HelpFeedback(request ?? new KnowledgeHelpFeedbackRequest()));
 
+        /// <summary>AI-22.4 (D-141 i): sổ công văn (folder=05) / biên bản họp (folder=15) theo năm – số vào sổ, nơi gửi / nhận, người xử lý, hạn, tình trạng việc giao.</summary>
+        [HttpGet("GetRegister")]
+        public Task<IActionResult> GetRegister([FromQuery] string? folder, [FromQuery] int? year) => Run(nameof(GetRegister), () => _service.GetRegister(folder, year));
+
+        /// <summary>AI-22.4: chọn người xử lý / người được giao (tên đăng nhập + họ tên) – người có quyền Sửa vùng 05 / 15.</summary>
+        [HttpGet("GetAssignees")]
+        public Task<IActionResult> GetAssignees([FromQuery] string? keyword) => Run(nameof(GetAssignees), () => _service.GetAssignees(keyword));
+
+        /// <summary>AI-22.4: lập biên bản họp (mẫu 99) – số BH-YYYY-NNN, mỗi việc giao thành việc theo dõi 98.</summary>
+        [HttpPost("CreateMeeting")]
+        public Task<IActionResult> CreateMeeting([FromBody] KnowledgeMeetingRequest request) => Run(nameof(CreateMeeting), () => _service.CreateMeeting(request ?? new KnowledgeMeetingRequest()));
+
+        /// <summary>AI-22.4: việc theo dõi được giao cho tôi (công văn, họp) – bấm Xong qua SetTask.</summary>
+        [HttpGet("GetMyTasks")]
+        public Task<IActionResult> GetMyTasks([FromQuery] bool includeDone) => Run(nameof(GetMyTasks), () => _service.GetMyTasks(includeDone));
+
+        /// <summary>AI-22.4: người được giao bấm Xong / mở lại việc của mình.</summary>
+        [HttpPost("SetMyTask")]
+        public Task<IActionResult> SetMyTask([FromBody] KnowledgeTaskSetRequest request) => Run(nameof(SetMyTask), () => _service.SetMyTask(request ?? new KnowledgeTaskSetRequest()));
+
         /// <summary>AI-22.2: chuyển Lưu trữ (thay xóa) – quyền Xóa vùng.</summary>
         [HttpPost("Archive")]
         public Task<IActionResult> Archive([FromBody] KnowledgePathRequest request) => Run(nameof(Archive), () => _service.Archive(request ?? new KnowledgePathRequest()));

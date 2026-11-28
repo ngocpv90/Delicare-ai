@@ -20,6 +20,7 @@ namespace AppDelicare.Tests.Agent
     /// AI-1 (D-133): AppDelicare.ToolGateway – MCP <c>/mcp</c> (Streamable HTTP, SDK ModelContextProtocol 2.4.0) liệt kê + gọi <c>ping</c>; REST <c>/tools/{name}</c>
     /// cùng bộ công cụ; <c>/health</c> 200; header khóa agent (AI-2) đi qua cả MCP và REST; ToolGateway không truy cập CSDL riêng.
     /// </summary>
+    [Collection(AppDelicare.Tests.Integration.StaticLoggerCollection.Name)] // AI-22.4: chạy không song song – MCP ping hết giờ khi cả bộ test chạy nặng (chập chờn từ RPT-1.3)
     public class ToolGatewayAi1Tests : IClassFixture<ToolGatewayAi1Tests.GatewayFactory>
     {
         public sealed class GatewayFactory : WebApplicationFactory<AppDelicare.ToolGateway.Program>

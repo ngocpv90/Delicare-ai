@@ -637,6 +637,16 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-22.4 – Sổ công văn, biên bản họp, việc được giao (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Hành chính (CEO-PMO – cần tạo uat.ceo-pmo) | 05 Công văn → Vào sổ công văn đến, giao Thủ kho, hạn mai | Số VD-2026-NNNN; cột Việc giao "Đang xử lý 0/1" |
+| 2 | CEO | 15 Họp & giao ban → Lập biên bản họp, 2 việc giao | Số BH-2026-NNN; 2 việc theo dõi |
+| 3 | Thủ kho (uat.ops-wh) | Kho tri thức → Việc tôi được giao → Xong | Việc chuyển Xong; sổ / biên bản hiện Xong |
+| 4 | Thủ kho | Mở vùng 05 | Không thấy (không có quyền sổ công văn) |
+| 5 | Thủ kho | 07:00 hôm sau (việc hạn mai) | Bot nhắc "Việc được giao sắp / quá hạn" |
+
 ## AI-22.3 – Nút "?" + thư viện Hướng dẫn sử dụng (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |
