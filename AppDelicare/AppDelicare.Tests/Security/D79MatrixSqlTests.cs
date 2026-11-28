@@ -71,13 +71,13 @@ namespace AppDelicare.Tests.Security
 
                 var actual = new Dictionary<(string, string), string>();
                 await using (var cmd = new SqlCommand("""
-                    SELECT g.Name, m.MetaLink,
+                    SELECT ISNULL(NULLIF(g.Code, ''), g.Name), m.MetaLink,
                            CONCAT(MAX(CAST(r.AllowAccess AS INT)), MAX(CAST(r.AllowAdd AS INT)), MAX(CAST(r.AllowEdit AS INT)), MAX(CAST(r.AllowDelete AS INT)),
                                   MAX(CAST(r.AllowPrint AS INT)), MAX(CAST(r.AllowExport AS INT)), MAX(CAST(r.AllowImport AS INT)))
                     FROM UserRole r JOIN UserGroup g ON g.Id = r.UserGroupId AND g.IsDeleted = 0
                     JOIN ObjectMenu m ON m.Id = r.ObjectMenuId AND m.IsDeleted = 0 AND m.IsActive = 1 AND m.LevelShow = 2
                     WHERE r.IsDeleted = 0 AND m.MetaLink NOT IN ('#/bot-van-hanh', '#/bot-dieu-hanh')
-                    GROUP BY g.Name, m.MetaLink
+                    GROUP BY ISNULL(NULLIF(g.Code, ''), g.Name), m.MetaLink
                     """, cn, tx))
                 await using (var reader = await cmd.ExecuteReaderAsync())
                 {

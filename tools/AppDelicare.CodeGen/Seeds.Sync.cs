@@ -144,6 +144,9 @@ public static partial class Seeds
                 OR ISNULL(ur.AllowDelete, 0) <> ISNULL(a.D, 0) OR ISNULL(ur.AllowPrint, 0) <> ISNULL(a.P, 0) OR ISNULL(ur.AllowExport, 0) <> ISNULL(a.X, 0)
                 OR ISNULL(ur.AllowImport, 0) <> ISNULL(a.I, 0));
             INSERT INTO @Out
+            SELECT N'Quyền – nhóm trùng', r.Name, CONCAT(COUNT(g.Id), N' nhóm cùng mã – giữ 1 (dọn: DB/scripts/SYNC1_dedupe_usergroups.sql)') FROM @Roles r
+            JOIN dbo.UserGroup g ON ISNULL(NULLIF(g.Code, N''), g.Name) = r.Name AND ISNULL(g.IsDeleted, 0) = 0 GROUP BY r.Name HAVING COUNT(g.Id) > 1;
+            INSERT INTO @Out
             SELECT N'Quyền – thiếu nhóm', r.Name, N'chưa có nhóm quyền chuẩn' FROM @Roles r
             WHERE NOT EXISTS (SELECT 1 FROM dbo.UserGroup g WHERE ISNULL(NULLIF(g.Code, N''), g.Name) = r.Name AND ISNULL(g.IsDeleted, 0) = 0);
             """);

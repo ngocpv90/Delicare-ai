@@ -75,11 +75,11 @@ public static partial class Seeds
             INSERT INTO [dbo].[UserGroup] (Id, Name, Code, Description, IsDefault, CreatedDate, CreatedBy, IsDeleted)
             SELECT NEWID(), N'AGENT_' + a.Code, N'AGENT_' + a.Code, N'Nhóm quyền của agent ' + a.Name + N' (AI-2, D-133) – chỉ Xem', 0, @Now, @SeedBy, 0
             FROM @A a
-            WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] g WHERE g.Name = N'AGENT_' + a.Code AND g.IsDeleted = 0);
+            WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] g WHERE ISNULL(NULLIF(g.Code, N''), g.Name) = N'AGENT_' + a.Code AND g.IsDeleted = 0);
 
             INSERT INTO [dbo].[UserClaim] (Id, UserId, UserGroupId, CreatedDate, CreatedBy, IsDeleted)
             SELECT NEWID(), a.UserId, g.Id, @Now, @SeedBy, 0
-            FROM @A a JOIN [dbo].[UserGroup] g ON g.Name = N'AGENT_' + a.Code AND g.IsDeleted = 0
+            FROM @A a JOIN [dbo].[UserGroup] g ON ISNULL(NULLIF(g.Code, N''), g.Name) = N'AGENT_' + a.Code AND g.IsDeleted = 0
             WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserClaim] c WHERE c.UserId = a.UserId AND c.UserGroupId = g.Id AND c.IsDeleted = 0);
 
             INSERT INTO [dbo].[BotConfiguration] (Id, IntegrationChannelId, BotCode, BotName, TargetAudience, WebhookPath, BotStatus, SecretReference, Note, CreatedDate, CreatedBy, IsDeleted)
@@ -108,7 +108,7 @@ public static partial class Seeds
             INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
             SELECT NEWID(), g.Id, m.Id, 1, 0, 0, 0, 0, 0, 0, @Now, @SeedBy, 0
             FROM @R r
-            JOIN [dbo].[UserGroup] g ON g.Name = r.GroupName AND g.IsDeleted = 0
+            JOIN [dbo].[UserGroup] g ON ISNULL(NULLIF(g.Code, N''), g.Name) = r.GroupName AND g.IsDeleted = 0
             JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
             WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
 

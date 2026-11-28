@@ -64,9 +64,25 @@
     const old = document.getElementById('navNotice'); if (old) old.remove();
     if (!Store.isLive || !(window.DC_HOST && DC_HOST.user && DC_HOST.user.isAdmin)) return;
     const msg = !db ? 'Không tải được menu từ máy chủ – đang hiện menu dự phòng.' : db.some(g => OLD_GROUPS.includes(g.name)) ? 'DB chưa chạy script menu MENU-5 (còn nhóm tên cũ).' : '';
-    if (!msg) return;
+    if (!msg) { configCheck(); return; }
     const nav = document.getElementById('navGroups'); if (!nav) return;
     nav.insertAdjacentHTML('beforebegin', `<div id="navNotice" class="nav-notice" role="alert" style="margin:8px 12px;padding:8px 10px;border-radius:8px;background:#fff4e5;color:#8a4b00;font-size:12px;line-height:1.4">${esc(msg)}</div>`);
+  }
+  // DEPLOY-SYNC-1.5 (D-134): admin thấy cảnh báo khi DB lệch bản chuẩn menu / quyền (chưa chạy quy trình cập nhật) – kiểm 1 lần / phiên (máy chủ nhớ 10 phút).
+  let configChecked = false, configResult = null;
+  function configCheck() {
+    if (configChecked) { showConfigCheck(); return; }
+    configChecked = true;
+    Store.query('ConfigCheck/Get').then(x => { configResult = x.ok && x.data; showConfigCheck(); });
+  }
+  // Sidebar dựng lại nhiều lần (khi tải dữ liệu) → vẽ lại cảnh báo từ kết quả đã nhớ.
+  function showConfigCheck() {
+    {
+      const d = configResult; if (!d || !d.supported || !d.count) return;
+      const nav = document.getElementById('navGroups'); if (!nav || document.getElementById('navNotice')) return;
+      const tip = (d.listRow || []).slice(0, 8).map(r => r.kind + ': ' + r.item + (r.detail ? ' – ' + r.detail : '')).join(' · ');
+      nav.insertAdjacentHTML('beforebegin', `<div id="navNotice" class="nav-notice" role="alert" title="${esc(tip)}" style="margin:8px 12px;padding:8px 10px;border-radius:8px;background:#fff4e5;color:#8a4b00;font-size:12px;line-height:1.4">Menu / quyền lệch bản chuẩn ${d.count} dòng – chạy cập nhật DB (Deploy-Database / db-init, deploy/README mục 9b).</div>`);
+    }
   }
   APP._navNotice = navNotice;
   // Menu dự phòng (chế độ DEMO, hoặc khi máy chủ không trả menu): nhóm + thứ tự sinh từ cùng nguồn Seeds.Menu5Groups (CodeGen → catalog.menuGroups, D-93).

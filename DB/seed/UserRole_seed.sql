@@ -11,44 +11,44 @@ BEGIN TRAN;
 -- UserGroup: Name = mã vai trò (bảng UserGroup không có cột Code). 19 nhóm chuẩn (16 cũ + SAL-HEAD, OPS-SCM-HEAD, OPS-WH).
 -- CLAUDE.md 4.3: chỉ THÊM dòng chưa có (nhóm × menu), KHÔNG ghi đè quyền admin đã chỉnh. DB đang chạy đặt lại theo ma trận: DB/scripts/D79_permission_matrix.sql.
 -- Ký hiệu: Q = Thêm + Sửa + Xóa + Nhập · S = Thêm + Sửa · X = Xem · IX = In + Xuất · Duyệt = Xem + Sửa trên mục #/wf-inbox?type=<màn> (D-31).
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'CEO' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'CEO', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'CEO-PMO' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'CEO-PMO', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'COO' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'COO', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-PLAN' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-PLAN', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-SCM' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-SCM', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-WH' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-WH', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-SCM-HEAD' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-SCM-HEAD', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-KIT' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-KIT', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-LOG' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-LOG', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-POS' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-POS', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'OPS-MNT' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-MNT', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'SAL-SALES' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-SALES', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'SAL-CON' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-CON', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'SAL-HEAD' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-HEAD', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'SAL-CS' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-CS', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'FIN-ACC' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'FIN-ACC', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'FIN-HR' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'FIN-HR', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'FIN-IT' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'FIN-IT', 0, @Now, @SeedBy, 0);
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE Name = N'QA' AND IsDeleted = 0)
-    INSERT INTO [dbo].[UserGroup] (Id, Name, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'QA', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'CEO' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'CEO', N'CEO', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'CEO-PMO' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'CEO-PMO', N'CEO-PMO', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'COO' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'COO', N'COO', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-PLAN' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-PLAN', N'OPS-PLAN', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-SCM' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-SCM', N'OPS-SCM', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-WH' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-WH', N'OPS-WH', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-SCM-HEAD' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-SCM-HEAD', N'OPS-SCM-HEAD', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-KIT' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-KIT', N'OPS-KIT', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-LOG' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-LOG', N'OPS-LOG', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-POS' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-POS', N'OPS-POS', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'OPS-MNT' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'OPS-MNT', N'OPS-MNT', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'SAL-SALES' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-SALES', N'SAL-SALES', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'SAL-CON' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-CON', N'SAL-CON', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'SAL-HEAD' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-HEAD', N'SAL-HEAD', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'SAL-CS' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'SAL-CS', N'SAL-CS', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'FIN-ACC' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'FIN-ACC', N'FIN-ACC', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'FIN-HR' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'FIN-HR', N'FIN-HR', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'FIN-IT' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'FIN-IT', N'FIN-IT', 0, @Now, @SeedBy, 0);
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UserGroup] WHERE ISNULL(NULLIF(Code, N''), Name) = N'QA' AND IsDeleted = 0)
+    INSERT INTO [dbo].[UserGroup] (Id, Name, Code, IsDefault, CreatedDate, CreatedBy, IsDeleted) VALUES (NEWID(), N'QA', N'QA', 0, @Now, @SeedBy, 0);
 
 DECLARE @R TABLE (GroupName NVARCHAR(100), MetaLink NVARCHAR(400), A BIT, Ad BIT, E BIT, D BIT, P BIT, X BIT, I BIT);
 INSERT INTO @R VALUES
@@ -2987,7 +2987,7 @@ INSERT INTO @R VALUES
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), g.Id, m.Id, r.A, r.Ad, r.E, r.D, r.P, r.X, r.I, @Now, @SeedBy, 0
 FROM @R r
-JOIN [dbo].[UserGroup] g ON g.Name = r.GroupName AND g.IsDeleted = 0
+JOIN [dbo].[UserGroup] g ON ISNULL(NULLIF(g.Code, N''), g.Name) = r.GroupName AND g.IsDeleted = 0
 JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
 WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
 COMMIT;
