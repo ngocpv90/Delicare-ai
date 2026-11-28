@@ -186,7 +186,8 @@ INSERT INTO @T VALUES
     (N'#/group/14', 1, NULL, 1060, N'Trợ lý AI', N'ai', 1),
     (N'#/ai-agents', 2, N'#/group/14', 1061, N'Trung tâm agent', N'AI', 1),
     (N'#/ai-agent-log', 2, N'#/group/14', 1062, N'Nhật ký agent', N'AI', 1),
-    (N'#/ai-schedule', 2, N'#/group/14', 1063, N'Lịch chạy', N'AI', 1);
+    (N'#/ai-flow', 2, N'#/group/14', 1063, N'Luồng liên phòng', N'AI', 1),
+    (N'#/ai-schedule', 2, N'#/group/14', 1064, N'Lịch chạy', N'AI', 1);
 DECLARE @Changed TABLE (Id UNIQUEIDENTIFIER, Link NVARCHAR(400), What NVARCHAR(400));
 -- 1. Thêm nhóm / mục còn thiếu (mục cấp 2 cần nhóm cha có sẵn – nhóm thêm trước).
 INSERT INTO dbo.ObjectMenu (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)

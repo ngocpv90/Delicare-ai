@@ -10,6 +10,7 @@ du_bao_thieu_hut
 get_lo_can_date
 get_ton_kho
 ghi_nhat_ky
+gui_canh_bao
 hao_hut_khoang
 ke_hoach_mua
 ke_hoach_ngay

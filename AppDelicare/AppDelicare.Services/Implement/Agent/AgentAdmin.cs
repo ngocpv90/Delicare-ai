@@ -312,24 +312,30 @@ namespace AppDelicare.Services.Implement.Agent
             return Results<AgentScheduleModel>.Success(items, "OK");
         }
 
+        /// <summary>AI-11: đường dẫn tệp lịch – <c>Agent:SchedulesFile</c> tuyệt đối, hoặc tương đối tìm từ ContentRoot lên tới 5 cấp. Không thấy → null.</summary>
+        public static string? SchedulesPath(IConfiguration configuration, string contentRoot)
+        {
+            string rel = configuration["Agent:SchedulesFile"] is { Length: > 0 } v ? v : "agents/schedules.json";
+            if (Path.IsPathRooted(rel))
+            {
+                return rel;
+            }
+            var dir = new DirectoryInfo(contentRoot);
+            for (int i = 0; i < 6 && dir != null; i++, dir = dir.Parent)
+            {
+                string candidate = Path.Combine(dir.FullName, rel);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+            return null;
+        }
+
         /// <summary>Đọc <c>Agent:SchedulesFile</c> (mặc định agents/schedules.json – tìm từ ContentRoot lên tới 5 cấp; Docker: gắn thư mục agents).</summary>
         private List<AgentScheduleModel> ReadSchedules()
         {
-            string rel = configuration["Agent:SchedulesFile"] is { Length: > 0 } v ? v : "agents/schedules.json";
-            string? file = Path.IsPathRooted(rel) ? rel : null;
-            if (file == null)
-            {
-                var dir = new DirectoryInfo(env.ContentRootPath);
-                for (int i = 0; i < 6 && dir != null; i++, dir = dir.Parent)
-                {
-                    string candidate = Path.Combine(dir.FullName, rel);
-                    if (File.Exists(candidate))
-                    {
-                        file = candidate;
-                        break;
-                    }
-                }
-            }
+            string? file = SchedulesPath(configuration, env.ContentRootPath);
             if (file == null || !File.Exists(file))
             {
                 return [];

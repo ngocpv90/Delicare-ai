@@ -629,7 +629,8 @@ INSERT INTO @P VALUES
     (N'#/group/14', 1, NULL, 1400, 1400, N'', NULL, 1060, N'Trợ lý AI', N'ai', NULL),
     (N'#/ai-agents', 2, NULL, 0, -1, N'', N'#/group/14', 1061, N'Trung tâm agent', N'AI', NULL),
     (N'#/ai-agent-log', 2, NULL, 0, -1, N'', N'#/group/14', 1062, N'Nhật ký agent', N'AI', NULL),
-    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/14', 1063, N'Lịch chạy', N'AI', NULL);
+    (N'#/ai-flow', 2, NULL, 0, -1, N'', N'#/group/14', 1063, N'Luồng liên phòng', N'AI', NULL),
+    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/14', 1064, N'Lịch chạy', N'AI', NULL);
 INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), p.NewName, p.ShortName, p.Link, NULL, 1, p.NewOrder, 1, 0, @Now, @By, 0
 FROM @P p WHERE p.Lvl = 1 AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);

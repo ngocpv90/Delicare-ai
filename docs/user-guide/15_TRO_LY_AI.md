@@ -44,6 +44,13 @@ Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent;
 3. Bật lại: gạt công tắc – không cần xác nhận.
 4. Thẻ ghi "máy chủ chưa có khóa agent": IT cần đặt biến môi trường `AGENT_KEY_<MÃ>` trên server (`agents/README.md`).
 
+## 4b. Cảnh báo chủ động và Luồng liên phòng (AI-11)
+
+- **Cảnh báo chủ động:** khi có sự kiện (sự cố, cảnh báo, job xong, phản ánh…), agent nhận xét và đưa phương án rồi gửi **1 tin bot** (bot Vận hành; VIVI gửi bot Điều hành) tới người **có quyền Thêm** trên màn liên quan (vd Mua hàng cho Kế hoạch mua). Mỗi sự kiện chỉ gửi 1 lần. Agent chỉ cảnh báo được màn mà chính agent được xem. Người chưa liên kết bot không nhận được tin.
+- **Trợ lý AI › Luồng liên phòng:** mỗi thẻ là một luồng nối các bước cùng mã tương quan: sự kiện → agent đọc dữ liệu → đề xuất → người duyệt → kết quả ghi nghiệp vụ → tin đã gửi. Chọn **Hôm nay / Hôm qua** hoặc ngày; 5 chỉ số: luồng, xong, chờ duyệt, lỗi / từ chối, tin đã gửi. Viền trái bước: xanh = xong, cam = chờ, đỏ = lỗi / từ chối. Quyền xem: như Nhật ký agent (CEO, COO, FIN-IT).
+- **Lịch chạy:** người có quyền Sửa màn Lịch chạy (CEO, COO, FIN-IT) bật / tắt từng việc bằng công tắc ở cột Trạng thái. Tệp lịch `agents/schedules.json` được ghi lại, Hermes đọc lại khi sinh cron. Việc chưa có công cụ (agent chưa bật) không bật được.
+- 4 luồng liên phòng (AGENTS §3): (1) chốt đơn → thiếu hụt → PROC đề xuất đơn mua → duyệt → WH chờ nhận; (4) sự cố ATTP: nhiệt độ lõi < 70°C / giao < 60°C → QA đề xuất giữ lô + cảnh báo, VIVI báo Ban GĐ. Luồng (2) khách báo thiếu suất và (3) hộp thất thoát cần agent CSKH / ACC – bật ở đợt 3.
+
 ## 5. Đọc nhật ký agent
 
 - Lọc theo agent, kết quả, công cụ, khoảng ngày → **Lọc**; **Xem thêm** để tải trang sau.

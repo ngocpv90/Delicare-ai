@@ -61,6 +61,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X |
 | Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — |
 | Trợ lý AI › Trung tâm agent | `ai-agents` | S | — | S | — |
+| Trợ lý AI › Lịch chạy | `ai-schedule` | S | — | S | — |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

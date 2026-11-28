@@ -39,6 +39,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | S (IX) |
 | Trợ lý AI › Trung tâm agent | `ai-agents` | S |
+| Trợ lý AI › Lịch chạy | `ai-schedule` | S |
 <!-- MENU5:END -->
 
 | `adm-reference` | Danh mục dùng chung | **Chỉ xem** các giá trị chọn sẵn (loại suất, loại kho, kênh phản ánh…) và màn / cột đang dùng. Thêm / sửa giá trị = sửa cấu hình máy chủ (liên hệ quản trị hệ thống) |

@@ -6,6 +6,7 @@ du_bao_thieu_hut
 get_lo_can_date
 get_ton_kho
 ghi_nhat_ky
+gui_canh_bao
 lay_su_kien
 ping
 propose_goods_receipt

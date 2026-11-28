@@ -107,7 +107,7 @@ public static partial class Seeds
             "kpi-refresh", "bot-van-hanh", "bot-dieu-hanh",
         ]),
         // AI-6 (D-133): nhóm "Trợ lý AI" – Trung tâm agent, Nhật ký agent, Lịch chạy (CEO / COO / FIN-IT).
-        new("#/group/14", "Trợ lý AI", [], 1060, "ai", ["ai-agents", "ai-agent-log", "ai-schedule"]),
+        new("#/group/14", "Trợ lý AI", [], 1060, "ai", ["ai-agents", "ai-agent-log", "ai-flow", "ai-schedule"]),
     ];
 
     /// <summary>RETAIL-1 (D-135): nhóm × mục Bán lẻ × cờ XemThemSuaXoaInXuatNhap (nguồn: ObjectMenu_retail_seed.sql).</summary>
@@ -178,6 +178,7 @@ public static partial class Seeds
         // AI-6 (D-133): Trợ lý AI + Tri thức.
         ["ai-agents"] = ("Trung tâm agent", "AI"),
         ["ai-agent-log"] = ("Nhật ký agent", "AI"),
+        ["ai-flow"] = ("Luồng liên phòng", "AI"), // AI-11 (D-133)
         ["ai-schedule"] = ("Lịch chạy", "AI"),
         ["knowledge"] = ("Kho tri thức", "AI"),
         ["knowledge?folder=10"] = ("10 Ban GĐ", "AI"),
@@ -368,8 +369,8 @@ public static partial class Seeds
         // AI-6 (D-133): Trợ lý AI – CEO / COO / FIN-IT xem; bật / tắt agent = Sửa Trung tâm agent.
         foreach (string role in new[] { "CEO", "COO", "FIN-IT" })
         {
-            G(role, EditR, ["ai-agents"]);
-            G(role, ViewR, ["ai-agent-log", "ai-schedule"]);
+            G(role, EditR, ["ai-agents", "ai-schedule"]); // AI-11: bật / tắt việc theo lịch = Sửa Lịch chạy
+            G(role, ViewR, ["ai-agent-log", "ai-flow"]);
         }
         // AI-6: Kho tri thức – mọi nhóm nội bộ xem màn + 80 Đào tạo + 99 Mẫu; thư mục theo bộ phận (§7.4), chủ thư mục Sửa; Ban GĐ xem mọi thư mục (kể cả BOD).
         static string K(string folder) => "knowledge?folder=" + folder;

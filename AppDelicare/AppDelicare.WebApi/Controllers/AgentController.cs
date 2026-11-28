@@ -11,9 +11,10 @@ namespace AppDelicare.WebApi.Controllers
     /// AI-6 (D-133) – Trợ lý AI: Trung tâm agent (<c>ai-agents</c>), Nhật ký agent (<c>ai-agent-log</c>), Lịch chạy (<c>ai-schedule</c>).
     /// Bật / tắt agent = Sửa Trung tâm agent (CEO / COO / FIN-IT) – đổi BotConfiguration.BotStatus, ToolGateway kiểm mỗi lời gọi nên có hiệu lực ngay.
     /// </summary>
-    public class AgentController(IAgentAdminService service) : BaseController
+    public class AgentController(IAgentAdminService service, IAgentFlowService flows) : BaseController
     {
         private readonly IAgentAdminService _service = service;
+        private readonly IAgentFlowService _flows = flows;
 
         private async Task<IActionResult> Run<T>(string name, Func<Task<T>> call)
         {
@@ -43,6 +44,16 @@ namespace AppDelicare.WebApi.Controllers
         [HttpGet("GetActivity")]
         [Security.Permission("ai-agent-log", PermissionAction.View, OrScreens = ["ai-agents"])]
         public Task<IActionResult> GetActivity([FromQuery] AgentActivityRequest request) => Run(nameof(GetActivity), () => _service.GetActivity(request ?? new AgentActivityRequest()));
+
+        /// <summary>AI-11 (D-133): luồng liên phòng của 1 ngày – dựng từ CorrelationId (sự kiện → agent → đề xuất → duyệt → kết quả → tin).</summary>
+        [HttpGet("GetFlows")]
+        [Security.Permission("ai-flow", PermissionAction.View, OrScreens = ["ai-agents"])]
+        public Task<IActionResult> GetFlows([FromQuery] DateTime? date) => Run(nameof(GetFlows), () => _flows.GetFlows(date));
+
+        /// <summary>AI-11: bật / tắt 1 việc theo lịch (ghi agents/schedules.json – Hermes đọc lại).</summary>
+        [HttpPost("SaveSchedule")]
+        [Security.Permission("ai-schedule", PermissionAction.Edit)]
+        public Task<IActionResult> SaveSchedule([FromForm] string? id, [FromForm] bool enabled) => Run(nameof(SaveSchedule), () => _flows.SaveSchedule(id, enabled));
 
         [HttpGet("GetSchedules")]
         [Security.Permission("ai-schedule", PermissionAction.View, OrScreens = ["ai-agents"])]
