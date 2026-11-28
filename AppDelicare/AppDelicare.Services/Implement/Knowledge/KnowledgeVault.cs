@@ -114,11 +114,15 @@ namespace AppDelicare.Services.Implement.Knowledge
             /// <summary>Dạng gấp (không dấu, thường) của tiêu đề + nội dung – chỉ mục tìm.</summary>
             public string FoldedTitle { get; init; } = string.Empty;
             public string FoldedBody { get; init; } = string.Empty;
+            /// <summary>AI-22.7: bản chữ trích từ tệp gốc (&lt;tệp&gt;.txt, chia [Trang N]) – vào chỉ mục tìm, không hiện như nội dung ghi chú.</summary>
+            public string Extract { get; init; } = string.Empty;
         }
 
         public static string Sha256(string content) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content))).ToLowerInvariant();
 
-        public static Note Parse(string relPath, string content)
+        public static Note Parse(string relPath, string content) => Parse(relPath, content, null);
+
+        public static Note Parse(string relPath, string content, string? extract)
         {
             var meta = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var refs = new List<string>();
@@ -171,7 +175,7 @@ namespace AppDelicare.Services.Implement.Knowledge
             return new Note
             {
                 Path = relPath, Folder = folder?.Code ?? string.Empty, Meta = meta, Refs = refs, Body = body, Title = title, Hash = Sha256(content), HasFrontmatter = has,
-                FoldedTitle = Fold(title), FoldedBody = Fold(body),
+                FoldedTitle = Fold(title), FoldedBody = Fold(extract is { Length: > 0 } ex ? body + "\n" + ex : body), Extract = extract ?? string.Empty,
             };
         }
 
@@ -361,7 +365,14 @@ namespace AppDelicare.Services.Implement.Knowledge
                 }
                 try
                 {
-                    index[rel] = new Entry(info.LastWriteTimeUtc, info.Length, Parse(rel, File.ReadAllText(file, Encoding.UTF8)));
+                    string text = File.ReadAllText(file, Encoding.UTF8);
+                    var note = Parse(rel, text);
+                    // AI-22.7: tài liệu gốc có bản chữ <tệp>.txt cạnh tệp → đưa vào chỉ mục tìm.
+                    if (note.Meta.GetValueOrDefault("file") is { Length: > 0 } src && System.IO.Path.Combine(System.IO.Path.GetDirectoryName(file)!, System.IO.Path.GetFileNameWithoutExtension(src) + ".txt") is var txt && File.Exists(txt))
+                    {
+                        note = Parse(rel, text, File.ReadAllText(txt, Encoding.UTF8));
+                    }
+                    index[rel] = new Entry(info.LastWriteTimeUtc, info.Length, note);
                 }
                 catch (IOException)
                 {

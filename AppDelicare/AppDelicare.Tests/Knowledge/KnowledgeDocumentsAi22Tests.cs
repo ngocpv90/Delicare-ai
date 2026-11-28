@@ -78,7 +78,7 @@ namespace AppDelicare.Tests.Knowledge
             (await As(f, hr, s => s.GetDocuments("employee", employee))).Data!.UploadFolder.Should().Be("70-HS");
 
             Task<Data.Interface.IResult<KnowledgeSaveResultModel>> Up(IKnowledgeService s, string folder, string type, string title, string code, string? hetHan)
-                => s.UploadFile(new KnowledgeUploadRequest { Folder = folder, Type = type, Title = title, DoiTuong = code, HetHan = hetHan, Ngay = "2026-01-01" }, "hd.pdf", new MemoryStream(Pdf), Pdf.Length);
+                => s.UploadFile(new KnowledgeUploadRequest { Folder = folder, Type = type, Title = title, DoiTuong = code, HetHan = hetHan, Ngay = "2026-01-01", Summary = "Tóm tắt: " + title }, "hd.pdf", new MemoryStream(Pdf), Pdf.Length);
             (await As(f, sales, s => Up(s, "20-HD", "hop-dong-kh", "Hợp đồng suất ăn 2026", "KHB-A225", "2026-12-28"))).ResponseCode.Should().Be(200);
             (await As(f, sales, s => Up(s, "20-HD", "hop-dong-kh", "Phụ lục giá 2026", "HD-261128-A25", null))).ResponseCode.Should().Be(200);
             (await As(f, buyer, s => Up(s, "40-HD", "hop-dong-ncc", "Hợp đồng cung cấp thịt", "NC-A225", "2026-12-05"))).ResponseCode.Should().Be(200);

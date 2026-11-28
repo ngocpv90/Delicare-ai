@@ -159,6 +159,13 @@ namespace AppDelicare.Services.Implement.Knowledge
                 }
                 regNo = no;
             }
+            // AI-22.7: trích chữ lúc tải lên; scan / ảnh → KNOW đọc qua AI (trừ vùng cá nhân / BOD: không gửi AI, bắt buộc tóm tắt của người tải lên).
+            var (extracted, _, needsOcr) = KnowledgeExtract.Extract(bytes, ext);
+            bool noAi = folder.Code == KnowledgeVault.Personal || folder.Code == KnowledgeVault.Bod;
+            if (needsOcr && noAi && string.IsNullOrWhiteSpace(request.Summary))
+            {
+                return Result<KnowledgeSaveResultModel>.Fail("Bản scan / ảnh ở vùng hồ sơ cá nhân / BOD không gửi AI đọc – nhập tóm tắt nội dung khi tải lên");
+            }
             string? handlerName = await UserNameAsync(request.HandlerId);
             DateTime? handlerDue = KnowledgeVault.ParseDate(request.HandlerDue);
             // Tên trên đĩa do máy chủ đặt (luật 7): <loại>-<yyyyMMddHHmmss>-<8 ký tự>; tên gốc chỉ để hiển thị.
@@ -173,6 +180,7 @@ namespace AppDelicare.Services.Implement.Knowledge
                 ("refs", string.IsNullOrWhiteSpace(request.DoiTuong) ? "[]" : "[" + KnowledgeVault.FileSafe(Q(request.DoiTuong)) + "]"), ("title", Q(title)),
                 ("so_hieu", Q(request.SoHieu)), ("ngay", day.ToString("yyyy-MM-dd")), ("doi_tuong", Q(request.DoiTuong)), ("retain_until", retain?.ToString("yyyy-MM-dd") ?? string.Empty),
                 ("file", stem + ext.ToLowerInvariant()), ("ten_goc", Q(Path.GetFileName(fileName))), ("kich_thuoc", bytes.Length.ToString()),
+                ("ban_chu", needsOcr ? (noAi ? "khong-gui-ai" : "cho-doc") : "co"), .. (needsOcr && !noAi ? new[] { ("ocr", "cho-ai") } : []),
                 .. (KnowledgeVault.ParseDate(request.HetHan) is { } hh ? new[] { ("het_han", hh.ToString("yyyy-MM-dd")) } : []),
                 .. (regNo != null ? new[] { ("so_vao_so", regNo), ("noi_gui_nhan", Q(request.NoiGuiNhan)), ("nguoi_xu_ly", handlerName ?? string.Empty), ("han_xu_ly", handlerDue?.ToString("yyyy-MM-dd") ?? string.Empty) } : []),
             ]);
@@ -180,10 +188,15 @@ namespace AppDelicare.Services.Implement.Knowledge
             string full = Path.Combine(Root, filePath);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
             await File.WriteAllBytesAsync(full, bytes);
+            if (extracted.Length > 0)
+            {
+                await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(full)!, stem + ".txt"), extracted, new UTF8Encoding(false));
+            }
             var r = await WriteAsync(notePath, fm + body, null, actor.UserId, guardGenerated: true, note: "upload " + filePath);
             if (r.ResponseCode != 200)
             {
                 File.Delete(full);
+                File.Delete(Path.Combine(Path.GetDirectoryName(full)!, stem + ".txt"));
             }
             else if (regNo != null)
             {

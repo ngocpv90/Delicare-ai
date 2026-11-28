@@ -50,3 +50,15 @@ cases:
     expect:
       status: 400
       contains: không hợp lệ
+  - id: vivi-kho-cong-van # AI-22 (§7.10)
+    question: Công văn số 125 yêu cầu gì, hạn khi nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: "cong van 125" }
+    expect:
+      status: 200
+  - id: vivi-kho-doc-sai # AI-22 (§7.10)
+    question: Đọc tài liệu không có
+    tool: doc_tai_lieu
+    args: { id: KHONG-CO-TAI-LIEU }
+    expect:
+      status: 400

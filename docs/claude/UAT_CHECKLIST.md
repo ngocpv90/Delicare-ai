@@ -637,6 +637,16 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-22.6 / 22.7 – Agent đọc nội dung tài liệu (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | KD trưởng | Tải PDF hợp đồng có chữ (điều khoản phạt ở trang 2) → ô tìm "phạt giao trễ" | Ra hợp đồng, đoạn trích + "trang 2" |
+| 2 | QA | Tìm "phạt giao trễ" | Không ra (không có quyền vùng hợp đồng) |
+| 3 | KD trưởng | Hỏi Vivi "Hợp đồng khách … phạt giao trễ thế nào?" (Hermes bật) | Trả lời có nguồn: tên, số hiệu, ngày, trang |
+| 4 | Nhân sự | Tải ảnh scan vào 70 › Hồ sơ cá nhân không nhập tóm tắt | Báo phải nhập tóm tắt (không gửi AI) |
+| 5 | Kế toán | Hỏi ACC nội dung 1 chứng từ gốc | Chỉ thông tin phiếu mô tả |
+
 ## AI-22.5 – Tài liệu trên trang chi tiết + nhắc hết hạn (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

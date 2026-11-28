@@ -26,3 +26,9 @@ cases:
     args: { ma_khach: KH-KHONG-CO, loai_hop: KHAY, so_luong: 5, ly_do: "khách báo mất" }
     expect:
       status: 400
+  - id: acc-kho-chung-tu # AI-22 (§7.10)
+    question: Chứng từ tháng 10 còn thiếu bản ký nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: "chung tu thang 10" }
+    expect:
+      status: 200

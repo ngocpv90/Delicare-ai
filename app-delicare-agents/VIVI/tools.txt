@@ -5,6 +5,7 @@ canh_bao
 cham_cong_ngay
 chuyen_giao_ngay
 doc_ghi_chu
+doc_tai_lieu
 don_hang_ngay
 ds_cho_duyet
 du_bao_thieu_hut

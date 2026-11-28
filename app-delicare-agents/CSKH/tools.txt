@@ -1,6 +1,7 @@
 # Công cụ của agent CSKH – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
 bao_chi_phi
 doc_ghi_chu
+doc_tai_lieu
 ghi_nhat_ky
 khach_don_hang
 khach_thuc_don

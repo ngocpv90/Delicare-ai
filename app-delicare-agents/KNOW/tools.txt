@@ -1,8 +1,12 @@
 # Công cụ của agent KNOW – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
 bao_chi_phi
 doc_ghi_chu
+doc_tai_lieu
+ghi_ban_chu
 ghi_nhat_ky
+ghi_tom_tat
 lay_su_kien
 ping
 propose_note_update
+tai_lieu_can_xu_ly
 tim_tri_thuc
