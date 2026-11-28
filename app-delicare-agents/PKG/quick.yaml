@@ -13,7 +13,7 @@ questions:
       tom_tat: "{tong.chua_thu} khay hộp chưa thu · {dem.vuot_nguong=true} khách vượt ngưỡng thất thoát"
       cot: ["Khách", "Đã giao", "Đã thu", "Còn", "Thất thoát %"]
       sap_xep: "Thất thoát % giảm dần"
-    mo_man: "#/log-container"
+    mo_man: "#/log-container-return"
     phan_tich: "Khách nào nên nhắc / tính phí thất thoát theo hợp đồng."
     kenh: ["web", "VH"]
   - id: pkg-qua-han
@@ -26,7 +26,7 @@ questions:
       tom_tat: "{so_dong} khách quá hạn"
       cot: ["Khách", "Còn", "Quá hạn (ngày)"]
       rong: "Không có khay hộp quá hạn."
-    mo_man: "#/log-container"
+    mo_man: "#/log-container-return"
     kenh: ["web", "VH"]
   - id: pkg-ve-sinh
     hoi: "Lô vệ sinh hôm nay"
@@ -36,7 +36,7 @@ questions:
       tieu_de: "Lô vệ sinh"
       tom_tat: "{dem.trang_thai=Hoàn thành}/{so_dong} lô xong"
       cot: ["Lô", "Bước hiện tại", "Bắt đầu", "Kết quả"]
-    mo_man: "#/qc-clean"
+    mo_man: "#/qc-cleaning"
     kenh: ["web", "VH"]
   - id: pkg-canh-bao
     hoi: "Cảnh báo khay hộp & vệ sinh"
@@ -48,5 +48,5 @@ questions:
       tom_tat: "{so_dong} cảnh báo"
       cot: ["Mức", "Nội dung", "Từ lúc"]
       rong: "Không có cảnh báo."
-    mo_man: "#/log-container"
+    mo_man: "#/log-container-return"
     kenh: ["web", "VH"]

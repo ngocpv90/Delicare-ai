@@ -68,7 +68,7 @@ questions:
     hien_thi:
       kieu: bang
       tieu_de: "Hao hụt 7 ngày"
-      tom_tat: "{tong.suat_huy} suất hủy · {tong.pct}% hao hụt"
+      tom_tat: "{tong.suat_huy} suất hủy · {tong.kg} kg"
       cot: ["Loại", "Món", "Suất", "%"]
       sap_xep: "Suất giảm dần"
     mo_man: "#/prod-waste"

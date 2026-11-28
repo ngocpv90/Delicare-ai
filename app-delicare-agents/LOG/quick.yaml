@@ -49,7 +49,7 @@ questions:
       tom_tat: "{so_dong} chuyến trễ"
       cot: ["Chuyến", "Tài xế", "Điểm giao", "Giờ hẹn", "Trễ (phút)"]
       rong: "Không có chuyến trễ."
-    mo_man: "#/log-track"
+    mo_man: "#/log-execution"
     kenh: ["web", "VH"]
   - id: log-khay
     hoi: "Khay hộp chưa thu hồi"
@@ -61,5 +61,5 @@ questions:
       tom_tat: "{tong.chua_thu} khay hộp tại {so_dong} khách"
       cot: ["Khách", "Đã giao", "Đã thu", "Còn", "Quá hạn (ngày)"]
       rong: "Đã thu hồi đủ."
-    mo_man: "#/log-container"
+    mo_man: "#/log-container-return"
     kenh: ["web", "VH"]

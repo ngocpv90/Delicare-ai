@@ -25,7 +25,7 @@ questions:
       tom_tat: "{so_dong} sự cố"
       cot: ["Giờ", "Loại", "Nội dung", "Mức", "Trạng thái"]
       rong: "Hôm nay chưa ghi nhận sự cố."
-    mo_man: "#/qc-incident"
+    mo_man: "#/dash-exec"
     phan_tich: "Đối chiếu SOP ATTP, việc cần làm ngay."
     kenh: ["web", "VH"]
   - id: qa-cho-qc
@@ -62,7 +62,7 @@ questions:
       tom_tat: "{so_dong} lô chưa xong"
       cot: ["Lô", "Bước hiện tại", "Bắt đầu", "Người làm"]
       rong: "Mọi lô vệ sinh đã xong."
-    mo_man: "#/qc-clean"
+    mo_man: "#/qc-cleaning"
     kenh: ["web", "VH"]
   - id: qa-phan-anh
     hoi: "Phản ánh chất lượng đang mở"
