@@ -35,6 +35,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | X | X | X | — |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | X | X | X | X |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | — |
+| Đóng gói & Giao hàng › Loại hộp / khay | `log-packaging-type` | X | X | X | — |
 | Tri thức › Kho tri thức | `knowledge` | X | X | X | X |
 | Tri thức › 20 Kinh doanh & Hợp đồng | `knowledge?folder=20` | X | X | S | X |
 | Tri thức › 30 Thực đơn & Công thức | `knowledge?folder=30` | — | — | X | — |

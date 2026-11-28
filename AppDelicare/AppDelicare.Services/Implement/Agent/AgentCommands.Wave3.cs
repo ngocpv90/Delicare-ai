@@ -265,7 +265,7 @@ namespace AppDelicare.Services.Implement.Agent
             {
                 Code = "propose_container_loss_charge", Title = "Ghi hộp / khay thất thoát (tính phí khách)", Agents = ["ACC", "PKG"], Screen = "log-packaging-ledger", Action = PermissionAction.Add,
                 Description = "Đề xuất GHI THẤT THOÁT hộp / khay của khách (như Ghi thất thoát trên màn Sổ hộp khay) – số thất thoát vào bảng kê công nợ kỳ đó và được tính phí theo "
-                    + "BusinessRules:ContainerLossFee khi vượt ngưỡng (như Bảng kê thanh toán). Không vượt số khách đang giữ. Người có quyền Thêm Sổ hộp khay xác nhận.",
+                    + "phí thất thoát / cái của danh mục Loại hộp / khay khi vượt ngưỡng (như Bảng kê thanh toán). Không vượt số khách đang giữ. Người có quyền Thêm Sổ hộp khay xác nhận.",
                 InputSchemaJson = "{\"type\":\"object\",\"properties\":{\"ma_khach\":{\"type\":\"string\"},\"loai_hop\":{\"type\":\"string\"},\"so_luong\":{\"type\":\"number\"},\"so_phieu_giao\":{\"type\":\"string\"}," + Common + "},"
                     + "\"required\":[\"ma_khach\",\"loai_hop\",\"so_luong\",\"ly_do\"]}",
                 PrepareAsync = async (sp, a) =>
@@ -284,10 +284,10 @@ namespace AppDelicare.Services.Implement.Agent
                     {
                         throw new AgentToolException($"Khách {cus.Code} đang giữ {holding:0.#} {type} – không ghi thất thoát {qty:0.#} được");
                     }
-                    decimal fee = Svc<IOptions<BusinessRulesOptions>>(sp).Value.ContainerLossFee.TryGetValue(type, out var f) ? f : 0m;
+                    decimal fee = PackagingTypeCatalog.LossFee(db, Svc<IOptions<BusinessRulesOptions>>(sp).Value, type);
                     var pv = new AgentPreview
                     {
-                        Summary = $"Ghi thất thoát {qty:0.#} {type} của {cus.Name}" + (fee > 0 ? $" – phí dự kiến tối đa {qty * fee:#,0} đ ({fee:#,0} đ / cái, phần vượt ngưỡng)" : " – chưa cấu hình phí (BusinessRules:ContainerLossFee)"),
+                        Summary = $"Ghi thất thoát {qty:0.#} {type} của {cus.Name}" + (fee > 0 ? $" – phí dự kiến tối đa {qty * fee:#,0} đ ({fee:#,0} đ / cái, phần vượt ngưỡng)" : " – chưa đặt phí thất thoát cho loại này (Đóng gói & Giao hàng › Loại hộp / khay)"),
                         Counterparty = $"{cus.Code} {cus.Name}", MainValue = $"{qty:0.#}", DocumentNo = dlvNo, OpenLink = "#/log-packaging-ledger",
                         LineHeaders = ["Loại", "Đang giữ", "Thất thoát", "Tỷ lệ thất thoát kỳ", "Phí / cái"],
                         Lines = [[type, $"{holding:0.#}", $"{qty:0.#}", item?.LossRatePct is { } lr ? $"{lr:0.#}%" : "–", fee > 0 ? $"{fee:#,0} đ" : "chưa cấu hình"]],
@@ -295,7 +295,7 @@ namespace AppDelicare.Services.Implement.Agent
                     };
                     if (fee <= 0)
                     {
-                        pv.Warnings.Add("Phí hộp thất thoát chưa cấu hình – bảng kê chưa tính tiền (GAP-AI-LOSSFEE, anh chốt mức phí)");
+                        pv.Warnings.Add("Loại hộp này chưa đặt phí thất thoát (Loại hộp / khay) – bảng kê chưa tính tiền");
                     }
                     return pv;
                 },

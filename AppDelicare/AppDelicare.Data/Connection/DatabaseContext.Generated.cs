@@ -85,6 +85,7 @@ namespace AppDelicare.Data.Connection
         public virtual DbSet<OrganizationUnit> OrganizationUnit { get; set; }
         public virtual DbSet<OutboundMessage> OutboundMessage { get; set; }
         public virtual DbSet<PackagingLedger> PackagingLedger { get; set; }
+        public virtual DbSet<PackagingType> PackagingType { get; set; }
         public virtual DbSet<PackingOrder> PackingOrder { get; set; }
         public virtual DbSet<PackingResult> PackingResult { get; set; }
         public virtual DbSet<Patient> Patient { get; set; }
@@ -216,6 +217,7 @@ namespace AppDelicare.Data.Connection
             modelBuilder.Entity<OrganizationUnit>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
             modelBuilder.Entity<OutboundMessage>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });
             modelBuilder.Entity<PackagingLedger>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });
+            modelBuilder.Entity<PackagingType>(e => { e.Ignore(x => x.DeletedDate); e.Ignore(x => x.DeleteddBy); e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime2(0)"); e.Property(x => x.ModifiedDate).HasColumnType("datetime2(0)"); });
             modelBuilder.Entity<PackingOrder>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
             modelBuilder.Entity<PackingResult>(e => { e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });
             modelBuilder.Entity<Patient>(e => { e.Ignore(x => x.DeletedBy); e.Property(x => x.CreatedDate).HasColumnType("datetime"); e.Property(x => x.ModifiedDate).HasColumnType("datetime"); e.Property(x => x.DeletedDate).HasColumnType("datetime"); });

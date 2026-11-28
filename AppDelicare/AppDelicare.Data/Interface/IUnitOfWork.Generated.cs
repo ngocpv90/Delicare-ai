@@ -82,6 +82,7 @@ namespace AppDelicare.Data.Interface
         public IOrganizationUnitRepository OrganizationUnitRepository { get; }
         public IOutboundMessageRepository OutboundMessageRepository { get; }
         public IPackagingLedgerRepository PackagingLedgerRepository { get; }
+        public IPackagingTypeRepository PackagingTypeRepository { get; }
         public IPackingOrderRepository PackingOrderRepository { get; }
         public IPackingResultRepository PackingResultRepository { get; }
         public IPatientRepository PatientRepository { get; }

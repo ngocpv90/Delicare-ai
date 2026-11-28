@@ -627,6 +627,18 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## PKG-FEE – Loại hộp / khay + phí thất thoát; thủ kho xem lô (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Giao vận (uat.ops-log) | Đóng gói & Giao hàng › Loại hộp / khay → Thêm loại "hop nhua" | Mã tự thành HOP_NHUA; mã trùng / có dấu cách → báo lỗi |
+| 2 | Kế toán (uat.fin-acc) | Sửa phí Hộp giữ nhiệt 85.000 đ | Lưu được; không có nút Thêm / Ngừng dùng |
+| 3 | Bếp (uat.ops-kit) | Mở màn | Chỉ xem |
+| 4 | Giao vận | Ghi trả / ghi thất thoát ở Sổ hộp khay | Ô chọn loại = các loại Đang dùng của danh mục; loại Ngừng dùng không hiện |
+| 5 | Kế toán | Bảng kê thanh toán tháng của khách vượt ngưỡng thất thoát | Dòng phí hộp = phần vượt ngưỡng × phí / cái của loại |
+| 6 | Giao vận | Đổi mã / xóa loại đã có giao dịch | Báo không được – dùng Ngừng dùng |
+| 7 | Thủ kho (uat.ops-wh) | Kho › Tồn kho › lô bất kỳ → trang chi tiết lô | Mở được (Xem + Xuất); không có nút Tạm giữ (việc của QA) |
+
 ## AI-19 – Bot Zalo khách hàng + agent CSKH (D-133 đợt 4, D-06)
 
 Chuẩn bị (IT): Zalo OA đã xác thực; `.env`: `ZALO_ENABLED=true`, `ZALO_APP_ID`, `ZALO_APP_SECRET`, `ZALO_OA_SECRET_KEY`, `ZALO_REFRESH_TOKEN` (lần đầu), `MESSAGING_LINK_SIGNING_KEY`, `AGENT_KEY_CSKH`; webhook OA trỏ `https://<máy chủ>/zalo/ZALO_KH`; bật kênh ZALO_OA + bot ZALO_KH (Tích hợp › Kênh).

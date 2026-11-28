@@ -39,6 +39,7 @@ namespace AppDelicare.Services.Mapping
             CreateMap<MenuChangeRequestRequest, MenuChangeRequest>();
             CreateMap<OutboundMessageRequest, OutboundMessage>();
             CreateMap<PackagingLedgerRequest, PackagingLedger>();
+            CreateMap<PackagingTypeRequest, PackagingType>();
             CreateMap<ProductionLineRequest, ProductionLine>();
             CreateMap<RetailCustomerRequest, RetailCustomer>();
             CreateMap<RetailOrderRequest, RetailOrder>();

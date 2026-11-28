@@ -551,3 +551,65 @@
     });
   });
 })();
+
+/* PKG-FEE (anh duyệt 2026-11-28): Đóng gói & Giao hàng › Loại hộp / khay (#/log-packaging-type) – danh mục loại hộp / khay dùng ở Sổ hộp khay, ghi trả, đóng gói
+ * và PHÍ THẤT THOÁT / CÁI theo loại (bảng kê thanh toán tính phần vượt ngưỡng; agent ACC / PKG xem trước phí). Giao vận thêm / sửa; Kế toán sửa phí; còn lại xem.
+ * Loại đã có giao dịch: không đổi mã, không xóa – chuyển Ngừng dùng. API: PackagingType/GetAll · Insert · Update (form). */
+(function () {
+  const U = UTIL, I = U.icon, esc = U.esc, FN = APP.FN || {};
+  if (!FN['log-packaging-type']) FN['log-packaging-type'] = { extra: true, ph: 'ACC', grp: 'Đóng gói & Giao hàng', fn: 'Loại hộp / khay', id: 'log-packaging-type', name: 'Loại hộp / khay', types: ['LS', 'CR', 'ED'], table: null, rel: [], st: 'MAPPED', note: '' };
+  const money = v => U.num(Math.round(+v || 0)) + '\u00a0đ';
+
+  function edit(row, perm, done) {
+    const r = row || { status: 'Active', lossFee: 0 };
+    const feeOnly = row && perm.add === false; // Kế toán: chỉ sửa phí
+    UI.modal({ title: row ? 'Sửa loại hộp / khay' : 'Thêm loại hộp / khay', size: 'sm',
+      body: `<div class="form-grid">
+        <label>Mã loại<input class="input" id="ptCode" value="${esc(r.code || '')}" ${row ? 'readonly' : ''} placeholder="VD HOP_GIU_NHIET" style="text-transform:uppercase"></label>
+        <label>Tên loại<input class="input" id="ptName" value="${esc(r.name || '')}" ${feeOnly ? 'readonly' : ''}></label>
+        <label>Phí thất thoát / cái (đ)<input class="input" id="ptFee" type="number" min="0" step="1000" value="${+r.lossFee || 0}"></label>
+        <label>Thứ tự<input class="input" id="ptSort" type="number" min="0" value="${r.sortOrder ?? ''}" ${feeOnly ? 'readonly' : ''}></label>
+        <label>Ghi chú<input class="input" id="ptNote" value="${esc(r.note || '')}"></label></div>
+        <p class="small muted mt">Phí tính trên bảng kê thanh toán cho phần hộp thất thoát VƯỢT ngưỡng của khách (giao × ngưỡng %). Mã ghi vào Sổ hộp khay – đã có giao dịch thì không đổi được.</p>`,
+      foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="ptSave">Lưu</button>',
+      onMount: (m, close) => {
+        m.querySelector('#ptSave').onclick = () => {
+          const form = { Code: m.querySelector('#ptCode').value.trim().toUpperCase(), Name: m.querySelector('#ptName').value.trim(), LossFee: m.querySelector('#ptFee').value || 0,
+            SortOrder: m.querySelector('#ptSort').value, Status: r.status || 'Active', Note: m.querySelector('#ptNote').value.trim() };
+          if (row) form.Id = row.id;
+          Store.act(row ? 'PackagingType/Update' : 'PackagingType/Insert', { method: row ? 'PUT' : 'POST', form }).then(x => { if (x.ok) { UI.toast('Đã lưu loại hộp', 'ok'); close(); done(); } });
+        };
+      } });
+  }
+
+  APP.register('log-packaging-type', (el, f) => {
+    f = f || FN['log-packaging-type'];
+    const perm = Store.perm('log-packaging-type'), reload = () => APP.SCREENS['log-packaging-type'](el, f, {});
+    el.innerHTML = APP.header(f, perm.add !== false ? `<button class="btn primary" id="ptAdd">${I('plus')} Thêm loại</button>` : '', { noNote: true })
+      + '<div class="small muted mb">Danh mục loại hộp / khay dùng khi giao, thu hồi, ghi thất thoát; <b>phí thất thoát / cái</b> áp vào bảng kê thanh toán cho phần vượt ngưỡng.</div>'
+      + '<div id="ptBody"><div class="muted small">Đang tải…</div></div>';
+    const add = el.querySelector('#ptAdd'); if (add) add.onclick = () => edit(null, perm, reload);
+    Store.query('PackagingType/GetAll', { Page: 1, PageSize: 200 }).then(x => {
+      if (!el.isConnected) return;
+      const box = el.querySelector('#ptBody');
+      if (!x.ok) { box.innerHTML = `<div class="muted small">${esc(x.message || 'Không tải được danh mục')}</div>`; return; }
+      const rows = (x.list || []).map(r => r.packagingType || r).sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || String(a.code).localeCompare(String(b.code)));
+      const active = rows.filter(r => r.status === 'Active'), noFee = active.filter(r => !(+r.lossFee > 0));
+      box.innerHTML = UI.kpis([
+        UI.kpi('Loại đang dùng', U.num(active.length), rows.length - active.length ? (rows.length - active.length) + ' loại ngừng dùng' : 'tất cả đang dùng', 'package', 'blue'),
+        UI.kpi('Chưa đặt phí', U.num(noFee.length), noFee.length ? 'bảng kê chưa tính phí các loại này' : 'mọi loại đã có phí', 'alert', noFee.length ? 'orange' : 'green'),
+      ]) + '<div class="card panel"><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Mã</th><th>Tên loại</th><th class="num">Phí thất thoát / cái</th><th class="num">Thứ tự</th><th>Trạng thái</th><th>Ghi chú</th><th></th></tr></thead><tbody>'
+        + (rows.length ? rows.map((r, i) => `<tr><td><b>${esc(r.code)}</b></td><td>${esc(r.name || '')}</td><td class="num">${+r.lossFee > 0 ? money(r.lossFee) : '<span class="txt-orange">chưa đặt</span>'}</td>
+            <td class="num">${r.sortOrder ?? ''}</td><td>${UI.tag(r.status === 'Active' ? 'Đang dùng' : 'Ngừng dùng', r.status === 'Active' ? 'green' : '')}</td><td class="small">${esc(r.note || '')}</td>
+            <td class="num" style="white-space:nowrap">${perm.edit !== false ? `<button class="btn xs" data-e="${i}">Sửa</button>` : ''}${perm.edit !== false && perm.add !== false ? `<button class="btn xs" data-t="${i}">${r.status === 'Active' ? 'Ngừng dùng' : 'Dùng lại'}</button>` : ''}</td></tr>`).join('')
+          : '<tr><td colspan="7" class="muted small">Chưa có loại hộp – bấm "Thêm loại".</td></tr>')
+        + '</tbody></table></div></div>';
+      box.querySelectorAll('[data-e]').forEach(b => b.onclick = () => edit(rows[+b.dataset.e], perm, reload));
+      box.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+        const r = rows[+b.dataset.t];
+        Store.act('PackagingType/Update', { method: 'PUT', form: { Id: r.id, Code: r.code, Name: r.name, LossFee: r.lossFee || 0, SortOrder: r.sortOrder ?? '', Status: r.status === 'Active' ? 'Inactive' : 'Active', Note: r.note || '' } })
+          .then(x => { if (x.ok) reload(); });
+      });
+    });
+  });
+})();

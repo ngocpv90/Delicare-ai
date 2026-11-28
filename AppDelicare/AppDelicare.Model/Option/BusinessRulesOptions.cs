@@ -151,7 +151,7 @@ namespace AppDelicare.Model.Option
         public int MenuNoRepeatDays { get; set; } = 14;
         /// <summary>UI-6.9: ngày trong tháng bot báo bảng kê tháng trước (1 = ngày 1).</summary>
         public int BillingMonthNoticeDay { get; set; } = 1;
-        /// <summary>BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay (PROPOSED – trống = 0, chưa tính).</summary>
+        /// <summary>BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay – CŨ: từ PKG-FEE phí đặt ở danh mục Loại hộp / khay (bảng PackagingType); mục này chỉ dùng cho loại không có trong danh mục.</summary>
         public Dictionary<string, decimal> ContainerLossFee { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         /// <summary>T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04).</summary>
         public decimal GoodsReceiptOverReceivePct { get; set; } = 10m;

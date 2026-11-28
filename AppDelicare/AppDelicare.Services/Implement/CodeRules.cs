@@ -29,6 +29,7 @@ namespace AppDelicare.Services.Implement
             (typeof(UserGroup), "Code", "nhóm quyền – luồng duyệt / bot / nhóm gợi ý tìm theo mã (UI-6.43)"),
             (typeof(Shift), "Code", "ca – hậu tố mã mẻ / vệ sinh (CA1…)"),
             (typeof(UnitMeasure), "Code", "đơn vị tính (KG…)"),
+            (typeof(PackagingType), "Code", "loại hộp / khay – ghi vào Sổ hộp khay (PKG-FEE)"),
             (typeof(ProductionLine), "Code", "dây chuyền – QR LINE_"),
             (typeof(KitchenWorkstation), "Code", "trạm bếp"),
             (typeof(StorageZone), "Code", "khu kho"),
