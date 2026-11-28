@@ -233,3 +233,7 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 - 🖥 **Tình trạng hệ thống** (`/hethong`, chỉ quản trị): job tự động + tin gửi lỗi.
 - Nhận cảnh báo 🔴 job lỗi, 🔴 tin gửi thất bại nhiều lần.
 - Gỡ liên kết Telegram của người dùng: hiện chưa có màn web (màn `int-identity` đang ẩn) – người dùng tự gửi `/huylienket` trên bot, hoặc IT gọi API.
+
+## Thử quy đổi đơn vị (FE-2, 28/11/2026)
+
+- **Danh mục hệ thống › Đơn vị tính** → **Thử quy đổi**: nhập số lượng, chọn *Từ đơn vị* / *Sang đơn vị* → **Quy đổi** → kết quả theo quy đổi đang hiệu lực (vd 1 kg = 1.000 g; thùng 10 kg → kg). Chưa có quy đổi giữa 2 đơn vị → báo "Chưa có quy đổi".

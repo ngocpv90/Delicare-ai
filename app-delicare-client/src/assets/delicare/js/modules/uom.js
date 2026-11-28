@@ -59,13 +59,39 @@
       } });
   }
   const base0 = APP.SCREENS['scm-uom'];
+  // FE-2 (thử quy đổi – UomConversion/Convert): nhập số lượng + đơn vị nguồn / đích → kết quả theo quy đổi đang hiệu lực (kể cả quy đổi qua đơn vị gốc).
+  function tryConvert() {
+    Store.query('UnitMeasure/GetUsage').then(x => {
+      const units = (x.list || []).filter(u => u.id).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'vi'));
+      const opts = sel => units.map(u => `<option value="${esc(u.id)}" ${u.id === sel ? 'selected' : ''}>${esc(u.name || u.symbol || u.code || '')}${u.kind === 'PACK' ? ' (đóng gói)' : ''}</option>`).join('');
+      UI.modal({ title: 'Thử quy đổi đơn vị', size: 'sm',
+        body: `<div class="field"><label>Số lượng</label><input type="number" step="any" class="input" id="cvQ" value="1"></div>
+          <div class="field"><label>Từ đơn vị</label><select class="select" id="cvF">${opts(units[0] && units[0].id)}</select></div>
+          <div class="field"><label>Sang đơn vị</label><select class="select" id="cvT">${opts(units[1] && units[1].id)}</select></div>
+          <div id="cvR" class="mt"></div>`,
+        foot: '<button class="btn" data-close>Đóng</button><button class="btn primary" id="cvGo">Quy đổi</button>',
+        onMount: m => {
+          m.querySelector('#cvGo').onclick = () => {
+            const q = +m.querySelector('#cvQ').value, fu = m.querySelector('#cvF'), tu = m.querySelector('#cvT');
+            const name = sl => sl.options[sl.selectedIndex] ? sl.options[sl.selectedIndex].text : '';
+            Store.query('UomConversion/Convert', { Quantity: q, FromUnitId: fu.value, ToUnitId: tu.value }).then(r => {
+              m.querySelector('#cvR').innerHTML = r.ok
+                ? `<div class="notice info"><div><b>${U.num(q, 4)} ${esc(name(fu))} = ${U.num(r.data, 4)} ${esc(name(tu))}</b></div></div>`
+                : `<div class="notice warn">${esc(r.message || 'Không quy đổi được – chưa có quy đổi giữa 2 đơn vị này')}</div>`;
+            });
+          };
+        } });
+    });
+  }
+
   APP.register('scm-uom', (el, f, p) => {
     if (!Store.isLive) return base0 ? base0(el, f, p) : APP.genericList(el, f);
-    el.innerHTML = APP.header(f, `${can('add') ? `<button class="btn" id="umBase">${I('plus')} Đơn vị gốc</button><button class="btn primary" id="umPack">${I('plus')} Đơn vị đóng gói</button>` : ''}`, { noNote: true }) + `
+    el.innerHTML = APP.header(f, `<button class="btn" id="umTry">${I('calc')} Thử quy đổi</button>${can('add') ? `<button class="btn" id="umBase">${I('plus')} Đơn vị gốc</button><button class="btn primary" id="umPack">${I('plus')} Đơn vị đóng gói</button>` : ''}`, { noNote: true }) + `
       <div class="notice info mb">${I('help')}<div>Đơn vị gốc (kg, g, lít, quả…) và đơn vị đóng gói có kích cỡ (thùng 10 kg, bao 25 kg…). Quy đổi lưu cùng đơn vị – không còn mục menu "Quy đổi đơn vị" riêng. Đơn vị đã dùng thì không đổi kích cỡ.</div></div>
       <div id="umKpi"></div><div class="card panel"><div class="row-flex mb" id="umChips"></div><div id="umBody"><div class="muted small">Đang tải…</div></div></div>`;
     const g = s => el.querySelector(s);
     if (g('#umBase')) g('#umBase').onclick = () => baseForm(null);
+    g('#umTry').onclick = () => tryConvert();
     if (g('#umPack')) g('#umPack').onclick = () => APP.packUnitForm({ onSave: () => APP.refresh() });
     Store.query('UnitMeasure/GetUsage').then(x => {
       if (!g('#umBody')) return;
