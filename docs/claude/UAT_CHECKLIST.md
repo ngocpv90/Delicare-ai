@@ -627,6 +627,17 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## RPT-1.2 – Nhập sổ AMIS + quy tắc phân loại (D-140, 28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Kế toán (uat.fin-acc) | Tab Kết quả kinh doanh → Nhập sổ AMIS → chọn 8 sổ chi tiết tháng 8 + BCTC T8 | DT 13.873.110.000 · GVHB 11.606.949.223 · LN gộp 2.266.160.777 · CP BH & QL 1.091.588.920 · LN thuần 1.174.571.857 · LN trước thuế 1.042.726.123 |
+| 2 | Kế toán | Nhập lại đúng các tệp đó | Số không đổi (không nhân đôi) |
+| 3 | Kế toán | Số AMIS tháng → dòng chưa phân loại → Quy tắc phân loại thêm dòng → nhập lại sổ | Dòng đó vào đúng khoản mục |
+| 4 | CEO | Tab Kết quả kinh doanh | Thẻ Lợi nhuận gộp / CP BH & QL / LN trước thuế hiện số "Chính thức · AMIS"; không có nút Nhập |
+| 5 | CEO | Gọi Dashboard/ImportAmis | 403 |
+| 6 | Kế toán | Nhập sổ có chứng từ khác tháng | Báo lỗi, không ghi |
+
 ## RPT-1.1 – Tab Kết quả kinh doanh (D-140, 28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

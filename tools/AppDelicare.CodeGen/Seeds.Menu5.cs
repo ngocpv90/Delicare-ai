@@ -274,6 +274,8 @@ public static partial class Seeds
         {
             G(role, ix, ["dash-pl"]);
         }
+        // RPT-1.2 (D-140 d): Kế toán nhập sổ AMIS (Nhập) + sửa bảng quy tắc phân loại (Sửa).
+        G("FIN-ACC", new Right(true, false, true, false, true, true, true), ["dash-pl"]);
         G("CEO", ViewR, ["adm-company", "adm-orgunit", "adm-employee", "int-outbound", "wf-inbox"]);
         G("CEO-PMO", ViewR, business);
         G("CEO-PMO", ix, Kpi);

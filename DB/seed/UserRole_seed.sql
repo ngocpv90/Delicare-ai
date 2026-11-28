@@ -2503,7 +2503,7 @@ INSERT INTO @R VALUES
     (N'FIN-ACC', N'#/kpi-daily', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/kpi-monthly', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/cost-meal', 1, 0, 0, 0, 1, 1, 0),
-    (N'FIN-ACC', N'#/dash-pl', 1, 0, 0, 0, 1, 1, 0),
+    (N'FIN-ACC', N'#/dash-pl', 1, 0, 1, 0, 1, 1, 1),
     (N'FIN-ACC', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),

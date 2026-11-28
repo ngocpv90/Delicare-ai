@@ -949,7 +949,7 @@ INSERT INTO @Allow VALUES
     (N'FIN-ACC', N'#/kpi-daily', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/kpi-monthly', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/cost-meal', 1, 0, 0, 0, 1, 1, 0),
-    (N'FIN-ACC', N'#/dash-pl', 1, 0, 0, 0, 1, 1, 0),
+    (N'FIN-ACC', N'#/dash-pl', 1, 0, 1, 0, 1, 1, 1),
     (N'FIN-ACC', N'#/crm-customer', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-contract', 1, 0, 0, 0, 1, 1, 0),
     (N'FIN-ACC', N'#/crm-price-policy', 1, 0, 0, 0, 1, 1, 0),
