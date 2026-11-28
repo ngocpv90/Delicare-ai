@@ -45,6 +45,8 @@
   const robot = (c, on, size, mini) => `<span class="ac-ring ${on ? '' : 'off'}" style="--c:${esc(c || '#4F6B1F')};width:${size}px;height:${size}px"><svg width="${Math.round(size * .64)}" height="${Math.round(size * .64)}" viewBox="0 0 40 40" aria-hidden="true">${mini ? '' : `<line x1="20" y1="3" x2="20" y2="9" stroke="${esc(c)}" stroke-width="2"/><circle cx="20" cy="3" r="2.5" fill="${esc(c)}"/>`}<rect x="7" y="9" width="26" height="22" rx="9" fill="#fff" stroke="${esc(c)}" stroke-width="${mini ? 2 : 1.5}"/><rect x="11" y="14" width="18" height="10" rx="5" fill="#1F2A1A"/><path d="M14 19.5q2-2.5 4 0M22 19.5q2-2.5 4 0" stroke="${on ? '#7CE0A8' : '#9AA391'}" stroke-width="1.8" fill="none" stroke-linecap="round"/>${mini ? '' : `<circle cx="20" cy="28" r="1.8" fill="${esc(c)}"/>`}</svg></span>`;
   const cache = { agents: null, board: null, boardAt: 0 };
   const chatAgents = () => cache.agents ? Promise.resolve(cache.agents) : Store.query('Agent/GetChatAgents').then(x => (cache.agents = x.ok ? (x.list || []) : []));
+  // AI-25.2 (D-143): câu hỏi nhanh kênh web theo quyền người xem (Agent/GetQuick – mọi agent 1 lần, giữ trong phiên trang).
+  const quickAll = () => cache.quick ? Promise.resolve(cache.quick) : Store.query('Agent/GetQuick', { kenh: 'web' }).then(x => (cache.quick = x.ok ? (x.list || []) : []));
   const loadBoard = force => (!force && cache.board && Date.now() - cache.boardAt < 30000) ? Promise.resolve(cache.board)
     : Store.query('Agent/GetTasks', { includeDone: true }).then(x => { if (x.ok && x.data) { cache.board = x.data; cache.boardAt = Date.now(); } return x.ok ? x.data : null; });
 
@@ -77,7 +79,7 @@
     const b = frame(el, f, 'overview', `<span class="ac-pill" id="acPill"><span class="dot"></span>Đang tải…</span><button class="btn" id="acRefresh">${I('refresh')} Làm mới</button><a class="btn primary" href="#/ai-agents?tab=chat&agent=VIVI">Hỏi Vivi</a>`);
     el.querySelector('#acRefresh').onclick = () => { cache.board = null; APP.refresh(); };
     const canCost = Store.perm('ai-cost').access !== false;
-    Store.query('Agent/GetOverview').then(x => {
+    Promise.all([Store.query('Agent/GetOverview'), quickAll()]).then(([x, quick]) => {
       if (!b.isConnected) return;
       if (!x.ok || !x.data) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được Trung tâm Agent')}</div>`; return; }
       const d = x.data, agents = d.listAgent || [];
@@ -103,11 +105,11 @@
             <section class="card ac-feed"><div class="ac-list-h"><h2>Hoạt động gần đây</h2></div>${(d.listFeed || []).length ? d.listFeed.map(r => `<div class="ac-feed-r"><i class="ac-dot ${r.status === 'Succeeded' ? 'ok' : r.status === 'Denied' ? 'key' : 'bad'}"></i><div class="ac-row-t"><div class="ell"><b>${esc(r.agent || '')}</b> · ${esc(r.text)}</div><div class="small muted ell">${esc(r.who || '')}</div></div><span class="small muted nowrap">${esc(hm(r.at))}</span></div>`).join('') : '<div class="muted small" style="padding:12px 16px">Chưa có hoạt động trong 7 ngày.</div>'}</section></div></div>`;
       const paintCur = () => {
         const a = agents.find(z => z.code === ov.cur); const box = b.querySelector('#acCur'); if (!a || !box) return;
-        const canEdit = Store.perm('ai-agents').edit === true && a.configured;
+        const canEdit = Store.perm('ai-agents').edit === true && a.configured, qs = quick.filter(q => q.agent === a.code).slice(0, 4);
         box.innerHTML = `<section class="card ac-cur"><div class="row-flex" style="gap:12px;align-items:center">${robot(a.color, a.state !== 'off', 52)}<div style="flex:1;min-width:0"><b class="ell" style="font-size:16px;display:block">${esc(a.name)}</b><div class="small muted ell">Phục vụ: ${esc(a.serves)}</div></div>${stChip(a.state)}</div>
           <div class="ac-desc">${esc(a.purpose)}</div>
           <div class="ac-mini"><div><div class="l">Lượt hôm nay</div><b>${U.num(a.callsToday)}</b></div><div><div class="l">Chức năng</div><b>${U.num(a.toolCount)}</b></div><div><div class="l">Việc đang theo</div><b>${U.num(a.openTasks)}</b></div></div>
-          ${a.listAsk.length && a.state !== 'off' ? `<div class="small muted">Hỏi nhanh</div><div class="ac-asks">${a.listAsk.map(q => `<a href="#/ai-agents?tab=chat&agent=${esc(a.code)}&q=${encodeURIComponent(q)}">${esc(q)}</a>`).join('')}</div>` : ''}
+          ${qs.length && a.state !== 'off' ? `<div class="small muted">Hỏi nhanh · không dùng AI</div><div class="ac-asks">${qs.map(q => `<a href="#/ai-agents?tab=chat&agent=${esc(a.code)}&quick=${encodeURIComponent(q.id)}">${esc(q.hoi)}</a>`).join('')}</div>` : ''}
           <div class="row-flex" style="gap:8px">${a.state !== 'off' ? `<a class="btn primary" style="flex:1;justify-content:center" href="#/ai-agents?tab=chat&agent=${esc(a.code)}">Chat với agent</a>` : `<span class="muted small" style="flex:1">Agent đợt ${a.wave} – chưa bật</span>`}<a class="btn" href="#/ai-agents?code=${esc(a.code)}">Chi tiết</a>${canEdit ? `<label class="ai-switch" title="${a.active ? 'Tắt' : 'Bật'} agent"><input type="checkbox" data-code="${esc(a.code)}" ${a.active ? 'checked' : ''}><span>${a.active ? 'Bật' : 'Tắt'}</span></label>` : ''}</div></section>`;
         const sw = box.querySelector('.ai-switch input'); if (sw) sw.onchange = () => toggle(sw.dataset.code, sw.checked, () => APP.refresh());
       };
@@ -173,44 +175,88 @@
   const CHAT_KEY = 'dc-agent-chat';
   const chatStore = () => { try { return JSON.parse(sessionStorage.getItem(CHAT_KEY) || '{}'); } catch (e) { return {}; } };
   const chatSave = h => { try { sessionStorage.setItem(CHAT_KEY, JSON.stringify(h)); } catch (e) { /* đầy bộ nhớ – bỏ qua */ } };
+  // AI-25.2 (D-143): kết quả Hỏi nhanh (Agent/RunQuick – KHÔNG qua AI, 0 token) hiện thành thẻ / bảng / danh sách / biểu đồ trong khung chat;
+  // "Mở màn" chỉ hiện khi có quyền màn; "Phân tích thêm" gửi kết quả (đã lọc theo quyền) + câu phan_tich sang Chat AI.
+  const qNum = v => { const t = String(v == null ? '' : v).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, ''); return t === '' || isNaN(+t) ? null : +t; };
+  const qScreen = h => (h || '').replace(/^#\//, '').split('?')[0];
+  function quickCard(q, i) {
+    const d = q.data || {}, cot = d.cot || [], dong = d.dong || [];
+    let body = '';
+    if (!dong.length) body = `<div class="small muted">${esc(d.rong || 'Không có dữ liệu.')}</div>`;
+    else if (d.kieu === 'tom_tat') body = '';
+    else if (d.kieu === 'bieu_do' && cot.length > 1) {
+      const num = cot.map((c, k) => k > 0 && dong.some(r => qNum(r[k]) != null) ? k : -1).filter(k => k > 0);
+      body = UI.chart({ type: 'line', title: d.tieuDe, labels: dong.map(r => r[0]), series: num.map(k => ({ name: cot[k], values: dong.map(r => qNum(r[k])) })), h: 220 });
+    } else if (d.kieu === 'the') body = `<div class="ac-q-cards">${dong.map(r => `<div class="ac-q-card">${cot.map((c, k) => r[k] ? `<div class="spread small"><span class="muted">${esc(c)}</span><b>${esc(r[k])}</b></div>` : '').join('')}</div>`).join('')}</div>`;
+    else if (d.kieu === 'danh_sach') body = `<ul class="ac-q-list">${dong.map(r => `<li><b>${esc(r[0] || '')}</b>${r.slice(1).filter(Boolean).length ? ' <span class="muted">· ' + r.slice(1).filter(Boolean).map(esc).join(' · ') + '</span>' : ''}</li>`).join('')}</ul>`;
+    else body = `<div class="table-wrap"><table class="table dc-table"><thead><tr>${cot.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${dong.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const more = d.tongDong > dong.length ? `<div class="small muted">Hiện ${U.num(dong.length)} / ${U.num(d.tongDong)} dòng</div>` : '';
+    const scr = qScreen(d.moMan), open = d.moMan && Store.perm(scr).access !== false ? `<a class="btn sm" href="${esc(d.moMan)}">Mở màn</a>` : '';
+    const ai = d.phanTich && q.ai !== false ? `<button type="button" class="btn sm" data-more="${i}">Phân tích thêm</button>` : '';
+    return `<div class="ac-msg ac-quick"><div class="spread"><b>${esc(d.tieuDe || q.hoi || '')}</b><span class="ac-chip ok">Hỏi nhanh · không dùng AI</span></div>${d.tomTat ? `<div class="mt-s">${esc(d.tomTat)}</div>` : ''}${body ? `<div class="mt-s">${body}</div>` : ''}${more}${open || ai ? `<div class="row-flex mt-s" style="gap:8px">${open}${ai}</div>` : ''}</div>`;
+  }
+  const quickText = d => [`Số liệu Hỏi nhanh "${d.tieuDe}"${d.tomTat ? ' – ' + d.tomTat : ''} (${d.tongDong} dòng):`, (d.cot || []).join(' | '), ...(d.dong || []).slice(0, 30).map(r => r.join(' | '))].join('\n');
   function chat(el, f, p) {
     const b = frame(el, f, 'chat');
-    chatAgents().then(list => {
+    Promise.all([chatAgents(), quickAll()]).then(([list, quick]) => {
       if (!b.isConnected) return;
       if (!list.length) { b.innerHTML = '<div class="notice warn">Không tải được danh sách agent.</div>'; return; }
       const live = list.filter(a => a.state !== 'off');
       let cur = (list.find(a => a.code === (p.agent || '').toUpperCase() && a.state !== 'off') || live[0] || list[0]).code;
-      const draw = () => {
-        const a = list.find(z => z.code === cur), h = chatStore()[cur] || [];
+      let ask = null; // câu nhanh đang chờ nhập (nhap)
+      const push = (who, ...m) => { const all = chatStore(); all[who] = [...(all[who] || []), ...m].slice(-40); chatSave(all); };
+      const runQuick = (q, nhap) => {
+        const who = cur;
+        push(who, { role: 'user', content: q.hoi + (nhap && Object.values(nhap).some(Boolean) ? ' – ' + Object.values(nhap).filter(Boolean).join(', ') : '') });
+        ask = null; draw(true);
+        Store.act('Agent/RunQuick', { json: { id: q.id, nhap: nhap || {} }, quiet: true }).then(r => {
+          push(who, r.ok ? { role: 'quick', hoi: q.hoi, data: r.data || {} } : { role: 'assistant', err: true, content: '⚠ ' + (r.message || 'Không chạy được câu hỏi nhanh') });
+          if (b.isConnected && cur === who) draw();
+        });
+      };
+      const sendAi = (text, shown) => {
+        const who = cur, hist = (chatStore()[who] || []).filter(m => (m.role === 'user' || m.role === 'assistant') && !m.err);
+        push(who, { role: 'user', content: shown || text }); draw(true);
+        Store.act('Agent/Chat', { json: { agent: who, message: text, history: hist.slice(-20).map(m => ({ role: m.role, content: m.content })) }, quiet: true }).then(r => {
+          push(who, r.ok ? { role: 'assistant', content: (r.data || {}).reply || '', corr: (r.data || {}).correlationId } : { role: 'assistant', err: true, content: '⚠ ' + (r.message || 'Trợ lý không phản hồi') });
+          if (b.isConnected && cur === who) draw();
+        });
+      };
+      const msgHtml = (m, i) => m.role === 'quick' ? quickCard(m, i)
+        : `<div class="ac-msg ${m.role === 'user' ? 'me' : ''}">${m.role === 'assistant' ? APP.knowledgeMd(m.content, []) : esc(m.content)}${m.role === 'assistant' && !m.err ? `<div class="ac-src"><span class="ac-chip off">Chat AI</span><span>Nguồn: số liệu lõi trong quyền của anh / chị</span>${m.corr ? `<span>${esc(m.corr.slice(0, 8))}</span>` : ''}</div>` : ''}</div>`;
+      const draw = waiting => {
+        const a = list.find(z => z.code === cur), h = chatStore()[cur] || [], qs = quick.filter(q => q.agent === cur);
         b.innerHTML = `<div class="ac-chat"><aside class="card ac-chat-list"><div class="ac-chat-lh">Agent của tôi</div><div class="ac-chat-ag">${list.map(z => `<button class="ac-ag ${z.code === cur ? 'on' : ''} ${z.state === 'off' ? 'off' : ''}" data-ag="${esc(z.code)}" ${z.state === 'off' ? 'disabled title="Agent chưa bật"' : ''}>${robot(z.color, z.state !== 'off', 34, true)}<span class="ac-row-t"><b class="ell">${esc(z.short)}</b><span class="small muted ell">${esc(z.state === 'off' ? `Đợt ${z.wave} – chưa bật` : z.serves)}</span></span><i class="ac-dot ${esc(z.state)}"></i></button>`).join('')}</div></aside>
           <section class="card ac-chat-main"><div class="ac-chat-h">${robot(a.color, a.state !== 'off', 30, true)}<b class="ell">${esc(a.name)}</b><span class="small muted ell">${esc(a.serves)}</span><span class="ac-chip off" style="margin-left:auto">Ghi qua Phê duyệt</span></div>
-            <div class="ac-msgs" id="acMsgs">${h.length ? h.map(m => `<div class="ac-msg ${m.role === 'user' ? 'me' : ''}">${m.role === 'assistant' ? APP.knowledgeMd(m.content, []) : esc(m.content)}${m.role === 'assistant' && !m.err ? `<div class="ac-src"><span>Nguồn: số liệu lõi trong quyền của anh / chị</span>${m.corr ? `<span>${esc(m.corr.slice(0, 8))}</span>` : ''}</div>` : ''}</div>`).join('') : `<div class="muted small ac-empty">Hỏi ${esc(a.short)} về số liệu anh / chị được xem. Câu trả lời ghi nguồn; đề xuất ghi (nếu có) chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.</div>`}</div>
-            ${a.listAsk.length ? `<div class="ac-asks">${a.listAsk.map(q => `<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
+            <div class="ac-msgs" id="acMsgs">${h.length ? h.map(msgHtml).join('') : `<div class="muted small ac-empty">Bấm một câu <b>Hỏi nhanh</b> bên dưới để xem số liệu ngay (không dùng AI), hoặc hỏi ${esc(a.short)} bằng lời. Câu trả lời ghi nguồn; đề xuất ghi (nếu có) chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.</div>`}${waiting ? '<div class="ac-msg muted">Đang trả lời…</div>' : ''}</div>
+            ${qs.length ? `<div class="ac-asks" aria-label="Hỏi nhanh – không dùng AI">${qs.map(q => `<button type="button" data-qk="${esc(q.id)}" title="Hỏi nhanh · không dùng AI" class="${ask && ask.id === q.id ? 'on' : ''}">${esc(q.hoi)}</button>`).join('')}</div>` : ''}
+            ${ask ? `<form class="ac-qin" id="acQin"><span class="small"><b>${esc(ask.hoi)}</b></span>${Object.entries(ask.nhap).map(([k, l]) => `<input class="input" name="${esc(k)}" placeholder="${esc(l)}" aria-label="${esc(l)}" maxlength="100" required>`).join('')}<button class="btn primary sm" type="submit">Xem</button><button class="btn sm" type="button" id="acQx">Bỏ</button></form>` : ''}
             <form class="ac-input" id="acForm"><textarea class="input" id="acText" rows="1" maxlength="2000" placeholder="Hỏi ${esc(a.short)}… (Enter gửi, Shift+Enter xuống dòng)" aria-label="Câu hỏi"></textarea><button class="btn primary" type="submit">Gửi</button></form></section>
           <aside class="ac-chat-side"><section class="card"><h3>Agent này làm được</h3>${a.listCan.map(c => `<div class="small">✓ ${esc(c)}</div>`).join('')}<div class="small muted mt">${a.toolCount} chức năng · ${a.scheduleCount} lịch tự động</div></section>
+            <section class="card"><h3>Hỏi nhanh và Chat AI</h3><div class="small"><b>Hỏi nhanh</b>: máy chủ lấy số liệu theo mẫu, không dùng AI, không tốn chi phí. <b>Phân tích thêm</b> / gõ câu hỏi: gửi Chat AI (tính chi phí).</div></section>
             <section class="card"><h3>Giới hạn</h3><div class="small">Không xem số liệu ngoài quyền của anh / chị (giá vốn, lương…). Lệnh ghi (tạo phiếu, đổi trạng thái) chỉ là đề xuất – người có quyền xác nhận ở Phê duyệt › Lệnh của agent.</div></section>
             <section class="card"><h3>Cũng có trên bot</h3><div class="small">Telegram (bot Trợ lý) · lịch sử chat đồng bộ theo người dùng</div></section></aside></div>`;
         const msgs = b.querySelector('#acMsgs'); msgs.scrollTop = msgs.scrollHeight;
-        b.querySelectorAll('[data-ag]').forEach(x => x.onclick = () => { cur = x.dataset.ag; draw(); });
+        b.querySelectorAll('[data-ag]').forEach(x => x.onclick = () => { cur = x.dataset.ag; ask = null; draw(); });
         const ta = b.querySelector('#acText');
         if (p.q && cur === (p.agent || '').toUpperCase()) { ta.value = p.q; p.q = ''; }
         ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); b.querySelector('#acForm').requestSubmit(); } };
-        b.querySelectorAll('[data-q]').forEach(x => x.onclick = () => { ta.value = x.dataset.q; b.querySelector('#acForm').requestSubmit(); });
-        b.querySelector('#acForm').onsubmit = e => {
-          e.preventDefault();
-          const text = ta.value.trim(); if (!text) return;
-          const all = chatStore(), hist = all[cur] || [], who = cur;
-          hist.push({ role: 'user', content: text }); all[cur] = hist.slice(-40); chatSave(all); draw();
-          const wait = document.createElement('div'); wait.className = 'ac-msg muted'; wait.textContent = 'Đang trả lời…'; b.querySelector('#acMsgs').appendChild(wait);
-          Store.act('Agent/Chat', { json: { agent: who, message: text, history: hist.slice(-21, -1).map(m => ({ role: m.role, content: m.content })) }, quiet: true }).then(r => {
-            const a2 = chatStore(), h2 = a2[who] || [];
-            h2.push(r.ok ? { role: 'assistant', content: (r.data || {}).reply || '', corr: (r.data || {}).correlationId } : { role: 'assistant', err: true, content: '⚠ ' + (r.message || 'Trợ lý không phản hồi') });
-            a2[who] = h2.slice(-40); chatSave(a2); if (b.isConnected && cur === who) draw();
-          });
-        };
-        if (!('ontouchstart' in window)) ta.focus();
+        b.querySelectorAll('[data-qk]').forEach(x => x.onclick = () => {
+          const q = qs.find(z => z.id === x.dataset.qk); if (!q) return;
+          if (Object.keys(q.nhap || {}).length) { ask = q; draw(); const i = b.querySelector('#acQin input'); if (i) i.focus(); } else runQuick(q);
+        });
+        const qin = b.querySelector('#acQin');
+        if (qin) { qin.onsubmit = e => { e.preventDefault(); runQuick(ask, Object.fromEntries([...qin.querySelectorAll('input')].map(i => [i.name, i.value.trim()]))); }; b.querySelector('#acQx').onclick = () => { ask = null; draw(); }; }
+        b.querySelectorAll('[data-more]').forEach(x => x.onclick = () => {
+          const m = h[+x.dataset.more]; if (!m || !m.data) return;
+          sendAi(`${m.data.phanTich}\n\n${quickText(m.data)}`, 'Phân tích thêm: ' + (m.data.tieuDe || m.hoi));
+        });
+        b.querySelector('#acForm').onsubmit = e => { e.preventDefault(); const text = ta.value.trim(); if (text) sendAi(text); };
+        if (!('ontouchstart' in window) && !ask) ta.focus();
       };
       draw();
+      // Thẻ agent ở Tổng quan: #/ai-agents?tab=chat&agent=..&quick=<id> → chạy luôn câu nhanh (1 lần).
+      if (p.quick) { const q = quick.find(z => z.id === p.quick && z.agent === cur); p.quick = ''; if (q) { if (Object.keys(q.nhap || {}).length) { ask = q; draw(); } else runQuick(q); } }
     });
   }
 
@@ -348,11 +394,15 @@
       if (!b.isConnected) return;
       if (!x.ok || !x.data) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được chi phí')}</div>`; return; }
       const d = x.data, mm = d.month.slice(5) + '/' + d.month.slice(0, 4), name = c => (agents.find(a => a.code === c) || {}).short || c;
-      if (!d.turns) { b.innerHTML = `<div class="card panel empty">${I('chart')}<h2 class="mt">Chưa có dữ liệu chi phí tháng ${esc(mm)}</h2><p class="muted">Số liệu có khi Hermes báo token / chi phí mỗi lượt trả lời (công cụ bao_chi_phi – AI-13). Ngân sách: ${d.budget ? esc(money(d.budget)) : 'chưa đặt (Agent:MonthlyBudget)'}.</p></div>`; return; }
+      // AI-25.2 (D-143): lượt theo nguồn – Hỏi nhanh (không dùng AI, 0 đ) · Chat AI · Theo lịch; ước tiết kiệm = lượt Hỏi nhanh × bình quân 1 lượt Chat AI.
+      const src = `<div class="card mt"><h3>Theo nguồn · tháng ${esc(mm)}</h3><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Nguồn</th><th class="num">Lượt</th><th class="num">Chi phí (đ)</th></tr></thead><tbody>`
+        + [['Hỏi nhanh · không dùng AI', d.quickRuns, 0], ['Chat AI', d.chatTurns, d.chatVnd], ['Theo lịch', d.scheduleTurns, d.scheduleVnd]].map(([l, n, v]) => `<tr><td>${esc(l)}</td><td class="num">${U.num(n || 0)}</td><td class="num">${U.num(Math.round(v || 0))}</td></tr>`).join('')
+        + `</tbody></table></div><div class="small muted mt">${d.savedVnd == null ? 'Chưa đủ dữ liệu để ước số tiền tiết kiệm (cần ít nhất 1 lượt AI có báo chi phí).' : `Ước tiết kiệm nhờ Hỏi nhanh: <b>≈ ${esc(money(d.savedVnd))}</b> (${U.num(d.quickRuns || 0)} lượt × bình quân 1 lượt Chat AI).`}</div></div>`;
+      if (!d.turns) { b.innerHTML = (d.quickRuns ? src : '') + `<div class="card panel empty">${I('chart')}<h2 class="mt">Chưa có dữ liệu chi phí tháng ${esc(mm)}</h2><p class="muted">Số liệu có khi Hermes báo token / chi phí mỗi lượt trả lời (công cụ bao_chi_phi – AI-13). Ngân sách: ${d.budget ? esc(money(d.budget)) : 'chưa đặt (Agent:MonthlyBudget)'}.</p></div>`; return; }
       const color = d.pct == null ? 'blue' : d.pct >= 100 ? 'red' : d.pct >= d.alertPct ? 'orange' : 'green';
       b.innerHTML = UI.kpis([UI.kpi('Đã dùng', shortMoney(d.totalVnd), d.budget ? 'ngân sách ' + money(d.budget) : 'chưa đặt ngân sách', 'chart', color), UI.kpi('% ngân sách', d.pct == null ? '–' : U.num(d.pct, 1) + ' %', `cảnh báo từ ${U.num(d.alertPct)} %`, 'shield', color),
         UI.kpi('Dự báo cuối tháng', shortMoney(d.forecastVnd), 'theo bình quân ngày', 'trend', d.budget && d.forecastVnd > d.budget ? 'red' : 'blue'), UI.kpi('Tháng ' + d.prevMonth.slice(5), shortMoney(d.prevTotalVnd), 'tháng trước', 'history', 'blue'),
-        UI.kpi('Bình quân / lượt', d.perTurnVnd == null ? '–' : money(d.perTurnVnd), U.num(d.turns) + ' lượt', 'clock', 'blue'), UI.kpi('Token', U.num((d.tokensIn + d.tokensOut) / 1000, 1) + 'k', 'vào ' + U.num(d.tokensIn / 1000, 1) + 'k · ra ' + U.num(d.tokensOut / 1000, 1) + 'k', 'layers', 'blue')])
+        UI.kpi('Bình quân / lượt', d.perTurnVnd == null ? '–' : money(d.perTurnVnd), U.num(d.turns) + ' lượt', 'clock', 'blue'), UI.kpi('Token', U.num((d.tokensIn + d.tokensOut) / 1000, 1) + 'k', 'vào ' + U.num(d.tokensIn / 1000, 1) + 'k · ra ' + U.num(d.tokensOut / 1000, 1) + 'k', 'layers', 'blue')]) + src
         + `<div class="ac-usage mt"><div class="card"><h3>Chi phí theo ngày · tháng ${esc(mm)}</h3>${UI.chart({ type: 'bar', title: 'Chi phí AI theo ngày', unit: 'đ', labels: d.listDay.map(z => String(z.date).slice(8, 10)), fullLabels: d.listDay.map(z => U.date(z.date)), series: [{ name: 'Chi phí (đ)', values: d.listDay.map(z => z.costVnd), role: 'deliver' }], h: 260 })}</div>
           <div class="card"><h3>Theo agent</h3>${UI.chart({ type: 'hbar', title: 'Chi phí theo agent', unit: 'đ', labels: d.listAgent.map(a => name(a.agent)), series: [{ name: 'Chi phí (đ)', values: d.listAgent.map(a => a.costVnd) }], h: Math.max(160, d.listAgent.length * 34) })}</div></div>
         <div class="card mt"><h3>Chi tiết theo agent</h3><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Agent</th><th class="num">Lượt</th><th class="num">Token vào</th><th class="num">Token ra</th><th class="num">Chi phí (đ)</th><th class="num">%</th></tr></thead><tbody>

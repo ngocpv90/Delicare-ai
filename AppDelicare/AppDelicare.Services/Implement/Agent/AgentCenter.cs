@@ -185,23 +185,8 @@ namespace AppDelicare.Services.Implement.Agent
             ["PLAN"] = "Kế hoạch SX", ["PROC"] = "Mua hàng", ["HR"] = "Nhân sự", ["LOG"] = "Giao vận", ["PKG"] = "Hộp khay & VS", ["ACC"] = "Kế toán", ["CSKH"] = "CSKH – Zalo",
         };
 
-        /// <summary>Câu hỏi gợi ý của từng agent (tab Chat, thẻ agent).</summary>
-        public static readonly IReadOnlyDictionary<string, string[]> Asks = new Dictionary<string, string[]>
-        {
-            ["VIVI"] = ["Tóm tắt tình hình hôm nay", "Bước nào trong luồng đang kẹt?", "Việc nào quá hạn?"],
-            ["WH"] = ["Lô nào hết hạn trong 3 ngày?", "Nguyên liệu dưới định mức"],
-            ["KITCHEN"] = ["Tiến độ ca trưa", "Mẻ nào đang trễ?"],
-            ["QA"] = ["Nhiệt độ kho lạnh", "Lô đang tạm giữ"],
-            ["KNOW"] = ["SOP làm lạnh nhanh", "Sự cố tương tự tháng trước"],
-            ["SALES"] = ["Khách chưa chốt đơn ngày mai"],
-            ["PLAN"] = ["Kế hoạch sản xuất ngày mai"],
-            ["PROC"] = ["Thiếu nguyên liệu gì cho ngày mai?"],
-            ["HR"] = ["Ai chưa vào ca hôm nay?"],
-            ["LOG"] = ["Xe nào đang trễ?"],
-            ["PKG"] = ["Khay thất thoát tuần này"],
-            ["ACC"] = ["Giá vốn suất tuần này"],
-            ["CSKH"] = ["Thực đơn tuần sau"],
-        };
+        /// <summary>AI-25.2 (D-143): câu hỏi gợi ý của từng agent = câu nhanh kênh web trong <c>quick.yaml</c> (tab Chat / thẻ agent gọi Agent/GetQuick để lọc theo quyền).</summary>
+        private static List<string> Asks(string code) => [.. QuickCatalog.Load(QuickCatalog.Root()).Questions.Where(q => q.Agent == code && q.Kenh.Contains("web")).Select(q => q.Hoi).Take(4)];
 
         private static string AgentName(string code) => ShortName.TryGetValue(code, out var n) ? n : code;
 
@@ -595,7 +580,7 @@ namespace AppDelicare.Services.Implement.Agent
         {
             Code = a.Code, Name = a.Name, Short = AgentName(a.Code), Serves = a.Serves, Purpose = a.Purpose, Wave = a.Wave, Color = a.Color, Active = a.Active, Configured = a.Status != null,
             State = a.Active ? (a.HasKey ? "ok" : "key") : "off", ToolCount = a.ListTool.Count, ScheduleCount = schedules, CallsToday = a.CallsToday, DeniedToday = a.DeniedToday, FailedToday = a.FailedToday,
-            LastAt = a.LastCallAt, ListAsk = [.. Asks.GetValueOrDefault(a.Code) ?? []],
+            LastAt = a.LastCallAt, ListAsk = Asks(a.Code),
             ListCan = [.. a.Purpose.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(Cap)],
         };
 

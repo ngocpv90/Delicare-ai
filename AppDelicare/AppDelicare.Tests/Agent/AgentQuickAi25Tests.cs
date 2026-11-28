@@ -62,6 +62,31 @@ namespace AppDelicare.Tests.Agent
             mine.Should().NotContain("wh-ton-kho");
             var deny = JsonDocument.Parse(await (await plain.PostAsJsonAsync("/api/Agent/RunQuick", new { id = "wh-ton-kho" })).Content.ReadAsStringAsync()).RootElement;
             deny.GetProperty("responseCode").GetInt32().Should().Be(403);
+
+            // AI-25.2: tab Sử dụng tách Hỏi nhanh / Chat AI / Theo lịch + ước tiết kiệm; câu gợi ý của agent lấy từ quick.yaml.
+            DateTime now = DateTime.Now;
+            await f.SeedAsync(db =>
+            {
+                foreach (var (corr, vnd) in new[] { ("chat:a25", 1000m), ("chat:a25b", 3000m), ("sched:VIVI:sang", 5000m) })
+                {
+                    db.IntegrationLog.Add(new IntegrationLog
+                    {
+                        Id = Guid.NewGuid(), DirectionCode = "COST", OperationCode = "agent_cost", CorrelationId = corr, IdempotencyKey = "COST:VIVI:" + corr, RequestAt = now, ResponseAt = now, HttpStatus = 200,
+                        LogStatus = "Succeeded", ErrorCode = "COST:VIVI", ErrorMessage = JsonSerializer.Serialize(new { Agent = "VIVI", Model = "m", In = 10L, Out = 5L, Vnd = vnd }), CreatedDate = now,
+                    });
+                }
+                return Task.CompletedTask;
+            });
+            var cost = JsonDocument.Parse(await c.GetStringAsync("/api/Agent/GetCost?month=" + now.ToString("yyyy-MM"))).RootElement.GetProperty("data");
+            int runs = await f.QueryAsync(db => db.IntegrationLog.CountAsync(l => l.ErrorCode!.StartsWith(AgentQuickService.LogPrefix)));
+            cost.GetProperty("quickRuns").GetInt32().Should().Be(runs);
+            cost.GetProperty("chatTurns").GetInt32().Should().Be(2);
+            cost.GetProperty("chatVnd").GetDecimal().Should().Be(4000m);
+            cost.GetProperty("scheduleTurns").GetInt32().Should().Be(1);
+            cost.GetProperty("scheduleVnd").GetDecimal().Should().Be(5000m);
+            cost.GetProperty("savedVnd").GetDecimal().Should().Be(2000m * runs, "lượt Hỏi nhanh × bình quân 1 lượt Chat AI");
+            var vivi = JsonDocument.Parse(await c.GetStringAsync("/api/Agent/GetChatAgents")).RootElement.GetProperty("listData").EnumerateArray().First(x => x.GetProperty("code").GetString() == "VIVI");
+            vivi.GetProperty("listAsk").EnumerateArray().Select(x => x.GetString()).Should().BeSubsetOf(all.Where(q => q.Agent == "VIVI").Select(q => q.Hoi)).And.NotBeEmpty();
         }
     }
 }

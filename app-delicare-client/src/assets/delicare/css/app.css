@@ -1051,6 +1051,15 @@ tr.bb-late td{background:#FFF5F4}
 .ac-msg { align-self: flex-start; max-width: 78%; padding: 10px 14px; border-radius: 14px; line-height: 1.5; background: #fff; border: 1px solid #E4E9DC; border-bottom-left-radius: 4px; overflow-wrap: anywhere; }
 .ac-msg.me { align-self: flex-end; background: #4F6B1F; color: #fff; border-color: #4F6B1F; border-bottom-left-radius: 14px; border-bottom-right-radius: 4px; white-space: pre-wrap; }
 .ac-msg > :last-child { margin-bottom: 0; } .ac-msg p { margin: 0 0 6px; }
+/* AI-25.2 (D-143): Hỏi nhanh – kết quả theo mẫu, không dùng AI */
+.ac-asks button.on { border-color: #4F6B1F; background: #EEF3E5; }
+.ac-msg.ac-quick { max-width: 92%; width: 100%; border-color: #CFE0B8; background: #FBFCF8; }
+.ac-quick .mt-s { margin-top: 8px; } .ac-quick .table-wrap { max-height: 320px; overflow: auto; } .ac-quick .dc-table { font-size: 12px; }
+.ac-q-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.ac-q-card { border: 1px solid #E4E9DC; border-radius: 10px; padding: 8px 10px; background: #fff; display: grid; gap: 4px; }
+.ac-q-card .spread { gap: 8px; } .ac-q-card b { text-align: right; }
+.ac-q-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.ac-qin { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 8px 0; } .ac-qin .input { flex: 1; min-width: 160px; }
 .ac-src { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; } .ac-src span { font-size: 11px; color: #4F6B1F; background: #F4F8EC; border: 1px solid #DCE6CF; border-radius: 999px; padding: 2px 8px; }
 .ac-empty { padding: 20px 4px; }
 .ac-input { display: flex; gap: 8px; align-items: flex-end; } .ac-input textarea { flex: 1; resize: none; min-height: 42px; max-height: 160px; }
