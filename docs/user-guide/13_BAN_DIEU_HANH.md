@@ -66,6 +66,9 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Tri thức › 60 Kế toán | `knowledge?folder=60` | X | X | X | S |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X |
 | Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — |
+| Tri thức › 05 Công văn đến / đi | `knowledge?folder=05` | X | S | X | — |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | S | X | S | S |
+| Tri thức › 60 › Chứng từ gốc | `knowledge?folder=60-ct` | X | X | X | S |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

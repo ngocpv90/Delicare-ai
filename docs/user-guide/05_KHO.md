@@ -50,8 +50,12 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 40 Kho & Truy xuất | `knowledge?folder=40` | S | S |
 | Tri thức › 45 ATTP | `knowledge?folder=45` | X | — |
 | Tri thức › 60 Kế toán | `knowledge?folder=60` | — | X |
+| Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | X | S |
+| Tri thức › 40 › Hợp đồng nhà cung cấp | `knowledge?folder=40-hd` | — | S |
+| Tri thức › 80 › Hướng dẫn sử dụng | `knowledge?folder=80-hdsd` | X | X |
 <!-- MENU5:END -->
 
 **UI-6.29 (D-110): menu Kho còn 5 mục** – Nhận hàng · Xuất kho sản xuất · Tồn kho · Kiểm kê · Kho & vị trí. Các mục cũ đã ẩn và mở đúng chỗ: Lô hàng & hạn dùng (`scm-lot`) → Tồn kho tab **Theo lô & hạn dùng**; Sổ kho (`scm-inv-txn`) → Tồn kho tab **Sổ kho**; Định mức tồn kho (`scm-inv-policy`) → Tồn kho tab **Định mức theo kho**; Khu bảo quản / Vị trí kệ → Kho & vị trí tab tương ứng; Giữ chỗ nguyên liệu → Xuất kho sản xuất tab **Giữ chỗ nguyên liệu**; Chênh lệch tiêu hao → Giá vốn & lãi gộp tab Theo món / Bảng sản xuất ngày. Quyền ở mục cũ được gộp vào mục cha (không ai mất quyền xem). Chuyển kho / Điều chỉnh tồn chỉ còn ở Tồn kho tab đầu (`scm-transfer`, `scm-adjustment` ẩn từ MENU-4). Các mục "Chi tiết phiếu nhập / phiếu xuất / kiểm kê" cũng đã bỏ: xem dòng trong chi tiết phiếu, hoặc **Lọc theo nguyên liệu** trên danh sách Phiếu nhập / Phiếu xuất.

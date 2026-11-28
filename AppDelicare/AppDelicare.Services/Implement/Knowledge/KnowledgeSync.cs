@@ -41,7 +41,7 @@ namespace AppDelicare.Services.Implement.Knowledge
                 return Status<KnowledgeSyncManifestModel>(403, "Agent không đồng bộ kho về máy");
             }
             var rights = await RightsAsync(caller);
-            var notes = All().Where(n => n.Folder.Length > 0 && n.Folder != KnowledgeVault.Bod && !n.IsBod && rights.NoteVisible(n))
+            var notes = All().Where(n => n.Folder.Length > 0 && !KnowledgeVault.Restricted.Contains(n.Folder) && !n.IsBod && rights.NoteVisible(n)) // AI-22.1 (§7.9 luật 5): không vùng cá nhân, BOD, chứng từ, hợp đồng
                 .Select(n => new KnowledgeSyncNoteModel { Path = n.Path, Folder = n.Folder, Hash = n.Hash, ReadOnly = n.Generated })
                 .OrderBy(n => n.Path, StringComparer.Ordinal).ToList();
             var m = new KnowledgeSyncManifestModel

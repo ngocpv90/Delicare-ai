@@ -110,7 +110,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Tri thức › 50 Sản xuất | `knowledge?folder=50` | X | X | X | X | — | — | — | S | — | — | — | — | — | — | — | — | — | — | X |
 | Tri thức › 55 Giao vận | `knowledge?folder=55` | X | X | X | — | — | — | — | — | S | — | — | — | — | X | X | — | — | — | X |
 | Tri thức › 60 Kế toán | `knowledge?folder=60` | X | X | X | — | — | — | X | — | — | — | — | — | — | — | — | S | — | — | — |
-| Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — | — |
+| Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | S | X | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X |
 | Tri thức › 95 Nguồn BOT | `knowledge?folder=95` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 | Tri thức › 96 Nhật ký | `knowledge?folder=96` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
@@ -118,6 +118,13 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Tri thức › 98 Công việc | `knowledge?folder=98` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | S | X |
 | Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Tri thức › 05 Công văn đến / đi | `knowledge?folder=05` | X | S | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | S | X | S | — | — | X | S | S | X | — | — | — | — | S | — | S | S | — | S |
+| Tri thức › 20 › Hợp đồng khách hàng | `knowledge?folder=20-hd` | X | X | X | — | — | — | — | — | — | — | — | — | S | S | — | X | — | — | — |
+| Tri thức › 40 › Hợp đồng nhà cung cấp | `knowledge?folder=40-hd` | X | X | X | — | X | — | S | — | — | — | — | — | — | — | — | X | — | — | — |
+| Tri thức › 60 › Chứng từ gốc | `knowledge?folder=60-ct` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | S | — | — | — |
+| Tri thức › 70 › Hồ sơ cá nhân | `knowledge?folder=70-hs` | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — | — |
+| Tri thức › 80 › Hướng dẫn sử dụng | `knowledge?folder=80-hdsd` | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X |
 | Quản trị hệ thống › Tài khoản | `adm-user` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Nhóm quyền | `adm-usergroup` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
 | Quản trị hệ thống › Cấu hình menu | `adm-objectmenu` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | Q (IX) | — |
@@ -138,24 +145,24 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào 119 mục · ô quyền  157
-  CEO-PMO       vào 106 mục · ô quyền  112
-  COO           vào 129 mục · ô quyền  177
-  OPS-PLAN      vào  47 mục · ô quyền   95
-  OPS-SCM       vào  30 mục · ô quyền   70
-  OPS-WH        vào  28 mục · ô quyền   82
-  OPS-SCM-HEAD  vào  45 mục · ô quyền  138
-  OPS-KIT       vào  38 mục · ô quyền   65
-  OPS-LOG       vào  29 mục · ô quyền   57
-  OPS-POS       vào  19 mục · ô quyền   36
-  OPS-MNT       vào   8 mục · ô quyền   12
-  SAL-SALES     vào  28 mục · ô quyền   51
-  SAL-CON       vào  26 mục · ô quyền   75
-  SAL-HEAD      vào  38 mục · ô quyền  111
-  SAL-CS        vào  19 mục · ô quyền   28
-  FIN-ACC       vào  46 mục · ô quyền  144
-  FIN-HR        vào  19 mục · ô quyền   55
-  FIN-IT        vào 124 mục · ô quyền  249
-  QA            vào  41 mục · ô quyền   86
+  CEO           vào 126 mục · ô quyền  166
+  CEO-PMO       vào 112 mục · ô quyền  120
+  COO           vào 135 mục · ô quyền  185
+  OPS-PLAN      vào  49 mục · ô quyền   97
+  OPS-SCM       vào  33 mục · ô quyền   73
+  OPS-WH        vào  31 mục · ô quyền   85
+  OPS-SCM-HEAD  vào  49 mục · ô quyền  146
+  OPS-KIT       vào  41 mục · ô quyền   70
+  OPS-LOG       vào  32 mục · ô quyền   60
+  OPS-POS       vào  21 mục · ô quyền   38
+  OPS-MNT       vào  10 mục · ô quyền   14
+  SAL-SALES     vào  30 mục · ô quyền   53
+  SAL-CON       vào  29 mục · ô quyền   80
+  SAL-HEAD      vào  42 mục · ô quyền  119
+  SAL-CS        vào  21 mục · ô quyền   30
+  FIN-ACC       vào  52 mục · ô quyền  154
+  FIN-HR        vào  22 mục · ô quyền   62
+  FIN-IT        vào 126 mục · ô quyền  251
+  QA            vào  44 mục · ô quyền   91
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; ai-agent-cmd = OPS-WH, OPS-KIT, QA, OPS-SCM, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-HR, COO, OPS-PLAN, OPS-POS, SAL-SALES, SAL-CON, SAL-CS; kb-sop = CEO, COO, OPS-KIT, QA, OPS-WH, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-ACC, FIN-HR; log-load-short = COO, OPS-SCM-HEAD
 ```

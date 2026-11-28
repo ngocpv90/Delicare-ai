@@ -25,5 +25,8 @@ namespace AppDelicare.Model.Option
 
         /// <summary>AI-18: cho phép đồng bộ HAI CHIỀU thư mục 80 Đào tạo với Obsidian máy cá nhân (tools/kb-sync). Mặc định tắt – mọi thư mục chỉ một chiều (máy chủ → máy).</summary>
         public bool SyncTwoWayTraining { get; set; }
+
+        /// <summary>AI-22.1 (D-141 g, §7.9 luật 3): agent được đọc BOD Bảo mật (khi người hỏi được cấp đích danh). Mặc định false – nội dung agent đọc được gửi tới nhà cung cấp mô hình AI.</summary>
+        public bool AgentCanReadBod { get; set; }
     }
 }

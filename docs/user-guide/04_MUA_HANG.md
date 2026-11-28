@@ -48,8 +48,12 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 30 Thực đơn & Công thức | `knowledge?folder=30` | X | X |
 | Tri thức › 40 Kho & Truy xuất | `knowledge?folder=40` | X | S |
 | Tri thức › 60 Kế toán | `knowledge?folder=60` | — | X |
+| Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | — | S |
+| Tri thức › 40 › Hợp đồng nhà cung cấp | `knowledge?folder=40-hd` | X | S |
+| Tri thức › 80 › Hướng dẫn sử dụng | `knowledge?folder=80-hdsd` | X | X |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

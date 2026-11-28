@@ -37,30 +37,51 @@ namespace AppDelicare.Services.Implement.Knowledge
             new("98", "98 Công việc", "KNOW", AgentWritable: true),
             new("99", "99 Mẫu", "Admin"),
             new(Bod, "BOD Bảo mật", "CEO"),
+            // AI-22.1 (D-141, §7.9): kho tài liệu doanh nghiệp – mỗi vùng 1 mục quyền riêng; vùng con = thư mục con của thư mục lớn (quyền riêng, không thừa kế thư mục cha).
+            new("05", "05 Công văn", "Hành chính"),
+            new("15", "15 Họp & giao ban", "Người lập biên bản"),
+            new("20-HD", "20 Kinh doanh & Hợp đồng/Hợp đồng khách hàng", "TP Kinh doanh"),
+            new("40-HD", "40 Kho & Truy xuất/Hợp đồng nhà cung cấp", "Mua hàng"),
+            new("60-CT", "60 Kế toán/Chứng từ gốc", "Kế toán"),
+            new(Personal, "70 Nhân sự/Hồ sơ cá nhân", "TP Nhân sự"),
+            new(UserGuide, "80 Đào tạo/Hướng dẫn sử dụng", "Máy (tự sinh từ docs/user-guide)"),
         ];
+
+        /// <summary>AI-22.1: vùng cá nhân (hồ sơ nhân viên, HĐLĐ) – chỉ người được cấp đích danh (admin không tự thấy); agent chỉ HR khi người hỏi có quyền.</summary>
+        public const string Personal = "70-HS";
+        /// <summary>AI-22.3: Hướng dẫn sử dụng (máy tự nhập) – mọi tài khoản nội bộ.</summary>
+        public const string UserGuide = "80-HDSD";
+        /// <summary>Mục công khai nội bộ (mọi tài khoản nội bộ xem).</summary>
+        public static readonly string[] PublicInternal = ["70", "80", UserGuide, "99"];
+        /// <summary>§7.9 luật 3 (Quyết định tự chọn AI-22.1): việc theo lịch / không người hỏi KHÔNG đọc vùng tài liệu hạn chế + công văn + biên bản họp (và ghi chú confidentiality hạn chế); phần còn lại theo phạm vi agent như AI-3…AI-16.</summary>
+        public static readonly string[] NoAskerBlocked = ["05", "15", "20-HD", "40-HD", "60-CT", Personal, Bod];
+        /// <summary>§7.9 luật 4 / 5: mục hạn chế – ghi nhật ký mỗi lần xem / tải file; KHÔNG đồng bộ Obsidian máy cá nhân.</summary>
+        public static readonly string[] Restricted = ["20-HD", "40-HD", "60-CT", Personal, Bod];
 
         public static KnowledgeFolder? FolderByCode(string? code) => Folders.FirstOrDefault(f => string.Equals(f.Code, code?.Trim(), StringComparison.OrdinalIgnoreCase));
 
+        /// <summary>Thư mục của đường dẫn: khớp dài nhất (vùng con "20 Kinh doanh &amp; Hợp đồng/Hợp đồng khách hàng" thắng thư mục cha).</summary>
         public static KnowledgeFolder? FolderOfPath(string relPath)
         {
-            string first = relPath.Split('/')[0];
-            return Folders.FirstOrDefault(f => string.Equals(f.Dir, first, StringComparison.OrdinalIgnoreCase));
+            string p = relPath.Replace('\\', '/');
+            return Folders.Where(f => p.Equals(f.Dir, StringComparison.OrdinalIgnoreCase) || p.StartsWith(f.Dir + "/", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(f => f.Dir.Length).FirstOrDefault();
         }
 
         /// <summary>Phạm vi đọc của agent (§7.8). null = mọi thư mục trừ BOD. CSKH: chỉ ghi chú công khai (lọc ở ghi chú).</summary>
         public static string[]? AgentScope(string agent) => agent.ToUpperInvariant() switch
         {
             "VIVI" or "KNOW" => null,
-            "SALES" => ["20", "30", "55", "80"],
+            "SALES" => ["20", "20-HD", "30", "55", "80"],
             "PLAN" => ["30", "40", "50", "80"],
-            "PROC" => ["30", "40", "60", "80"],
+            "PROC" => ["30", "40", "40-HD", "60", "80"],
             "WH" => ["40", "45", "80"],
             "KITCHEN" => ["30", "45", "50", "80"],
             "QA" => ["40", "45", "50", "55", "80"],
             "LOG" => ["20", "55", "80"],
             "PKG" => ["20", "45", "55", "80"],
-            "HR" => ["70", "80"],
-            "ACC" => ["20", "40", "60", "80"],
+            "HR" => ["70", Personal, "80"],
+            "ACC" => ["20", "40", "60", "60-CT", "80"],
             "CSKH" => ["20", "30", "55", "80"],
             _ => [],
         };
