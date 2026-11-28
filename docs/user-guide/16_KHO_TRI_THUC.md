@@ -63,3 +63,12 @@ Máy tự xuất (job **Xuất kho tri thức** 23:30, **Bản tin sáng / Báo 
 - Nhãn **gắn mã** = mã nằm trong `refs` của ghi chú (xếp trước); **nhắc tới** = mã chỉ xuất hiện trong nội dung (kèm đoạn trích). Nhãn trạng thái (hiệu lực / nháp / lưu trữ) và **cần rà soát** như ở màn Kho tri thức.
 - Chỉ hiện ghi chú bạn được xem (quyền thư mục); thư mục BOD chỉ người được cấp rõ. Bấm ghi chú → mở đúng ghi chú ở Kho tri thức.
 - Muốn ghi chú hiện ở một hồ sơ: khi soạn, ghi mã vào `refs` (vd `refs: [LO-261128-NC00173-03, NCC-0012]`).
+
+## AI-18 – Đọc kho tri thức bằng Obsidian trên máy cá nhân (tùy chọn)
+
+- IT cài Node 18+ và chạy (thay tài khoản / mật khẩu của bạn – chỉ đặt ở biến môi trường, không ghi ra tệp):
+  `DC_KB_URL=https://<máy chủ>/api DC_KB_USER=<tài khoản> DC_KB_PASS=<mật khẩu> node tools/kb-sync/kb-sync.mjs "D:\Obsidian\DELI-CARE"` (thêm `--dry` để xem trước). Mở thư mục đó bằng Obsidian (Open folder as vault). Chạy lại script khi cần cập nhật (hoặc đặt lịch Windows).
+- Chỉ tải các thư mục **bạn được xem**; **BOD không bao giờ tải về máy**, kể cả Ban GĐ. Bị thu hồi quyền → lần đồng bộ sau xóa bản trên máy.
+- **Một chiều** (mặc định, mọi thư mục): tệp trên máy chỉ đọc; sửa trên máy KHÔNG lên máy chủ – lần sau bản máy được chuyển vào `.delicare-conflict` và bản máy chủ ghi lại. Muốn sửa: sửa trên màn Kho tri thức.
+- **Hai chiều** chỉ thư mục **80 Đào tạo**, khi IT bật `Knowledge:SyncTwoWayTraining` và bạn có quyền Sửa thư mục 80: sửa / thêm tệp .md trên máy được đẩy lên (vẫn kiểm số điện thoại / CCCD / số tài khoản, khóa băm, lịch sử). Máy chủ cũng đã đổi cùng tệp → không ghi đè, bản máy giữ ở `.delicare-conflict`.
+- Mỗi lần đồng bộ ghi lịch sử (ai, bao nhiêu ghi chú, thư mục nào) – IT xem được.

@@ -627,6 +627,17 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-18 – Đồng bộ Obsidian máy cá nhân + CHỐT ĐỢT 3 (D-133)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | QA (uat.qa) | `node tools/kb-sync/kb-sync.mjs <vault>` | Tải đúng thư mục QA được xem; không có thư mục BOD; tệp chỉ đọc; chạy lại → "0 tải về" |
+| 2 | uat.ceo (có BOD) | Đồng bộ | Không có BOD / ghi chú BOD trên máy |
+| 3 | uat.qa | Sửa 1 tệp 45 trên máy → đồng bộ | Báo xung đột, bản máy ở `.delicare-conflict`, tệp trở lại bản máy chủ; máy chủ không đổi |
+| 4 | IT bật `Knowledge:SyncTwoWayTraining`; người có quyền Sửa 80 | Tạo / sửa ghi chú trong "80 Đào tạo" trên máy → đồng bộ | Lên máy chủ (lịch sử lưu ghi người dùng); ghi SĐT → bị chặn |
+| 5 | IT | Thu hồi quyền thư mục của 1 người → người đó đồng bộ | Ghi chú thư mục đó bị xóa trên máy |
+| 6 | Anh | **Chốt đợt 3:** 12 agent chạy ≥ 2 tuần, `AI15_gate_wave2_report.sql` cho PLAN / PKG / ACC (duyệt không sửa, 0 ghi không qua duyệt), chi phí trong ngân sách | Qua cửa đợt 3 |
+
 ## AI-17 – Tab "Tri thức" trên trang chi tiết (D-133)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

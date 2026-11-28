@@ -41,6 +41,10 @@ namespace AppDelicare.WebApi.Controllers
         public Task<IActionResult> Search([FromQuery] KnowledgeSearchRequest request) => Run(nameof(Search), () => _service.Search(request ?? new KnowledgeSearchRequest()));
 
         /// <summary>AI-17 (D-133): tab Tri thức trên trang chi tiết – ghi chú gắn mã của bản ghi (refs / nhắc trong nội dung), theo quyền thư mục của người xem.</summary>
+        /// <summary>AI-18 (D-133): danh sách ghi chú để đồng bộ Obsidian máy cá nhân (tools/kb-sync/kb-sync.mjs) – theo quyền thư mục, không BOD.</summary>
+        [HttpGet("GetSyncManifest")]
+        public Task<IActionResult> GetSyncManifest() => Run(nameof(GetSyncManifest), _service.GetSyncManifest);
+
         [HttpGet("GetByEntity")]
         public Task<IActionResult> GetByEntity([FromQuery] string? type, [FromQuery] Guid id) => Run(nameof(GetByEntity), () => _service.GetByEntity(type, id));
 
