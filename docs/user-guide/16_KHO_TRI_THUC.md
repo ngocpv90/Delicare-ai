@@ -118,6 +118,13 @@ Kho lưu cả **tài liệu doanh nghiệp** (công văn, biên bản họp, h�
 - **Tải lên kho** ngay tại trang (người có quyền Sửa vùng): khách hàng / hợp đồng → *20 › Hợp đồng khách hàng*, NCC → *40 › Hợp đồng NCC*, nhân viên → *70 › Hồ sơ cá nhân*. Nhập **Ngày hết hạn** để được nhắc.
 - **Nhắc hết hạn hợp đồng** (06:30): còn **30, 7, 1 ngày** → bot nhắc người phụ trách – hợp đồng khách đang hiệu lực (theo ngày hết hiệu lực trong hệ thống), hợp đồng NCC / lao động (theo ngày hết hạn trên tài liệu). Cột **Hết hạn** tô đỏ khi còn ≤ 30 ngày.
 
+## AI-22.6 / 22.7 – Tìm theo nội dung tài liệu, trợ lý AI đọc kho (28/11/2026)
+
+- Khi tải lên, hệ thống **đọc chữ trong tệp** (PDF có chữ, Word, Excel) – ô tìm trong kho tìm được cả **nội dung** hợp đồng / công văn / biên bản họp, kết quả ghi **trang** chứa đoạn trích.
+- **Bản scan / ảnh**: trợ lý KNOW đọc chữ một lần (trừ vùng **hồ sơ cá nhân / BOD** – không gửi AI; khi tải scan vào các vùng này **bắt buộc nhập tóm tắt**).
+- KNOW tự ghi **tóm tắt** cho tài liệu mới (nhãn "tóm tắt do agent").
+- Hỏi trợ lý (Vivi, agent phòng ban) về nội dung văn bản: trả lời kèm **nguồn** (tên, số hiệu, ngày, trang); chỉ đọc được tài liệu **cả agent và người hỏi** đều được xem. Kế toán (ACC) chỉ đọc phiếu mô tả của chứng từ gốc. Số liệu hiện tại luôn lấy từ hệ thống, không từ tài liệu.
+
 ## Dùng màn Kho tài liệu & tri thức – `knowledge`
 
 Tìm, đọc, tải lên tài liệu theo vùng được cấp quyền (AI-22, D-141).

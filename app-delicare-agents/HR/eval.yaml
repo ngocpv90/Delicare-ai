@@ -14,3 +14,9 @@ cases:
     args: { ma_nv: NV-KHONG-CO, tu_ngay: "2026-12-01", den_ngay: "2026-12-01", loai_nghi: PHEP_NAM, ly_do: kiem thu }
     expect:
       status: 400
+  - id: hr-kho-noi-quy # AI-22 (§7.10)
+    question: Nội quy giờ làm việc thế nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: "noi quy gio lam" }
+    expect:
+      status: 200

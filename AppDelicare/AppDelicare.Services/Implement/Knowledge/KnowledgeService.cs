@@ -61,6 +61,10 @@ namespace AppDelicare.Services.Implement.Knowledge
     {
         public string Snippet { get; set; } = string.Empty;
         public int Score { get; set; }
+        /// <summary>AI-22.7: nguồn trích dẫn – số hiệu, ngày văn bản, trang của đoạn trích (bản chữ tài liệu gốc).</summary>
+        public string? SoHieu { get; set; }
+        public string? DocDate { get; set; }
+        public int? Page { get; set; }
     }
 
     public sealed class KnowledgeHistoryModel
@@ -154,6 +158,10 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<Dictionary<Guid, List<string>>> DueTasksByAssigneeAsync();
         // AI-22.5 (D-141 i): hồ sơ gắn đối tượng + nhắc hết hạn hợp đồng.
         Task<IResult<KnowledgeEntityDocsModel>> GetDocuments(string? type, Guid id);
+        // AI-22.7 (D-141 k): agent đọc nội dung tài liệu.
+        Task<IResult<KnowledgeDocReadModel>> ReadDocFor(KnowledgeCaller caller, string? idOrPath, int? page);
+        Task<List<KnowledgeDocReadModel>> PendingDocsFor(KnowledgeCaller caller, bool ocr);
+        Task<IResult<KnowledgeSaveResultModel>> WriteAgentTextFor(KnowledgeCaller caller, string? idOrPath, string? text, bool summary);
         Dictionary<string, List<string>> ExpiringDocuments(DateTime today, int[] daysLeft);
         Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
@@ -448,6 +456,23 @@ namespace AppDelicare.Services.Implement.Knowledge
                 var m = (KnowledgeHitModel)Head(h.N, new KnowledgeHitModel());
                 m.Score = h.Score;
                 m.Snippet = ApplyRules(Snippet(h.N, tokens, _o.SnippetLength));
+                m.SoHieu = h.N.Meta.GetValueOrDefault("so_hieu");
+                m.DocDate = h.N.Meta.GetValueOrDefault("ngay");
+                // AI-22.7: từ khóa chỉ có trong bản chữ tài liệu gốc → đoạn trích + trang lấy từ bản chữ (ACC ở chứng từ gốc chỉ phiếu mô tả).
+                if (h.N.Extract.Length > 0 && !(caller.AgentCode?.ToUpperInvariant() == "ACC" && h.N.Folder == "60-CT"))
+                {
+                    string fb = KnowledgeVault.Fold(h.N.Body), fx = KnowledgeVault.Fold(h.N.Extract);
+                    if (tokens.Count(t => fx.Contains(t, StringComparison.Ordinal)) > tokens.Count(t => fb.Contains(t, StringComparison.Ordinal))) // bản chữ khớp nhiều từ khóa hơn phiếu mô tả
+                    {
+                        int at = tokens.Select(t => fx.IndexOf(t, StringComparison.Ordinal)).Where(i => i >= 0).DefaultIfEmpty(-1).Min();
+                        if (at >= 0)
+                        {
+                            int from = Math.Max(0, at - _o.SnippetLength / 4), len = Math.Min(_o.SnippetLength, h.N.Extract.Length - from);
+                            m.Snippet = (from > 0 ? "…" : string.Empty) + System.Text.RegularExpressions.Regex.Replace(h.N.Extract.Substring(from, Math.Max(0, len)), @"\[Trang \d+\]\n?", string.Empty).Trim() + "…";
+                            m.Page = KnowledgeExtract.PageAt(h.N.Extract, at);
+                        }
+                    }
+                }
                 return m;
             }).ToList();
             return Results<KnowledgeHitModel>.Success(list, list.Count == 0 ? "Kho chưa có ghi chú phù hợp" : "OK");

@@ -3,6 +3,7 @@ bao_chi_phi
 canh_bao
 chuyen_giao_ngay
 doc_ghi_chu
+doc_tai_lieu
 ds_cho_duyet
 ghi_nhat_ky
 gui_canh_bao

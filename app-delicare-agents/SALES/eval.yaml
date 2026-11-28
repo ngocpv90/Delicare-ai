@@ -21,3 +21,9 @@ cases:
     args: { so_don: DH-KHONG-CO, dong: [{ loai_suat: TRUA, so_suat: 120 }] }
     expect:
       status: 400
+  - id: sales-kho-hop-dong # AI-22 (§7.10)
+    question: Hợp đồng khách phạt giao trễ thế nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: "phat giao tre" }
+    expect:
+      status: 200

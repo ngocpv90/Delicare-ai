@@ -34,3 +34,15 @@ cases:
     args: { loai: sop, noi_dung: thu ghi ngoai vung }
     expect:
       status: 400
+  - id: know-cho-doc-anh # AI-22 (§7.10)
+    question: Tài liệu nào cần đọc ảnh?
+    tool: tai_lieu_can_xu_ly
+    args: { loai: doc_anh }
+    expect:
+      status: 200
+  - id: know-cho-tom-tat # AI-22 (§7.10)
+    question: Tài liệu nào chưa tóm tắt?
+    tool: tai_lieu_can_xu_ly
+    args: { loai: tom_tat }
+    expect:
+      status: 200

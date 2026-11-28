@@ -46,3 +46,9 @@ cases:
       status: 200
       has: [ghi_chu, note]
       notContains: BOD Bảo mật
+  - id: wh-kho-hdsd # AI-22 (§7.10)
+    question: Màn nhận hàng dùng thế nào?
+    tool: tim_tri_thuc
+    args: { cau_hoi: "nhan hang" }
+    expect:
+      status: 200
