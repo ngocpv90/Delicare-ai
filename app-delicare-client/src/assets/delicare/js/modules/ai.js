@@ -366,10 +366,12 @@
   // ================= Lịch chạy =================
   function schedTable(rows, showAgent = true) {
     if (!rows || !rows.length) return '<div class="muted small">Chưa có lịch.</div>';
-    return `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Giờ</th>${showAgent ? '<th>Agent</th>' : ''}<th>Việc</th><th>Công cụ</th><th>Job lõi</th><th>Trạng thái</th><th>Lần chạy gần nhất</th></tr></thead><tbody>
-      ${rows.map(s => `<tr class="${s.enabled && s.agentActive ? '' : 'muted'}"><td class="nowrap"><b>${esc(s.at || s.cron || '')}</b></td>${showAgent ? `<td class="nowrap">${esc(s.agentName || s.agent)}</td>` : ''}
-        <td>${esc(s.title || '')}</td><td class="small">${(s.listTool || []).map(t => `<code>${esc(t)}</code>`).join(' ')}</td><td class="small">${esc(s.coreJob ? (UI.JOB_VI && UI.JOB_VI[s.coreJob]) || s.coreJob : '–')}</td>
-        <td class="nowrap">${!s.enabled ? chip((s.listTool || []).length ? 'Đang tắt' : `Chờ đợt ${s.wave}`) : s.agentActive ? chip('Đang chạy', 'green') : chip('Agent đang tắt', 'orange')}${showAgent && Store.perm('ai-schedule').edit && (s.listTool || []).length ? ` <label class="ai-switch" title="Bật / tắt việc này"><input type="checkbox" data-sched="${esc(s.id)}" ${s.enabled ? 'checked' : ''}></label>` : ''}</td>
+    return `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Giờ</th>${showAgent ? '<th>Agent</th>' : ''}<th>Việc</th><th>Dùng AI</th><th>Công cụ</th><th>Job lõi</th><th>Trạng thái</th><th>Lần chạy gần nhất</th></tr></thead><tbody>
+      ${rows.map(s => `<tr class="${s.enabled && (s.agentActive || s.mode !== 'ai') ? '' : 'muted'}"><td class="nowrap"><b>${esc(s.at || s.cron || '')}</b></td>${showAgent ? `<td class="nowrap">${esc(s.agentName || s.agent)}</td>` : ''}
+        <td>${esc(s.title || '')}</td>
+        <td class="nowrap" title="${esc(s.mode === 'ai' ? 'Hermes chạy theo lịch – tính chi phí AI' : (s.replacedBy || 'Chạy ở Job theo mẫu – 0 token'))}">${s.mode === 'ai' ? chip('Có', 'orange') : chip('Không', 'green')}${s.mode !== 'ai' && s.templateJob ? `<div class="small muted">${esc((UI.JOB_VI && UI.JOB_VI[s.templateJob]) || s.templateJob)}</div>` : ''}</td>
+        <td class="small">${(s.listTool || []).map(t => `<code>${esc(t)}</code>`).join(' ')}</td><td class="small">${esc(s.coreJob ? (UI.JOB_VI && UI.JOB_VI[s.coreJob]) || s.coreJob : '–')}</td>
+        <td class="nowrap">${!s.enabled ? chip((s.listTool || []).length ? 'Đang tắt' : `Chờ đợt ${s.wave}`) : s.agentActive || s.mode !== 'ai' ? chip('Đang chạy', 'green') : chip('Agent đang tắt', 'orange')}${showAgent && Store.perm('ai-schedule').edit && (s.listTool || []).length ? ` <label class="ai-switch" title="Bật / tắt việc này"><input type="checkbox" data-sched="${esc(s.id)}" ${s.enabled ? 'checked' : ''}></label>` : ''}</td>
         <td class="small">${s.lastRunAt ? esc(when(s.lastRunAt)) + ' ' + chip((STATUS[s.lastRunStatus] || [s.lastRunStatus || ''])[0], (STATUS[s.lastRunStatus] || ['', ''])[1]) : '<span class="muted">chưa chạy</span>'}</td></tr>`).join('')}</tbody></table></div>`;
   }
   function schedule(el, f) {
@@ -378,7 +380,7 @@
       if (!b.isConnected) return;
       if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được lịch')}</div>`; return; }
       const list = x.list || [];
-      b.innerHTML = `<div class="notice info mb">${I('help')}<div>Job lõi (khóa đơn, MRP, bản tin…) vẫn chạy đúng giờ dù agent tắt; agent chỉ đọc kết quả và báo. Người có quyền Sửa Lịch chạy bật / tắt từng việc bằng công tắc ở cột Trạng thái – ghi lại tệp lịch, Hermes đọc lại.</div></div>`
+      b.innerHTML = `<div class="notice info mb">${I('help')}<div>Việc "Dùng AI: Không" chạy ở Job theo mẫu (0 token, vẫn chạy khi Hermes / agent tắt); chỉ việc cần suy luận ("Dùng AI: Có") chạy trên Hermes. Job lõi (khóa đơn, MRP…) luôn chạy đúng giờ. Người có quyền Sửa Lịch chạy bật / tắt từng việc bằng công tắc ở cột Trạng thái – ghi lại tệp lịch, Hermes đọc lại.</div></div>`
         + `<div class="card">${list.length ? schedTable(list) : `<div class="muted">${esc((x.res && x.res.responseMessage) || 'Chưa có lịch')}</div>`}</div>`;
       b.querySelectorAll('[data-sched]').forEach(cb => cb.onchange = () => Store.act('Agent/SaveSchedule', { form: { id: cb.dataset.sched, enabled: cb.checked } }).then(r => { if (r.ok) UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); APP.refresh(); }));
     });

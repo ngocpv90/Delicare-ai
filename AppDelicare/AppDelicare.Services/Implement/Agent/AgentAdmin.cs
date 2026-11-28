@@ -121,6 +121,11 @@ namespace AppDelicare.Services.Implement.Agent
         public string? Title { get; set; }
         public List<string> ListTool { get; set; } = [];
         public string? CoreJob { get; set; }
+        /// <summary>AI-25.5 (D-143): template = chạy ở AppDelicare.Job theo mẫu (0 token) · ai = Hermes cron (cần suy luận).</summary>
+        public string Mode { get; set; } = "template";
+        /// <summary>Job chạy thay (mode template) – vd BriefingWarehouse, AgentEventPump.</summary>
+        public string? TemplateJob { get; set; }
+        public string? ReplacedBy { get; set; }
         public int Wave { get; set; }
         public bool Enabled { get; set; }
         /// <summary>Agent đang bật (BotStatus) – lịch chỉ chạy khi cả hai bật.</summary>
@@ -308,6 +313,20 @@ namespace AppDelicare.Services.Implement.Agent
                 var last = runs.Where(r => r.CorrelationId!.StartsWith("sched:" + s.Id + ":", StringComparison.Ordinal)).OrderByDescending(r => r.RequestAt).FirstOrDefault();
                 s.LastRunAt = last?.RequestAt;
                 s.LastRunStatus = last?.LogStatus;
+                // AI-25.5: lịch template → lần chạy gần nhất của job thay (AnalyticsRefreshLog); AgentEventPump → tin cảnh báo theo mẫu gần nhất.
+                if (s.Mode == "template" && s.TemplateJob is { } tj)
+                {
+                    if (tj == AgentEventPumpService.JobCode)
+                    {
+                        s.LastRunAt = await db.OutboundMessage.AsNoTracking().Where(m => m.IdempotencyKey != null && m.IdempotencyKey.StartsWith(AgentEventPumpService.KeyPrefix)).MaxAsync(m => (DateTime?)m.CreatedDate);
+                        s.LastRunStatus = s.LastRunAt == null ? null : "Succeeded";
+                    }
+                    else if (await db.AnalyticsRefreshLog.AsNoTracking().Where(r => r.JobCode == tj && r.StartedAt >= since).OrderByDescending(r => r.StartedAt).Select(r => new { r.StartedAt, r.RunStatus }).FirstOrDefaultAsync() is { } jr)
+                    {
+                        s.LastRunAt = jr.StartedAt;
+                        s.LastRunStatus = jr.RunStatus;
+                    }
+                }
             }
             return Results<AgentScheduleModel>.Success(items, "OK");
         }
@@ -350,6 +369,9 @@ namespace AppDelicare.Services.Implement.Agent
                     Title = e.TryGetProperty("title", out var t) ? t.GetString() : null,
                     ListTool = e.TryGetProperty("tools", out var tl) && tl.ValueKind == JsonValueKind.Array ? [.. tl.EnumerateArray().Select(x => x.GetString() ?? string.Empty)] : [],
                     CoreJob = e.TryGetProperty("coreJob", out var cj) && cj.ValueKind == JsonValueKind.String ? cj.GetString() : null,
+                    Mode = e.TryGetProperty("mode", out var md) && md.GetString() is "ai" ? "ai" : "template",
+                    TemplateJob = e.TryGetProperty("templateJob", out var tj) && tj.ValueKind == JsonValueKind.String ? tj.GetString() : null,
+                    ReplacedBy = e.TryGetProperty("replacedBy", out var rb) && rb.ValueKind == JsonValueKind.String ? rb.GetString() : null,
                     Wave = e.TryGetProperty("wave", out var w) && w.TryGetInt32(out int wi) ? wi : 1,
                     Enabled = !e.TryGetProperty("enabled", out var en) || en.ValueKind != JsonValueKind.False,
                 })];

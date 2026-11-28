@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **292 khóa** trong 14 section.
+Tổng: **294 khóa** trong 14 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -51,6 +51,8 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Agent:ChatTimeoutSeconds` | int | 60 | AI-14: thời gian chờ Hermes trả lời 1 câu chat (giây). | – |
 | `Agent:BriefingAiComment` | bool | – | AI-25.4 (D-143): thêm 2–3 dòng nhận xét AI (Vivi) cuối bản tin dựng bằng mẫu – mặc định false (bản tin 0 token). | D-143 |
 | `Agent:TemplateBriefings` | bool | true | AI-25.4: bật bản tin dựng bằng mẫu (ban-tin.yaml – 5 job Briefing*) thay bản tin bot cũ MorningBrief / DailyReport / KnowledgeBrief*; false = quay về bản tin cũ. | – |
+| `Agent:EventAiAnalysis` | bool | – | AI-25.5 (D-143): cảnh báo mức cao do AgentEventPump gửi (mỗi 5′) thêm 2–3 dòng nhận xét AI (Vivi) – mặc định false (0 token). | D-143 |
+| `Agent:EventPumpMinutes` | int | 5 | AI-25.5: chu kỳ AgentEventPump trong AppDelicare.Job (phút, 1–60). | – |
 
 ## BusinessRules
 

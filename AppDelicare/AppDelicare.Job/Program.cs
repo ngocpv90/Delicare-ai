@@ -28,6 +28,8 @@ if (args.Contains("--healthcheck", StringComparer.OrdinalIgnoreCase))
     return fresh ? 0 : 1;
 }
 bool listOnly = args.Contains("--list", StringComparer.OrdinalIgnoreCase);
+// AI-25.5: --pump-once = chạy 1 vòng cảnh báo theo mẫu (AgentEventPump) rồi thoát – không chạy job khác.
+bool pumpOnce = args.Contains("--pump-once", StringComparer.OrdinalIgnoreCase);
 
 IHost host = Host.CreateDefaultBuilder(args)
     .UseEnvironment(environment)
@@ -55,9 +57,10 @@ IHost host = Host.CreateDefaultBuilder(args)
             throw new InvalidOperationException("Thiếu ConnectionStrings:MainConnectionString (biến môi trường ConnectionStrings__MainConnectionString).");
         }
         services.AddDelicareCore(context.Configuration, context.HostingEnvironment.ContentRootPath);
-        if (runOnce == null && !listOnly)
+        if (runOnce == null && !listOnly && !pumpOnce)
         {
             services.AddHostedService<JobSchedulerService>();
+            services.AddHostedService<AppDelicare.Job.AgentEventPumpHost>(); // AI-25.5: vivi-events theo mẫu mỗi Agent:EventPumpMinutes
         }
     })
     .ConfigureContainer<ContainerBuilder>((_, builder) => builder.RegisterModule<DelicareServicesModule>())
@@ -71,6 +74,18 @@ if (listOnly)
         Console.WriteLine($"{job.JobCode,-16} {(job.Enabled ? "bật" : "TẮT"),-4} {job.At}  kế tiếp {job.NextRunAt:dd/MM/yyyy HH:mm}  {job.JobName}"
             + (job.LastRun is { } last ? $"  | gần nhất {last.StartedAt:dd/MM HH:mm} {last.RunStatus}" : string.Empty));
     }
+    return 0;
+}
+if (pumpOnce)
+{
+    await using var scope = host.Services.CreateAsyncScope();
+    string? jobUser = host.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()["SystemUsers:JobUserId"];
+    using (scope.ServiceProvider.GetRequiredService<AppDelicare.Data.Share.ICurrentActor>().BeginScope(AppDelicare.Data.Share.ActorInfo.ForSystem(Guid.Parse(jobUser ?? throw new InvalidOperationException("Thiếu SystemUsers:JobUserId")))))
+    {
+        var r = await scope.ServiceProvider.GetRequiredService<AppDelicare.Services.Implement.Agent.IAgentEventPumpService>().RunOnceAsync();
+        Log.Information("[Job] --pump-once: chạy {Active} ({Reason}) · {Alerts} cảnh báo · gửi {Sent} tin · {Ai} nhận xét AI", r.Active, r.Reason ?? "vivi-events template", r.Alerts, r.Sent, r.AiComments);
+    }
+    await Log.CloseAndFlushAsync();
     return 0;
 }
 if (runOnce != null)
