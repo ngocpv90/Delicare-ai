@@ -399,7 +399,13 @@
   }
   APP.knowledgeMd = md;
 
-  const TYPE = { sop: 'SOP', 'su-co': 'Sự cố', 'bai-hoc': 'Bài học', 'bao-cao': 'Báo cáo', 'quyet-dinh': 'Quyết định', 'ho-so': 'Hồ sơ', 'nhat-ky': 'Nhật ký', 'huong-dan': 'Hướng dẫn' };
+  const TYPE = { sop: 'SOP', 'su-co': 'Sự cố', 'bai-hoc': 'Bài học', 'bao-cao': 'Báo cáo', 'quyet-dinh': 'Quyết định', 'ho-so': 'Hồ sơ', 'nhat-ky': 'Nhật ký', 'huong-dan': 'Hướng dẫn',
+    // AI-22.2 (D-141): loại tài liệu gốc (tầng Lưu trữ).
+    'cong-van-den': 'Công văn đến', 'cong-van-di': 'Công văn đi', 'bien-ban-hop': 'Biên bản họp', 'hop-dong-kh': 'Hợp đồng khách hàng', 'hop-dong-ncc': 'Hợp đồng NCC',
+    'hop-dong-ld': 'Hợp đồng lao động', 'ho-so-nv': 'Hồ sơ nhân viên', 'chung-tu': 'Chứng từ', hdsd: 'Hướng dẫn sử dụng', 'tai-lieu': 'Tài liệu' };
+  // Loại gợi ý theo vùng (tải file gốc).
+  const AREA_TYPES = { '05': ['cong-van-den', 'cong-van-di'], '15': ['bien-ban-hop', 'bao-cao'], '20-HD': ['hop-dong-kh'], '40-HD': ['hop-dong-ncc'], '60-CT': ['chung-tu'], '70-HS': ['ho-so-nv', 'hop-dong-ld'] };
+  const SOPT = ['sop', 'huong-dan', 'quyet-dinh']; // AI-12: loại qua Duyệt SOP (khôi phục – mất khi gộp ai.js ở AI-21)
   const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
   const typeName = t => TYPE[fold(t).replace(/\s+/g, '-')] || t || '';
 
@@ -422,10 +428,34 @@
     const folderView = () => {
       const fd = st.tree.find(x => x.code === st.folder);
       if (!fd) { main.innerHTML = `<h2>Kho tri thức</h2><p class="muted">Chọn thư mục bên trái hoặc tìm theo từ khóa.</p>${UI.kpis(st.tree.slice(0, 4).map(x => UI.kpi(x.name, U.num(x.noteCount), x.owner, 'file', 'blue')))}`; return; }
-      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(kfName(fd.name))}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px"><button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
+      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(kfName(fd.name))}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px">${fd.code !== '80-HDSD' ? `<button class="btn sm" id="knUp">${I('up')} Tải tài liệu lên</button>` : ''}<button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
         <div class="table-wrap mt"><table class="table dc-table"><thead><tr><th>Ghi chú</th><th>Loại</th><th>Trạng thái</th><th>Hiệu lực từ</th><th>Nguồn</th></tr></thead><tbody>
         ${(fd.listNote || []).slice(0, 200).map(n => `<tr><td><a href="#/knowledge?folder=${esc(fd.code)}&path=${encodeURIComponent(n.path)}">${esc(n.title)}</a>${n.needsReview ? ' ' + chip('cần rà soát', 'orange') : ''}</td><td>${esc(typeName(n.type))}</td><td>${esc(n.status || '')}</td><td>${esc(U.date(n.validFrom))}</td><td class="small">${esc(n.source || '')}</td></tr>`).join('')}</tbody></table></div>`;
       const nb = main.querySelector('#knNew'); if (nb) nb.onclick = () => editor(fd, null);
+      // AI-22.2 (D-141): tải file gốc (pdf / docx / xlsx / jpg / png) + phiếu mô tả – tên trên máy chủ do hệ thống đặt.
+      const ub = main.querySelector('#knUp'); if (ub) ub.onclick = () => {
+        const types = AREA_TYPES[fd.code] || ['tai-lieu', 'bao-cao', 'cong-van-den', 'cong-van-di', 'bien-ban-hop'];
+        UI.modal({
+          title: 'Tải tài liệu lên – ' + esc(kfName(fd.name)), size: 'md', sub: 'PDF, Word, Excel, ảnh JPG / PNG. Tệp gốc chỉ tải lại được qua nút "Tải file gốc" (cần quyền Xuất). Xóa = chuyển Lưu trữ.',
+          body: `<label class="field"><span>Tệp</span><input type="file" class="input" id="kuFile" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png"></label>
+            <div class="grid2"><label class="field"><span>Loại</span><select class="select" id="kuType">${types.map(t => `<option value="${t}">${esc(TYPE[t] || t)}</option>`).join('')}</select></label>
+            <label class="field"><span>Số hiệu</span><input class="input" id="kuNo" placeholder="vd 125/CV-DLC, HĐ-2026-014"></label></div>
+            <label class="field"><span>Tên / trích yếu</span><input class="input" id="kuTitle"></label>
+            <div class="grid2"><label class="field"><span>Ngày văn bản</span><input type="date" class="input" id="kuDay" value="${TODAY()}"></label>
+            <label class="field"><span>Hạn lưu giữ (nhắc, không tự xóa)</span><input type="date" class="input" id="kuKeep"></label></div>
+            <label class="field"><span>Mã đối tượng (khách / NCC / nhân viên / chứng từ)</span><input class="input" id="kuObj" placeholder="vd KH00012"></label>
+            <label class="field"><span>Mô tả / tóm tắt</span><textarea class="input" id="kuSum" rows="3"></textarea></label>`,
+          foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="kuGo">Tải lên</button>',
+          onMount: (m, close) => m.querySelector('#kuGo').onclick = () => {
+            const file = m.querySelector('#kuFile').files[0], v = id => m.querySelector(id).value.trim();
+            if (!file) return UI.toast('Chọn tệp', 'warn');
+            if (!v('#kuTitle')) return UI.toast('Nhập tên / trích yếu', 'warn');
+            const form = new FormData(); form.append('file', file); form.append('folder', fd.code); form.append('type', v('#kuType')); form.append('title', v('#kuTitle'));
+            form.append('soHieu', v('#kuNo')); form.append('ngay', v('#kuDay')); form.append('retainUntil', v('#kuKeep')); form.append('doiTuong', v('#kuObj')); form.append('summary', v('#kuSum'));
+            Store.act('Knowledge/UploadFile', { json: form }).then(r => { if (!r.ok) return; close(); UI.toast('Đã tải tài liệu lên', 'ok'); APP.go('knowledge?folder=' + fd.code + '&path=' + encodeURIComponent((r.data || {}).path || '')); });
+          },
+        });
+      };
       // AI-12 (D-133): nhập Word .docx → ghi chú Nháp (PDF chưa hỗ trợ – GAP-KB-PDF).
       const ib = main.querySelector('#knImp'); if (ib) ib.onclick = () => UI.modal({
         title: 'Nhập tài liệu Word – ' + esc(fd.name), size: 'sm', sub: 'Tiêu đề, danh sách, bảng, chữ đậm được giữ. Ghi chú vào ở trạng thái Nháp; SOP sửa xong bấm Gửi duyệt.',
@@ -443,8 +473,9 @@
       if (!x.ok || !x.data) { main.innerHTML = `<div class="notice warn">${esc(x.message || 'Không mở được ghi chú')}</div>`; return; }
       const n = x.data;
       main.innerHTML = `<div class="spread"><div><div class="muted small">${esc(n.path)}</div><h2 style="margin:4px 0">${esc(n.title)}</h2></div>
-          <div class="row-flex" style="gap:6px">${n.canEdit && SOPT.includes(n.type) && /^nh[aá]p$/i.test(n.status || '') ? `<button class="btn sm orange" id="knSubmit">Gửi duyệt</button>` : ''}${n.canEdit && SOPT.includes(n.type) && /hi[eệ]u l[uự]c/i.test(n.status || '') ? `<button class="btn sm" id="knVer">${I('plus')} Phiên bản mới</button>` : ''}${n.canEdit && !/ch[oờ] duy[eệ]t/i.test(n.status || '') && !(SOPT.includes(n.type) && /hi[eệ]u l[uự]c/i.test(n.status || '')) ? `<button class="btn sm" id="knEdit">${I('edit')} Sửa</button>` : ''}<button class="btn sm" id="knHist">${I('history')} Lịch sử</button></div></div>
+          <div class="row-flex" style="gap:6px">${n.canEdit && SOPT.includes(n.type) && /^nh[aá]p$/i.test(n.status || '') ? `<button class="btn sm orange" id="knSubmit">Gửi duyệt</button>` : ''}${n.canEdit && SOPT.includes(n.type) && /hi[eệ]u l[uự]c/i.test(n.status || '') ? `<button class="btn sm" id="knVer">${I('plus')} Phiên bản mới</button>` : ''}${n.canEdit && !/ch[oờ] duy[eệ]t/i.test(n.status || '') && !(SOPT.includes(n.type) && /hi[eệ]u l[uự]c/i.test(n.status || '')) ? `<button class="btn sm" id="knEdit">${I('edit')} Sửa</button>` : ''}${n.canDownload ? `<button class="btn sm primary" id="knDl">${I('down')} Tải file gốc</button>` : ''}${n.canArchive ? `<button class="btn sm" id="knArc">Lưu trữ</button>` : ''}${n.fileName && n.canEdit ? `<button class="btn sm" id="knAcc">Nhật ký truy cập</button>` : ''}<button class="btn sm" id="knHist">${I('history')} Lịch sử</button></div></div>
         <div class="row-flex mb" style="gap:6px;flex-wrap:wrap">${chip(typeName(n.type))}${chip(n.status || '', /hi[eệ]u l[uự]c/i.test(n.status || '') ? 'green' : '')}${chip('Hiệu lực từ ' + U.date(n.validFrom))}${n.needsReview ? chip('Quá hạn rà soát ' + U.date(n.reviewBy), 'orange') : chip('Rà soát trước ' + U.date(n.reviewBy))}${chip(n.confidentiality || '')}${n.readOnly ? chip('Tự sinh – chỉ đọc', 'blue') : ''}</div>
+        ${n.fileName ? `<div class="notice ${n.canDownload ? 'info' : 'warn'} mb">${I('file')}<div><b>Tệp gốc:</b> ${esc(n.fileName)}${n.meta && n.meta.so_hieu ? ' · số hiệu ' + esc(n.meta.so_hieu) : ''}${n.meta && n.meta.retain_until ? ' · lưu giữ đến ' + esc(U.date(n.meta.retain_until)) : ''}${n.canDownload ? '' : ' – cần quyền Xuất của vùng để tải file gốc'}</div></div>` : ''}
         ${n.refs && n.refs.length ? `<div class="small mb">Liên quan: ${md(n.refs.join(', '), allNotes()).replace(/^<p>|<\/p>$/g, '')}</div>` : ''}
         <article class="kn-body">${md(n.body, allNotes())}</article>
         <div class="kn-back mt"><h4>Liên kết ngược</h4>${(n.listBacklink || []).length ? n.listBacklink.map(b => `<a href="#/knowledge?path=${encodeURIComponent(b.path)}" class="kn-link">${esc(b.title)}</a>`).join(' · ') : '<span class="muted small">Chưa có ghi chú nào liên kết tới đây.</span>'}</div>`;
@@ -452,6 +483,13 @@
       // AI-12 (D-133): SOP / hướng dẫn / quyết định – Nháp → Gửi duyệt (Phê duyệt › Duyệt SOP); Hiệu lực → Phiên bản mới (bản cũ giữ tới khi bản mới được duyệt, rồi Lưu trữ).
       const sb = main.querySelector('#knSubmit'); if (sb) sb.onclick = () => UI.confirm('Gửi duyệt <b>' + esc(n.title) + '</b>? Sau khi gửi không sửa được cho tới khi duyệt / từ chối.', note => Store.act('Knowledge/SubmitSop', { json: { path: n.path, prevHash: n.hash, note } }).then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã gửi duyệt'), 'ok'); APP.refresh(); } }), { input: 'Ghi chú cho người duyệt', ok: 'Gửi duyệt' });
       const vb = main.querySelector('#knVer'); if (vb) vb.onclick = () => UI.confirm('Tạo phiên bản mới (Nháp) từ bản đang hiệu lực? Bản hiện tại vẫn dùng cho tới khi bản mới được duyệt.', () => Store.act('Knowledge/NewVersion', { json: { path: n.path } }).then(r => { if (r.ok) { UI.toast('Đã tạo phiên bản mới', 'ok'); APP.go('knowledge?path=' + encodeURIComponent((r.data || {}).path || '')); } }), { ok: 'Tạo phiên bản' });
+      // AI-22.2: tải file gốc (qua API, kiểm quyền Xuất – vùng hạn chế ghi nhật ký), chuyển Lưu trữ (thay xóa), xem nhật ký truy cập.
+      const db = main.querySelector('#knDl'); if (db) db.onclick = () => Store.download('Knowledge/DownloadFile', { path: n.path });
+      const ab = main.querySelector('#knArc'); if (ab) ab.onclick = () => UI.confirm('Chuyển <b>' + esc(n.title) + '</b> sang Lưu trữ? Tài liệu không bị xóa, không còn hiện trong kết quả tìm.', () => Store.act('Knowledge/Archive', { json: { path: n.path } }).then(r => { if (r.ok) { UI.toast('Đã chuyển Lưu trữ', 'ok'); APP.refresh(); } }), { ok: 'Lưu trữ' });
+      const lb = main.querySelector('#knAcc'); if (lb) lb.onclick = () => Store.query('Knowledge/GetAccessLog', { path: n.path }).then(h => UI.modal({
+        title: 'Nhật ký truy cập', sub: esc(n.title),
+        body: (h.list || []).length ? `<table class="table dc-table"><thead><tr><th>Lúc</th><th>Thao tác</th><th>Người</th></tr></thead><tbody>${h.list.map(r => `<tr><td class="nowrap">${esc(when(r.at))}</td><td>${esc(r.action || '')}</td><td class="small mono">${esc(r.by || '')}</td></tr>`).join('')}</tbody></table>` : `<p class="muted">${esc(h.message && !h.ok ? h.message : 'Chưa có lần xem / tải nào (chỉ ghi ở vùng hợp đồng, chứng từ, hồ sơ cá nhân, BOD).')}</p>`,
+      }));
       main.querySelector('#knHist').onclick = () => Store.query('Knowledge/GetHistory', { path: n.path }).then(h => UI.modal({
         title: 'Lịch sử ghi chú', sub: esc(n.path),
         body: (h.list || []).length ? `<table class="table dc-table"><thead><tr><th>Lúc</th><th>Thao tác</th><th>Chi tiết</th></tr></thead><tbody>${h.list.map(r => { let c = {}; try { c = JSON.parse(r.changes || '{}'); } catch (err) { /* bỏ qua */ } return `<tr><td class="nowrap">${esc(when(r.at))}</td><td>${esc(r.action || '')}</td><td class="small">${esc(c.actor || '')}${c.note ? ' · ' + esc(c.note) : ''}</td></tr>`; }).join('')}</tbody></table>` : '<p class="muted">Chưa có lần lưu nào qua ứng dụng.</p>',

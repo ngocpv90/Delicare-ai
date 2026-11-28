@@ -44,8 +44,8 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X | X | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X | X | X |
-| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | — | — | S | — |
-| Tri thức › 20 › Hợp đồng khách hàng | `knowledge?folder=20-hd` | — | S | S | — |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | — | — | S (IX) | — |
+| Tri thức › 20 › Hợp đồng khách hàng | `knowledge?folder=20-hd` | — | S (IX) | S (IX) | — |
 | Tri thức › 80 › Hướng dẫn sử dụng | `knowledge?folder=80-hdsd` | X | X | X | X |
 <!-- MENU5:END -->
 

@@ -67,6 +67,43 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("NewVersion")]
         public Task<IActionResult> NewVersion([FromBody] KnowledgePathRequest request) => Run(nameof(NewVersion), () => _service.NewVersion(request ?? new KnowledgePathRequest()));
 
+        /// <summary>AI-22.2 (D-141): tải file gốc (pdf / docx / xlsx / jpg / png ≤ Knowledge:MaxFileMb) + phiếu mô tả vào 1 vùng – quyền Sửa vùng kiểm trong service.</summary>
+        [HttpPost("UploadFile")]
+        [RequestSizeLimit(60_000_000)]
+        public Task<IActionResult> UploadFile([FromForm] KnowledgeUploadRequest request, IFormFile? file) => Run(nameof(UploadFile), async () =>
+        {
+            if (file == null || file.Length == 0)
+            {
+                return (AppDelicare.Data.Interface.IResult<KnowledgeSaveResultModel>)AppDelicare.Data.Repositories.Result<KnowledgeSaveResultModel>.Fail("Chọn tệp cần tải lên");
+            }
+            using var s = file.OpenReadStream();
+            return await _service.UploadFile(request ?? new KnowledgeUploadRequest(), file.FileName, s, file.Length);
+        });
+
+        /// <summary>AI-22.2: tải file gốc của tài liệu – chỉ qua API, quyền Xuất vùng; vùng hạn chế ghi nhật ký truy cập.</summary>
+        [HttpGet("DownloadFile")]
+        public async Task<IActionResult> DownloadFile([FromQuery] string? path)
+        {
+            try
+            {
+                var r = await _service.DownloadFile(path);
+                return r.ResponseCode == 200 && r.Data != null ? File(r.Data.Content, r.Data.ContentType, r.Data.FileName) : Ok(r);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "] DownloadFile: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>AI-22.2: chuyển Lưu trữ (thay xóa) – quyền Xóa vùng.</summary>
+        [HttpPost("Archive")]
+        public Task<IActionResult> Archive([FromBody] KnowledgePathRequest request) => Run(nameof(Archive), () => _service.Archive(request ?? new KnowledgePathRequest()));
+
+        /// <summary>AI-22.2: nhật ký xem / tải 1 tài liệu vùng hạn chế (người có quyền Sửa vùng).</summary>
+        [HttpGet("GetAccessLog")]
+        public Task<IActionResult> GetAccessLog([FromQuery] string? path) => Run(nameof(GetAccessLog), () => _service.GetAccessLog(path));
+
         /// <summary>AI-12: nhập Word .docx (/ .md / .txt) thành ghi chú Nháp trong thư mục (PDF: GAP-KB-PDF). Tối đa 10 MB.</summary>
         [HttpPost("Import")]
         [RequestSizeLimit(10_000_000)]
