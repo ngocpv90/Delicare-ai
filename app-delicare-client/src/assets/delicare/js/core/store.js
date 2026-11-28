@@ -249,6 +249,12 @@
   // UI-6: trang chi tiết <screen>-detail dùng quyền màn gốc – thêm qua Store.permAlias (modules/detail-page.js).
   const DASH_TABS = ['kpi-daily', 'cost-meal', 'dash-pl']; // UI-6.52 / RPT-1: mục quyền các tab của Bảng điều hành
   const AGENT_TABS = ['ai-tasks', 'ai-flow', 'ai-agent-log', 'ai-schedule', 'ai-cost']; // AI-21: mục quyền các tab của Trung tâm Agent
+  // MENU-TAB (anh 2026-11-28): mục quyền là TAB của 1 màn (không phải menu) – màn quản trị (phân quyền, xem trước menu, cây menu) hiện lồng dưới màn cha.
+  // Khớp máy chủ MenuTabs.ParentOf (đếm số màn, tìm kiếm toàn cục).
+  const TAB_OF = {};
+  DASH_TABS.concat(['kpi-monthly']).forEach(t => TAB_OF[t] = 'dash-exec');
+  AGENT_TABS.forEach(t => TAB_OF[t] = 'ai-agents');
+  const idOfLink = l => String(l || '').replace(/^#\//, '').split('?')[0];
   const PERM_ALIAS = { 'crm-customer-360': 'crm-customer', 'scm-supplier-360': 'scm-supplier', 'adm-employee-360': 'adm-employee',
     // MENU-4.3 (D-75 e): bảng con không còn mục menu → quyền của màn cha (khớp máy chủ ScreenMap.ParentByClass).
     'crm-contract-meal': 'crm-contract', 'crm-order-line': 'crm-order', 'menu-recipe-line': 'menu-recipe', 'menu-menu-line': 'menu-menu',
@@ -463,6 +469,15 @@
     reset() { load(true); Store.audit('System', 'reset', 'RESET', mode === 'api' ? 'Tải lại dữ liệu từ API' : 'Khôi phục dữ liệu demo'); notify(null); },
     // Phân quyền theo UserRole × ObjectMenu (MetaLink = '#/screen-id')
     permAlias(alias, screen) { PERM_ALIAS[alias] = screen; },
+    /** MENU-TAB: màn cha nếu id / MetaLink là tab của màn khác (dash-exec, ai-agents), ngược lại null. */
+    tabOf(idOrLink) { return TAB_OF[idOfLink(idOrLink)] || null; },
+    /** MENU-TAB: xếp lại danh sách mục menu – tab đứng ngay sau màn cha (đánh dấu _tab = id màn cha); tab không có màn cha trong danh sách giữ chỗ cũ. */
+    nestTabs(list, linkOf) {
+      const id = x => idOfLink(linkOf(x)), tabs = list.filter(x => TAB_OF[id(x)]), out = [];
+      list.filter(x => !TAB_OF[id(x)]).forEach(x => { out.push(x); tabs.filter(t => TAB_OF[id(t)] === id(x)).forEach(t => out.push(Object.assign(t, { _tab: id(x) }))); });
+      tabs.filter(t => !out.includes(t)).forEach(t => out.push(Object.assign(t, { _tab: TAB_OF[id(t)] })));
+      return out;
+    },
     perm(screen) {
       // Màn con không có mục menu riêng → dùng quyền của màn cha (UI-2: crm-customer-360 = quyền crm-customer).
       // PKG-FEE: bí danh nhiều tầng – trang chi tiết của màn con ẩn (scm-lot-detail → scm-lot → scm-inv-balance; prod-order-detail → prod-order → prod-plan).

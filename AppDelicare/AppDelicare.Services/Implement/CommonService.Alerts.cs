@@ -431,7 +431,7 @@ namespace AppDelicare.Services.Implement
                     .GroupBy(m => m.MetaLink!, StringComparer.OrdinalIgnoreCase).Select(g => g.First())
                     .OrderBy(m => Fold(m.Name!).StartsWith(folded, StringComparison.Ordinal) ? 0 : 1).ThenBy(m => m.Name, StringComparer.CurrentCulture)
                     .Take(Math.Max(0, _alertRules.SearchMaxScreens))
-                    .Select(m => new SearchScreenModel { Title = m.Name!, Route = m.MetaLink! })];
+                    .Select(m => new SearchScreenModel { Title = MenuTabs.ParentOf.TryGetValue(m.MetaLink!, out var tp) ? $"{tp.ParentName} › {m.Name}" : m.Name!, Route = m.MetaLink! })]; // MENU-TAB: tab hiện "Màn cha › Tab"
 
                 int take = Math.Max(1, _alertRules.SearchMaxPerType);
                 foreach (var type in CommonRelations.SearchTypes.Where(t => _permissionService.IsAllowed(perms, t.Resource.ScreenId, PermissionAction.View)))

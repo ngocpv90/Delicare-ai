@@ -237,3 +237,9 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 ## Thử quy đổi đơn vị (FE-2, 28/11/2026)
 
 - **Danh mục hệ thống › Đơn vị tính** → **Thử quy đổi**: nhập số lượng, chọn *Từ đơn vị* / *Sang đơn vị* → **Quy đổi** → kết quả theo quy đổi đang hiệu lực (vd 1 kg = 1.000 g; thùng 10 kg → kg). Chưa có quy đổi giữa 2 đơn vị → báo "Chưa có quy đổi".
+
+## Tab của một màn trong phân quyền (MENU-TAB, 28/11/2026)
+
+- Một số mục quyền là **tab của một màn**, không phải menu: **Trung tâm Agent** (Giao việc, Luồng liên phòng, Lịch chạy, Nhật ký agent, Sử dụng & chi phí) và **Bảng điều hành** (Chỉ số kinh doanh, Giá vốn & lãi gộp, Kết quả kinh doanh).
+- Ở **Nhóm quyền › Phân quyền**, **Xem trước menu**, **Ma trận phân quyền**, **Cây menu**: các mục này hiện **lồng ngay dưới màn cha** với nhãn **tab**, không lên thanh menu và không tính vào số màn. Vẫn cấp quyền riêng từng tab (vd tab Sử dụng & chi phí chỉ CEO / COO / IT).
+- Tìm kiếm trên đầu trang hiện dạng "Trung tâm Agent › Sử dụng & chi phí".

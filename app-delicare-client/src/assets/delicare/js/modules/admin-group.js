@@ -120,15 +120,16 @@
       };
       const q = st.rq.toLowerCase();
       const show = i => (!q || String(i.name || '').toLowerCase().includes(q) || String(i.parentName || '').toLowerCase().includes(q)) && (!st.onlyOn || cur(i) !== 'NONE');
-      const groups = parents.map(p => ({ p, kids: screens.filter(s => s.parentId === p.objectMenuId && show(s)) })).filter(x => x.kids.length);
+      // MENU-TAB: tab của 1 màn (Trung tâm Agent, Bảng điều hành) lồng ngay dưới màn cha – không tính là màn.
+      const groups = parents.map(p => ({ p, kids: Store.nestTabs(screens.filter(s => s.parentId === p.objectMenuId && show(s)), i => i.metaLink) })).filter(x => x.kids.length);
       const orphan = screens.filter(s => !parents.some(p => p.objectMenuId === s.parentId) && show(s));
       if (orphan.length) groups.push({ p: { name: 'Khác' }, kids: orphan });
       host.innerHTML = `<div class="card panel"><div class="row-flex mb" style="gap:8px;flex-wrap:wrap"><input class="input" id="rq" placeholder="Tìm màn hình" value="${esc(st.rq)}" style="width:220px">
           <label class="small"><input type="checkbox" id="rOn" ${st.onlyOn ? 'checked' : ''}> Chỉ màn có quyền</label>
           <span class="small muted">Mức: Xem · Xem, in & xuất · Xem & sửa (thêm, sửa) · Toàn quyền (gồm xóa, nhập file). Quyền duyệt ở nhóm "Phê duyệt": Được duyệt / Không ("Tất cả yêu cầu duyệt" chỉ để xem).</span></div>
         <div id="rBar"></div>
-        ${groups.map(({ p, kids }) => `<div class="panel-title mt">${esc(p.name || '')} <span class="small muted">· ${kids.filter(k => cur(k) !== 'NONE').length}/${kids.length} màn có quyền</span>${canEdit ? ` <span class="small">${kids.every(isApr) ? '' : `<a href="javascript:void 0" data-all="${p.objectMenuId || ''}" data-v="X">tất cả Xem</a> · `}<a href="javascript:void 0" data-all="${p.objectMenuId || ''}" data-v="NONE">bỏ hết</a></span>` : ''}</div>
-          <div class="table-wrap"><table class="table dc-table"><tbody>${kids.map(k => `<tr><td>${esc(k.name || '')}</td><td style="width:260px">${sel(k)}</td></tr>`).join('')}</tbody></table></div>`).join('') || '<div class="muted">Không có màn nào khớp.</div>'}</div>`;
+        ${groups.map(({ p, kids }) => `<div class="panel-title mt">${esc(p.name || '')} <span class="small muted">· ${kids.filter(k => !k._tab && cur(k) !== 'NONE').length}/${kids.filter(k => !k._tab).length} màn có quyền</span>${canEdit ? ` <span class="small">${kids.every(isApr) ? '' : `<a href="javascript:void 0" data-all="${p.objectMenuId || ''}" data-v="X">tất cả Xem</a> · `}<a href="javascript:void 0" data-all="${p.objectMenuId || ''}" data-v="NONE">bỏ hết</a></span>` : ''}</div>
+          <div class="table-wrap"><table class="table dc-table"><tbody>${kids.map(k => `<tr><td${k._tab ? ' style="padding-left:28px"' : ''}>${k._tab ? '<span class="tag" style="font-size:10px;padding:0 6px;margin-right:4px">tab</span>' : ''}${esc(k.name || '')}</td><td style="width:260px">${sel(k)}</td></tr>`).join('')}</tbody></table></div>`).join('') || '<div class="muted">Không có màn nào khớp.</div>'}</div>`;
       const bar = () => {
         const b = host.querySelector('#rBar'), n = st.draft.size;
         b.innerHTML = n ? `<div class="notice warn mb" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${n} thay đổi chưa lưu</b><button class="btn primary sm" id="rSave">Xem lại & lưu</button><button class="btn sm" id="rPrev">Xem trước menu</button><button class="btn sm" id="rDrop">Bỏ thay đổi</button></div>` : '';
@@ -184,7 +185,7 @@
       const m = (r.ok && r.data) || {}, tree = m.listMenu || [];
       const fl = n => [n.allowAdd || n.allowEdit ? 'sửa' : '', n.allowDelete ? 'xóa' : '', n.allowPrint || n.allowExport ? 'in / xuất' : '', n.allowImport ? 'nhập file' : ''].filter(Boolean).join(' · ');
       host.innerHTML = `<div class="card panel"><div class="small muted mb">${st.draft.size ? `Đã tính cả <b>${st.draft.size}</b> thay đổi chưa lưu. ` : ''}Người trong nhóm thấy <b>${U.num(m.screenCount || 0)}</b> màn hình (chưa tính quyền từ nhóm khác của họ).</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">${tree.map(p => `<div class="card panel" style="margin:0"><b>${esc(p.objectMenuName || '')}</b>${(p.children || []).map(c => `<div class="small" style="padding:2px 0">${esc(c.objectMenuName || '')}${fl(c) ? ` <span class="muted">– ${fl(c)}</span>` : ' <span class="muted">– xem</span>'}</div>`).join('') || '<div class="small muted">–</div>'}</div>`).join('') || '<div class="muted">Nhóm chưa thấy màn nào.</div>'}</div></div>`;
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">${tree.map(p => `<div class="card panel" style="margin:0"><b>${esc(p.objectMenuName || '')}</b>${Store.nestTabs((p.children || []).slice(), c => c.metaLink).map(c => `<div class="small" style="padding:2px 0${c._tab ? ';padding-left:18px' : ''}">${c._tab ? '<span class="tag" style="font-size:10px;padding:0 6px;margin-right:4px">tab</span>' : ''}${esc(c.objectMenuName || '')}${fl(c) ? ` <span class="muted">– ${fl(c)}</span>` : ' <span class="muted">– xem</span>'}</div>`).join('') || '<div class="small muted">–</div>'}</div>`).join('') || '<div class="muted">Nhóm chưa thấy màn nào.</div>'}</div></div>`;
     });
   }
 
