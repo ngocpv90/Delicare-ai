@@ -82,6 +82,7 @@ services:
       Agent__HermesApiUrlByAgent__ACC: http://hermes-van-phong:8642/v1
       Agent__HermesApiUrlByAgent__CSKH: http://hermes-van-phong:8642/v1
       HERMES_API_KEY: ${HERMES_API_KEY:-}
+      Agent__MonthlyBudget: ${AGENT_MONTHLY_BUDGET:-}   # AI-24: ngân sách AI / tháng (VND) – trống = không cảnh báo
     volumes:
       - api-import:/app/wwwroot/Import            # ảnh đại diện / tệp nhập Excel
       - api-docs:/app/App_Data/DocumentFiles      # tệp đính kèm (DocumentFile)
@@ -123,9 +124,11 @@ services:
       Licenses__GemBox: ${GEMBOX_LICENSE:-}
       DocumentStorage__RootPath: /app/App_Data/DocumentFiles
       Knowledge__VaultPath: /app/App_Data/Knowledge
+      Agent__SchedulesFile: /app/app-delicare-agents/schedules.json  # AI-25: bản tin (ban-tin.yaml) + cảnh báo theo mẫu (vivi-events)
     volumes:
       - api-docs:/app/App_Data/DocumentFiles
       - knowledge:/app/App_Data/Knowledge          # AI-1 (D-133): kho tri thức (exporter AI-5)
+      - ./app-delicare-agents:/app/app-delicare-agents:ro   # AI-25: quick.yaml, ban-tin.yaml, schedules.json – chỉ đọc
 
   # Đồng bộ database trước khi api chạy (xem đầu file). Tài khoản SQL trong .env cần quyền tạo stored procedure
   # (và quyền ALTER / BACKUP nếu bật DB_AUTO_MIGRATE).
@@ -163,6 +166,7 @@ services:
       Messaging__ClientKey: ${MESSAGING_CLIENT_KEY:-}
       Messaging__Mode: ${MESSAGING_MODE:-Polling}
       Messaging__WebhookBaseUrl: ${MESSAGING_WEBHOOK_BASE_URL:-}
+      Messaging__WebUrl: ${WEB_URL:-}                  # AI-25.3: nút 🌐 Mở trên web của 💬 Hỏi nhanh (https://…; trống = không nút)
       Telegram__Bots__VH__Token: ${TELEGRAM_VH_TOKEN:-}
       Telegram__Bots__VH__WebhookSecret: ${TELEGRAM_VH_WEBHOOK_SECRET:-}
       Telegram__Bots__VH__Username: ${TELEGRAM_VH_USERNAME:-}

@@ -75,6 +75,60 @@ namespace AppDelicare.Tests.Agent
             }
         }
 
+        /// <summary>
+        /// AI-24 (D-142 b): compose staging / production có toolgateway (chỉ mạng nội bộ, đủ 13 khóa, volume knowledge), 3 Hermes profile hermes đúng nhóm groups.json
+        /// (volume riêng, chỉ khóa của nhóm), api trỏ đúng container + kho tri thức + app-delicare-agents chỉ đọc, job thấy app-delicare-agents (bản tin / cảnh báo theo mẫu);
+        /// tệp env mẫu đủ biến, không giá trị thật.
+        /// </summary>
+        [Theory]
+        [InlineData("docker-compose.staging.yml", "staging.env.example")]
+        [InlineData("docker-compose.production.yml", "production.env.example")]
+        public void Staging_and_production_compose_carry_toolgateway_hermes_groups_and_knowledge(string file, string env)
+        {
+            string root = Repo();
+            string compose = File.ReadAllText(Path.Combine(root, "deploy", "docker", file)).Replace("\r\n", "\n");
+            var groups = JsonSerializer.Deserialize<Dictionary<string, string[]>>(JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "app-delicare-agents", "hermes", "groups.json"))).RootElement.GetProperty("groups").GetRawText())!;
+            string[] all = [.. AgentCatalog.All.Select(a => a.Code)];
+            var volumes = new List<string>();
+            foreach (var (g, agents) in groups)
+            {
+                string block = Service(compose, "hermes-" + g);
+                Keys(block).Should().BeEquivalentTo(agents, $"{file}: hermes-{g} chỉ giữ khóa agent của nhóm");
+                block.Should().Contain("<<: *hermes").And.Contain("<<: *hermes-env").And.Contain("../../app-delicare-agents:/opt/app-delicare-agents:ro");
+                volumes.Add(Regex.Match(block, @"- ([a-z0-9-]+):/opt/data").Groups[1].Value);
+                (block.Contains("TELEGRAM_BOT_TOKEN_TRO_LY") == (g == "vivi")).Should().BeTrue("chỉ hermes-vivi chạy bot Trợ lý");
+            }
+            volumes.Should().OnlyHaveUniqueItems().And.NotContain(string.Empty);
+            Regex.IsMatch(compose, @"^x-hermes: &hermes\n  profiles: \[""hermes""\]", RegexOptions.Multiline).Should().BeTrue($"{file}: Hermes chỉ chạy khi gọi profile hermes");
+
+            string tg = Service(compose, "toolgateway");
+            Keys(tg).Should().BeEquivalentTo(all, "toolgateway đủ khóa 13 agent");
+            tg.Should().NotContain("ports:", "ToolGateway chỉ mạng nội bộ").And.Contain("knowledge:/app/App_Data/Knowledge").And.Contain("healthcheck:");
+
+            var anchor = Regex.Match(compose, @"^x-agent-api-env: &agent-api-env\n(?<b>(?:  .*\n)*)", RegexOptions.Multiline);
+            anchor.Success.Should().BeTrue();
+            Keys(anchor.Groups["b"].Value).Should().BeEquivalentTo(all, "api đủ khóa 13 agent");
+            foreach (var (g, agents) in groups.Where(x => x.Key != "vivi"))
+            {
+                foreach (string a in agents)
+                {
+                    anchor.Groups["b"].Value.Should().Contain($"Agent__HermesApiUrlByAgent__{a}: http://hermes-{g}:8642/v1");
+                }
+            }
+            string api = Service(compose, "api");
+            api.Should().Contain("*agent-api-env").And.Contain("knowledge:/app/App_Data/Knowledge").And.Contain("../../app-delicare-agents:/app/app-delicare-agents:ro");
+            Service(compose, "job").Should().Contain("knowledge:/app/App_Data/Knowledge").And.Contain("../../app-delicare-agents:/app/app-delicare-agents:ro").And.Contain("Agent__SchedulesFile");
+            Service(compose, "messaging").Should().Contain("Messaging__WebUrl");
+            Regex.IsMatch(compose, @"^volumes:\n(?:  .*\n)*  knowledge:", RegexOptions.Multiline).Should().BeTrue("volume knowledge khai báo");
+
+            string example = File.ReadAllText(Path.Combine(root, "deploy", "docker", env));
+            foreach (string k in all.Select(a => "AGENT_KEY_" + a).Concat(["HERMES_API_KEY", "ANTHROPIC_API_KEY", "TELEGRAM_BOT_TOKEN_TRO_LY", "HERMES_MODEL_DEFAULT", "HERMES_MODEL_SCHEDULED", "AGENT_MONTHLY_BUDGET"]))
+            {
+                Regex.IsMatch(example, $@"^{k}=", RegexOptions.Multiline).Should().BeTrue($"{env} có {k}");
+            }
+            Regex.IsMatch(example, @"^(AGENT_KEY_[A-Z]+|HERMES_API_KEY|ANTHROPIC_API_KEY|TELEGRAM_BOT_TOKEN_TRO_LY)=\S", RegexOptions.Multiline).Should().BeFalse("env mẫu không có khóa thật");
+        }
+
         [Fact]
         public void Chat_url_picks_the_agent_container_and_reply_reads_openai_shape()
         {

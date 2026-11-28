@@ -11,6 +11,57 @@ x-logging: &logging
   options:
     max-size: "20m"
     max-file: "10"
+# AI-24 (D-142 b): Trợ lý AI – mẫu chung 3 container Hermes (profile "hermes"; lệnh "up" thường không đụng tới) + biến agent cho api.
+x-hermes: &hermes
+  profiles: ["hermes"]
+  image: nousresearch/hermes-agent:latest
+  command: ["gateway", "run"]
+  depends_on:
+    - toolgateway
+  expose:
+    - "8642"                                       # API server Hermes – chỉ mạng nội bộ (api gọi chat web)
+  restart: unless-stopped
+  logging: *logging
+
+x-hermes-env: &hermes-env
+  TZ: Asia/Ho_Chi_Minh
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  HERMES_MODEL_DEFAULT: ${HERMES_MODEL_DEFAULT:-claude-sonnet-5-5}
+  HERMES_MODEL_SCHEDULED: ${HERMES_MODEL_SCHEDULED:-claude-haiku-5-5}
+  API_SERVER_KEY: ${HERMES_API_KEY:-}             # khóa API server Hermes – api gửi Bearer cùng giá trị
+
+# api: kho tri thức, lịch / câu nhanh / bản tin (app-delicare-agents chỉ đọc), khóa agent (Trung tâm Agent báo "có khóa"), địa chỉ Hermes theo nhóm, ngân sách AI.
+x-agent-api-env: &agent-api-env
+  Knowledge__VaultPath: /app/App_Data/Knowledge
+  Agent__SchedulesFile: /app/app-delicare-agents/schedules.json
+  Agent__MonthlyBudget: ${AGENT_MONTHLY_BUDGET:-}
+  HERMES_API_KEY: ${HERMES_API_KEY:-}
+  Agent__HermesApiUrl: http://hermes-vivi:8642/v1
+  Agent__HermesApiUrlByAgent__KITCHEN: http://hermes-van-hanh:8642/v1
+  Agent__HermesApiUrlByAgent__QA: http://hermes-van-hanh:8642/v1
+  Agent__HermesApiUrlByAgent__LOG: http://hermes-van-hanh:8642/v1
+  Agent__HermesApiUrlByAgent__PKG: http://hermes-van-hanh:8642/v1
+  Agent__HermesApiUrlByAgent__WH: http://hermes-van-hanh:8642/v1
+  Agent__HermesApiUrlByAgent__SALES: http://hermes-van-phong:8642/v1
+  Agent__HermesApiUrlByAgent__PLAN: http://hermes-van-phong:8642/v1
+  Agent__HermesApiUrlByAgent__PROC: http://hermes-van-phong:8642/v1
+  Agent__HermesApiUrlByAgent__HR: http://hermes-van-phong:8642/v1
+  Agent__HermesApiUrlByAgent__ACC: http://hermes-van-phong:8642/v1
+  Agent__HermesApiUrlByAgent__CSKH: http://hermes-van-phong:8642/v1
+  AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
+  AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
+  AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
+  AGENT_KEY_QA: ${AGENT_KEY_QA:-}
+  AGENT_KEY_LOG: ${AGENT_KEY_LOG:-}
+  AGENT_KEY_PKG: ${AGENT_KEY_PKG:-}
+  AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+  AGENT_KEY_SALES: ${AGENT_KEY_SALES:-}
+  AGENT_KEY_PLAN: ${AGENT_KEY_PLAN:-}
+  AGENT_KEY_PROC: ${AGENT_KEY_PROC:-}
+  AGENT_KEY_HR: ${AGENT_KEY_HR:-}
+  AGENT_KEY_ACC: ${AGENT_KEY_ACC:-}
+  AGENT_KEY_CSKH: ${AGENT_KEY_CSKH:-}
+
 services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -62,6 +113,7 @@ services:
       db-init:
         condition: service_completed_successfully
     environment:
+      <<: *agent-api-env
       ASPNETCORE_ENVIRONMENT: Staging
       TZ: Asia/Ho_Chi_Minh
       Logging__ConsoleOnly: "true"
@@ -75,6 +127,8 @@ services:
       Messaging__LinkSigningKey: ${MESSAGING_LINK_SIGNING_KEY:-}
     volumes:
       - delicare-docs:/app/App_Data/DocumentFiles
+      - knowledge:/app/App_Data/Knowledge          # AI-24: kho tri thức
+      - ../../app-delicare-agents:/app/app-delicare-agents:ro   # schedules.json, quick.yaml, ban-tin.yaml – chỉ đọc
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -95,8 +149,12 @@ services:
       ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=${APP_DB_USER:-sa};Password=${APP_DB_PASSWORD:-${SA_PASSWORD}};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
       Licenses__GemBox: ${GEMBOX_LICENSE:-}
       DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+      Knowledge__VaultPath: /app/App_Data/Knowledge                  # AI-24: bản tin Ban GĐ ghi thư mục 10, gộp nhật ký
+      Agent__SchedulesFile: /app/app-delicare-agents/schedules.json  # AI-25: bản tin (ban-tin.yaml) + cảnh báo theo mẫu (vivi-events)
     volumes:
       - delicare-docs:/app/App_Data/DocumentFiles
+      - knowledge:/app/App_Data/Knowledge
+      - ../../app-delicare-agents:/app/app-delicare-agents:ro
     restart: unless-stopped
     logging: *logging
 
@@ -113,6 +171,7 @@ services:
       Messaging__ClientKey: ${MESSAGING_CLIENT_KEY:-}
       Messaging__Mode: ${MESSAGING_MODE:-Polling}
       Messaging__WebhookBaseUrl: ${MESSAGING_WEBHOOK_BASE_URL:-}
+      Messaging__WebUrl: ${WEB_URL:-}                # AI-25.3: nút 🌐 Mở trên web của 💬 Hỏi nhanh (https://…; trống = không nút)
       Telegram__Bots__VH__Token: ${TELEGRAM_VH_TOKEN:-}
       Telegram__Bots__VH__WebhookSecret: ${TELEGRAM_VH_WEBHOOK_SECRET:-}
       Telegram__Bots__VH__Username: ${TELEGRAM_VH_USERNAME:-}
@@ -124,6 +183,91 @@ services:
     restart: unless-stopped
     logging: *logging
 
+  # AI-24 (D-142 b) / AI-1 (D-133): ToolGateway – MCP /mcp + REST /tools/{name} cho Hermes. CHỈ mạng nội bộ (expose, KHÔNG ports; nginx KHÔNG chuyển ra ngoài).
+  # Chỉ gọi Service (không SQL riêng ngoài chuỗi kết nối như api); khóa agent qua AGENT_KEY_<MÃ> (tên ở BotConfiguration.SecretReference).
+  toolgateway:
+    build:
+      context: ../../AppDelicare
+      dockerfile: AppDelicare.ToolGateway/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      TZ: Asia/Ho_Chi_Minh
+      ConnectionStrings__MainConnectionString: "Server=db,1433;Database=${DB_NAME:-AppDelicare};User Id=${APP_DB_USER:-sa};Password=${APP_DB_PASSWORD:-${SA_PASSWORD}};Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;"
+      DocumentStorage__RootPath: /app/App_Data/DocumentFiles
+      Knowledge__VaultPath: /app/App_Data/Knowledge
+      AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
+      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
+      AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
+      AGENT_KEY_QA: ${AGENT_KEY_QA:-}
+      AGENT_KEY_LOG: ${AGENT_KEY_LOG:-}
+      AGENT_KEY_PKG: ${AGENT_KEY_PKG:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_SALES: ${AGENT_KEY_SALES:-}
+      AGENT_KEY_PLAN: ${AGENT_KEY_PLAN:-}
+      AGENT_KEY_PROC: ${AGENT_KEY_PROC:-}
+      AGENT_KEY_HR: ${AGENT_KEY_HR:-}
+      AGENT_KEY_ACC: ${AGENT_KEY_ACC:-}
+      AGENT_KEY_CSKH: ${AGENT_KEY_CSKH:-}
+    volumes:
+      - delicare-docs:/app/App_Data/DocumentFiles
+      - knowledge:/app/App_Data/Knowledge
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]   # image đã có curl (Dockerfile ToolGateway)
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    logging: *logging
+
+  # AI-15 / AI-24: Hermes tách 3 container theo nhóm (app-delicare-agents/hermes/groups.json): hermes-vivi (VIVI, KNOW – bot Trợ lý + chat web),
+  # hermes-van-hanh (KITCHEN, QA, LOG, PKG, WH), hermes-van-phong (SALES, PLAN, PROC, HR, ACC, CSKH). Cài đặt: deploy/README.md mục 13.
+  hermes-vivi:
+    <<: *hermes
+    environment:
+      <<: *hermes-env
+      HERMES_GROUP: vivi                       # app-delicare-agents/hermes/vivi.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group vivi
+      TELEGRAM_BOT_TOKEN_TRO_LY: ${TELEGRAM_BOT_TOKEN_TRO_LY:-}       # bot Trợ lý TEST / PROD riêng (@BotFather)
+      AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
+      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
+    volumes:
+      - hermes-vivi-data:/opt/data                     # MỖI container ĐÚNG 1 volume riêng (.env, config.yaml, SOUL, skills, sessions) – không dùng chung
+      - ../../app-delicare-agents:/opt/app-delicare-agents:ro
+
+  hermes-van-hanh:
+    <<: *hermes
+    environment:
+      <<: *hermes-env
+      HERMES_GROUP: van-hanh                       # app-delicare-agents/hermes/van-hanh.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-hanh
+      AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
+      AGENT_KEY_QA: ${AGENT_KEY_QA:-}
+      AGENT_KEY_LOG: ${AGENT_KEY_LOG:-}
+      AGENT_KEY_PKG: ${AGENT_KEY_PKG:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+    volumes:
+      - hermes-van-hanh-data:/opt/data                     # MỖI container ĐÚNG 1 volume riêng (.env, config.yaml, SOUL, skills, sessions) – không dùng chung
+      - ../../app-delicare-agents:/opt/app-delicare-agents:ro
+
+  hermes-van-phong:
+    <<: *hermes
+    environment:
+      <<: *hermes-env
+      HERMES_GROUP: van-phong                       # app-delicare-agents/hermes/van-phong.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-phong
+      AGENT_KEY_SALES: ${AGENT_KEY_SALES:-}
+      AGENT_KEY_PLAN: ${AGENT_KEY_PLAN:-}
+      AGENT_KEY_PROC: ${AGENT_KEY_PROC:-}
+      AGENT_KEY_HR: ${AGENT_KEY_HR:-}
+      AGENT_KEY_ACC: ${AGENT_KEY_ACC:-}
+      AGENT_KEY_CSKH: ${AGENT_KEY_CSKH:-}
+    volumes:
+      - hermes-van-phong-data:/opt/data                     # MỖI container ĐÚNG 1 volume riêng (.env, config.yaml, SOUL, skills, sessions) – không dùng chung
+      - ../../app-delicare-agents:/opt/app-delicare-agents:ro
+
 volumes:
   delicare-sql:
   delicare-docs:
+  knowledge:                                   # AI-24: kho tri thức (api / job / toolgateway) – sao lưu hằng đêm cùng delicare-docs
+  hermes-vivi-data:
+  hermes-van-hanh-data:
+  hermes-van-phong-data:
