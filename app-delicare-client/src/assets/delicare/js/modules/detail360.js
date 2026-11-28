@@ -80,6 +80,40 @@
     document.addEventListener('click', () => more && more.classList.add('hide'), { once: true });
   };
   // Tab Tài liệu: tệp đính kèm của bản ghi (DocumentFile/GetList · Upload · Download); canUp = quyền sửa màn gốc.
+  // AI-22.5 (D-141 i): khối "Kho tài liệu" – hợp đồng / hồ sơ gốc trong Kho tài liệu gắn mã bản ghi (doi_tuong), chỉ tài liệu người xem có quyền vùng; tải lên tại chỗ.
+  const KB_DOC = { Customer: 'customer', Contract: 'contract', Supplier: 'supplier', Employee: 'employee' };
+  const KB_TYPE = { 'hop-dong-kh': 'Hợp đồng khách hàng', 'hop-dong-ncc': 'Hợp đồng NCC', 'hop-dong-ld': 'Hợp đồng lao động', 'ho-so-nv': 'Hồ sơ nhân viên', 'tai-lieu': 'Tài liệu' };
+  const kbDocs = (host, type, id) => {
+    host.innerHTML = D.loading;
+    Store.query('Knowledge/GetDocuments', { type, id }).then(x => {
+      if (!host.isConnected) return;
+      const m = (x.ok && x.data) || null;
+      if (!m) { host.innerHTML = ''; return; }
+      const rows = m.listDocument || [], soon = r => r.expiresOn && (new Date(r.expiresOn) - Date.now()) / 86400000 <= 30;
+      host.innerHTML = `<div class="spread mt"><div class="panel-title">Kho tài liệu <span class="small muted">· hợp đồng, hồ sơ gốc (${rows.length})</span></div>${m.canUpload ? `<button class="btn sm" data-kbup>${I('up')} Tải lên kho</button>` : ''}</div>
+        ${rows.length ? D.table(rows, [{ label: 'Tài liệu', html: r => `<a href="${esc(APP.href('knowledge?path=' + encodeURIComponent(r.path)))}"><b>${esc(r.title)}</b></a>${/lưu trữ/i.test(r.status || '') ? ' <span class="badge">Lưu trữ</span>' : ''}` },
+          { label: 'Loại', html: r => esc(KB_TYPE[r.type] || r.type || '') }, { label: 'Số hiệu', html: r => esc(r.soHieu || '') }, { label: 'Ngày', html: r => D.dmy(r.date) },
+          { label: 'Hết hạn', html: r => r.expiresOn ? `<span class="${soon(r) ? 'warn' : ''}">${D.dmy(r.expiresOn)}</span>` : '' },
+          { label: '', html: r => r.canDownload ? `<button class="btn xs" data-kbdl="${esc(r.path)}">${I('down')} Tải</button>` : '' }], true)
+          : `<div class="muted small">Chưa có tài liệu trong Kho gắn mã ${esc(m.code || '')} (hoặc anh/chị chưa được xem vùng chứa tài liệu).</div>`}`;
+      host.querySelectorAll('[data-kbdl]').forEach(b => b.onclick = e => { e.stopPropagation(); Store.download('Knowledge/DownloadFile', { path: b.dataset.kbdl }); });
+      const up = host.querySelector('[data-kbup]'); if (up) up.onclick = () => UI.modal({
+        title: 'Tải lên Kho tài liệu', size: 'md', sub: `Gắn mã ${esc(m.code || '')} · vùng ${esc(m.uploadFolder)} (PDF / Word / Excel / ảnh ≤ 20 MB, tên tệp do hệ thống đặt)`,
+        body: `<label class="field"><span>Tệp</span><input type="file" class="input" id="kdF" accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png"></label>
+          <div class="grid2"><label class="field"><span>Loại</span><select class="select" id="kdT">${m.uploadTypes.map(t => `<option value="${t}">${esc(KB_TYPE[t] || t)}</option>`).join('')}</select></label><label class="field"><span>Số hiệu</span><input class="input" id="kdN"></label></div>
+          <label class="field"><span>Tên tài liệu</span><input class="input" id="kdTi"></label>
+          <div class="grid2"><label class="field"><span>Ngày ký</span><input type="date" class="input" id="kdD"></label><label class="field"><span>Ngày hết hạn (nhắc trước 30 / 7 / 1 ngày)</span><input type="date" class="input" id="kdE"></label></div>`,
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="kdGo">Tải lên</button>',
+        onMount: (mm, close) => mm.querySelector('#kdGo').onclick = () => {
+          const f = mm.querySelector('#kdF').files[0], v = k => mm.querySelector(k).value.trim();
+          if (!f) return UI.toast('Chọn tệp', 'warn'); if (!v('#kdTi')) return UI.toast('Nhập tên tài liệu', 'warn');
+          const fd = new FormData(); fd.append('file', f); fd.append('folder', m.uploadFolder); fd.append('type', v('#kdT')); fd.append('title', v('#kdTi')); fd.append('soHieu', v('#kdN'));
+          fd.append('ngay', v('#kdD')); fd.append('hetHan', v('#kdE')); fd.append('doiTuong', m.code || '');
+          Store.act('Knowledge/UploadFile', { json: fd }).then(r => { if (!r.ok) return; close(); UI.toast('Đã tải lên Kho tài liệu', 'ok'); kbDocs(host, type, id); });
+        },
+      });
+    });
+  };
   D.documentsTab = (resource, canUp) => (box, d, id) => {
     if (!Store.isLive) { box.innerHTML = D.demoNote; return; }
     const rules = APP.docRules || { DOC_MAX: 20 * 1024 * 1024, DOC_EXT: ['pdf', 'jpg', 'jpeg', 'png', 'xlsx', 'docx'] };
@@ -91,6 +125,7 @@
         { label: 'Dung lượng', num: true, html: r => U.num((r.fileSize || 0) / 1024, 0) + ' KB' }, { label: 'Người tải', html: r => esc(r.createdByName || '') }, { label: 'Ngày', html: r => D.dmy(r.createdDate) }], true);
       D.bindRows(docs, rows, r => Store.download('DocumentFile/Download', { id: r.id }));
     });
+    if (KB_DOC[resource]) { const kb = document.createElement('div'); box.appendChild(kb); kbDocs(kb, KB_DOC[resource], id); }
     if (canUp) {
       const inp = box.querySelector('[data-file]');
       box.querySelector('[data-up]').onclick = () => inp.click();

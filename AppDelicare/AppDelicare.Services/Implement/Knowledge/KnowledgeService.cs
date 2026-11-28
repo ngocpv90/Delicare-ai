@@ -152,6 +152,9 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResults<KnowledgeTaskModel>> GetMyTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetMyTask(KnowledgeTaskSetRequest request);
         Task<Dictionary<Guid, List<string>>> DueTasksByAssigneeAsync();
+        // AI-22.5 (D-141 i): hồ sơ gắn đối tượng + nhắc hết hạn hợp đồng.
+        Task<IResult<KnowledgeEntityDocsModel>> GetDocuments(string? type, Guid id);
+        Dictionary<string, List<string>> ExpiringDocuments(DateTime today, int[] daysLeft);
         Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
         /// <summary>AI-21 (D-138 d): sổ việc theo ngày (thư mục 98) – mở / tự đóng / đã xử lý việc của Trung tâm Agent.</summary>
