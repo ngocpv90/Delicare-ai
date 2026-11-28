@@ -135,6 +135,8 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
         /// <summary>AI-17: ghi chú gắn 1 đối tượng (type = customer | supplier | dish | lot | batch | route, id = Id bản ghi) – theo refs (ưu tiên) hoặc nhắc mã trong nội dung; chỉ ghi chú người hỏi được xem.</summary>
         Task<IResults<KnowledgeEntityNoteModel>> GetByEntity(string? type, Guid id);
+        /// <summary>AI-18: danh sách ghi chú người dùng được tải về Obsidian máy cá nhân (đường dẫn + băm; KHÔNG BOD), thư mục được đồng bộ hai chiều (80 khi bật). Ghi AuditChange KnowledgeSync.</summary>
+        Task<IResult<KnowledgeSyncManifestModel>> GetSyncManifest();
         Task<string?> SopStateAsync(Guid key);
         (string? Path, string? Title, string? Folder, string? Status) SopInfo(Guid key);
         Task<string?> ApplySopDecisionAsync(Guid key, bool approved, Guid actorUserId, string? note);

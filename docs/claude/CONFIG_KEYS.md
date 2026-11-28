@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **269 khóa** trong 13 section.
+Tổng: **270 khóa** trong 13 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -288,6 +288,7 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Knowledge:SnippetLength` | int | 400 | Độ dài đoạn trích trả cho agent (ký tự). | – |
 | `Knowledge:LogRetentionDays` | int | 90 | AI-12: nhật ký agent (96) quá số ngày này được gộp thành tóm tắt tháng. | – |
 | `Knowledge:BriefKeepMonths` | int | 13 | AI-12: bản tin ngày (10 Ban GĐ/Bản tin) giữ số tháng này, cũ hơn chuyển Lưu trữ bản tin. | – |
+| `Knowledge:SyncTwoWayTraining` | bool | – | AI-18: cho phép đồng bộ HAI CHIỀU thư mục 80 Đào tạo với Obsidian máy cá nhân (tools/kb-sync). Mặc định tắt – mọi thư mục chỉ một chiều (máy chủ → máy). | – |
 
 ## Messaging
 

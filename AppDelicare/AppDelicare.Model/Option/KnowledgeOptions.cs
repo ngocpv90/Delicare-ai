@@ -22,5 +22,8 @@ namespace AppDelicare.Model.Option
 
         /// <summary>AI-12: bản tin ngày (10 Ban GĐ/Bản tin) giữ số tháng này, cũ hơn chuyển Lưu trữ bản tin.</summary>
         public int BriefKeepMonths { get; set; } = 13;
+
+        /// <summary>AI-18: cho phép đồng bộ HAI CHIỀU thư mục 80 Đào tạo với Obsidian máy cá nhân (tools/kb-sync). Mặc định tắt – mọi thư mục chỉ một chiều (máy chủ → máy).</summary>
+        public bool SyncTwoWayTraining { get; set; }
     }
 }
