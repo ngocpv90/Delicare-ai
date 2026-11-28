@@ -60,6 +60,7 @@ namespace AppDelicare.Messaging.Presentation
             ["SHORTAGE_REPORTED"] = "🍱 Báo thiếu suất",
             ["RETAIL_ORDER_NEW"] = "🛒 Đơn khách lẻ mới",
             ["KNOWLEDGE_REVIEW_DUE"] = "📚 Ghi chú cần rà soát",
+            ["KNOWLEDGE_TASK_DUE"] = "📌 Việc được giao sắp / quá hạn", // AI-22.4
             ["AGENT_COST_ALERT"] = "💰 Chi phí Trợ lý AI",
             ["AGENT_ALERT"] = "🤖 Trợ lý AI cảnh báo",
             ["PURCHASE_DUE_NO_ORDER"] = "🛒 Kế hoạch mua – tới hạn đặt chưa có đơn mua",

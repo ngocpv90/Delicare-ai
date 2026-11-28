@@ -75,6 +75,7 @@ const SCRIPTS = [
   'modules/dash-tabs.js', // UI-6.52 (D-139): Bảng điều hành 3 tab – sau dashboard / be3 / cost-margin
   'modules/rpt.js', // RPT-1 (D-140): tab Kết quả kinh doanh – sau dash-tabs.js
   'modules/ai.js', // AI-6 (D-133): Trợ lý AI (Trung tâm agent, Nhật ký agent, Lịch chạy) + Kho tri thức
+  'modules/kb-register.js', // AI-22.4 (D-141 i): sổ công văn, biên bản họp, việc tôi được giao – sau ai.js
   'modules/help.js', // AI-22.3 (D-141 l): nút "?" mọi màn + thư viện Hướng dẫn sử dụng – CUỐI danh sách
 ];
 const SCRIPT_BASE = 'assets/delicare/js/';

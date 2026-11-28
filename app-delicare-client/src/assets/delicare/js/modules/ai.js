@@ -412,7 +412,7 @@
   APP.register('knowledge', (el, f, p) => {
     p = p || {};
     const st = { tree: [], folder: p.folder || '', path: p.path || '', q: p.q || '' };
-    el.innerHTML = APP.header(f || FN.knowledge, '', { noNote: true })
+    el.innerHTML = APP.header(f || FN.knowledge, `<a class="btn" href="#/knowledge?view=my-tasks">${I('check')} Việc tôi được giao</a>`, { noNote: true }) // AI-22.4
       + `<div class="notice info mb">${I('help')}<div>Kho chứa tri thức: cách làm, quy định, bài học, bản chụp báo cáo có ngày. Số liệu hiện tại luôn xem trên màn nghiệp vụ. Ghi chú tự sinh (lõi xuất) chỉ đọc; SOP / quyết định có hiệu lực sau khi duyệt.</div></div>
         <div class="kn-wrap"><aside class="card kn-side"><div class="row-flex mb" style="gap:6px" data-help="kn-search"><input class="input" id="knQ" placeholder="Tìm trong kho (gõ không dấu được)…" value="${esc(st.q)}"><button class="btn" id="knGo" aria-label="Tìm">${I('search')}</button></div><div id="knTree" data-help="kn-tree">${loading}</div></aside>
         <section class="card kn-main" id="knMain">${loading}</section></div>`;
@@ -428,6 +428,7 @@
     const folderView = () => {
       const fd = st.tree.find(x => x.code === st.folder);
       if (fd && fd.code === '80-HDSD' && APP.helpLibrary) { APP.helpLibrary(main); return; } // AI-22.3: thư viện Hướng dẫn sử dụng
+      if (fd && (fd.code === '05' || fd.code === '15') && APP.kbRegister) { APP.kbRegister(main, fd); return; } // AI-22.4: sổ công văn / biên bản họp
       if (!fd) { main.innerHTML = `<h2>Kho tri thức</h2><p class="muted">Chọn thư mục bên trái hoặc tìm theo từ khóa.</p>${UI.kpis(st.tree.slice(0, 4).map(x => UI.kpi(x.name, U.num(x.noteCount), x.owner, 'file', 'blue')))}`; return; }
       main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(kfName(fd.name))}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px">${fd.code !== '80-HDSD' ? `<button class="btn sm" id="knUp" data-help="kn-upload">${I('up')} Tải tài liệu lên</button>` : ''}<button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
         <div class="table-wrap mt"><table class="table dc-table"><thead><tr><th>Ghi chú</th><th>Loại</th><th>Trạng thái</th><th>Hiệu lực từ</th><th>Nguồn</th></tr></thead><tbody>
@@ -534,7 +535,7 @@
       st.tree = x.list || [];
       if (st.path) { const fd = st.tree.find(t => (t.listNote || []).some(n => n.path === st.path)); if (fd) st.folder = fd.code; }
       tree();
-      if (st.path) noteView(); else if (st.q) search(); else folderView();
+      if (p.view === 'my-tasks' && APP.kbMyTasks) APP.kbMyTasks(main); else if (st.path) noteView(); else if (st.q) search(); else folderView();
     });
   });
 })();

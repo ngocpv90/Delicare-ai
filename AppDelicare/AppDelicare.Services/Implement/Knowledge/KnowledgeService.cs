@@ -145,6 +145,13 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResult<KnowledgeHelpModel>> GetHelp(string? screen);
         Task<IResults<KnowledgeGuideModel>> GetGuides();
         Task<IResult<bool>> HelpFeedback(KnowledgeHelpFeedbackRequest request);
+        // AI-22.4 (D-141 i): sổ công văn (05), biên bản họp (15), việc giao → 98, nhắc hạn.
+        Task<IResults<KnowledgeAssigneeModel>> GetAssignees(string? keyword);
+        Task<IResults<KnowledgeRegisterItemModel>> GetRegister(string? folder, int? year);
+        Task<IResult<KnowledgeSaveResultModel>> CreateMeeting(KnowledgeMeetingRequest request);
+        Task<IResults<KnowledgeTaskModel>> GetMyTasks(bool includeDone);
+        Task<IResult<KnowledgeSaveResultModel>> SetMyTask(KnowledgeTaskSetRequest request);
+        Task<Dictionary<Guid, List<string>>> DueTasksByAssigneeAsync();
         Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
         /// <summary>AI-21 (D-138 d): sổ việc theo ngày (thư mục 98) – mở / tự đóng / đã xử lý việc của Trung tâm Agent.</summary>
@@ -275,6 +282,7 @@ namespace AppDelicare.Services.Implement.Knowledge
             ("Mẫu báo cáo", "bao-cao", "Mẫu báo cáo", "## Số liệu chính (bản chụp có ngày – số hiện tại luôn hỏi lõi)\n\n## Nhận xét\n"),
             ("Mẫu quyết định", "quyet-dinh", "Mẫu quyết định", "## Quyết định\n\n## Người chốt / thời điểm\n\n## Lý do\n"),
             ("Mẫu hướng dẫn", "huong-dan", "Mẫu hướng dẫn đào tạo", "## Dành cho vai trò\n\n## Các bước\n\n## Câu hỏi thường gặp\n"),
+            ("Mẫu biên bản họp", "bien-ban-hop", "Mẫu biên bản họp giao ban", "- Số: (máy cấp BH-YYYY-NNN)\n- Ngày họp:\n- Chủ trì:\n- Thành phần:\n\n## Nội dung\n\n## Kết luận\n\n## Việc giao\n\n| # | Việc | Người được giao | Hạn |\n|---|---|---|---|\n\n(Lập trên màn Kho tài liệu › 15 Họp & giao ban → Lập biên bản họp: mỗi việc giao tự thành việc theo dõi, có nút Xong, nhắc khi sắp / quá hạn.)\n"), // AI-22.4
         ];
 
         // ---------------- đọc

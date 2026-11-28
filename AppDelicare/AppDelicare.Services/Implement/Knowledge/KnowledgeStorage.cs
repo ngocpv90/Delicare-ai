@@ -26,6 +26,11 @@ namespace AppDelicare.Services.Implement.Knowledge
         public string? RetainUntil { get; set; }
         /// <summary>Mô tả / tóm tắt (bắt buộc với scan vùng cá nhân / BOD – không gửi AI).</summary>
         public string? Summary { get; set; }
+        /// <summary>AI-22.4 (sổ công văn 05): nơi gửi (đến) / nơi nhận (đi).</summary>
+        public string? NoiGuiNhan { get; set; }
+        /// <summary>AI-22.4: người xử lý (User.Id) + hạn xử lý yyyy-MM-dd → việc theo dõi 98.</summary>
+        public Guid? HandlerId { get; set; }
+        public string? HandlerDue { get; set; }
     }
 
     /// <summary>AI-22.2: 1 dòng nhật ký truy cập tài liệu hạn chế (AuditChange EntityName <c>KnowledgeAccess</c>).</summary>
@@ -133,6 +138,27 @@ namespace AppDelicare.Services.Implement.Knowledge
             {
                 conf = KnowledgeVault.Restricted.Contains(folder.Code) ? "han-che" : "noi-bo";
             }
+            // AI-22.4: công văn vào sổ 05 – số vào sổ máy chủ cấp (khóa vùng chống trùng), người xử lý + hạn → việc theo dõi 98.
+            bool dispatch = folder.Code == DispatchFolder && type is "cong-van-den" or "cong-van-di";
+            SemaphoreSlim? gate = dispatch ? KnowledgeVault.LockFor(Root, "#register-" + DispatchFolder) : null;
+            if (gate != null)
+            {
+                await gate.WaitAsync();
+            }
+            try
+            {
+            string? regNo = null;
+            if (dispatch)
+            {
+                var (no, err) = await DispatchNumberAsync(request, type, day);
+                if (err != null)
+                {
+                    return Result<KnowledgeSaveResultModel>.Fail(err);
+                }
+                regNo = no;
+            }
+            string? handlerName = await UserNameAsync(request.HandlerId);
+            DateTime? handlerDue = KnowledgeVault.ParseDate(request.HandlerDue);
             // Tên trên đĩa do máy chủ đặt (luật 7): <loại>-<yyyyMMddHHmmss>-<8 ký tự>; tên gốc chỉ để hiển thị.
             string stem = $"{type}-{clock.Now:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..(type.Length + 24)];
             string notePath = $"{folder.Dir}/{stem}.md", filePath = $"{folder.Dir}/{stem}{ext.ToLowerInvariant()}";
@@ -145,6 +171,7 @@ namespace AppDelicare.Services.Implement.Knowledge
                 ("refs", string.IsNullOrWhiteSpace(request.DoiTuong) ? "[]" : "[" + KnowledgeVault.FileSafe(Q(request.DoiTuong)) + "]"), ("title", Q(title)),
                 ("so_hieu", Q(request.SoHieu)), ("ngay", day.ToString("yyyy-MM-dd")), ("doi_tuong", Q(request.DoiTuong)), ("retain_until", retain?.ToString("yyyy-MM-dd") ?? string.Empty),
                 ("file", stem + ext.ToLowerInvariant()), ("ten_goc", Q(Path.GetFileName(fileName))), ("kich_thuoc", bytes.Length.ToString()),
+                .. (regNo != null ? new[] { ("so_vao_so", regNo), ("noi_gui_nhan", Q(request.NoiGuiNhan)), ("nguoi_xu_ly", handlerName ?? string.Empty), ("han_xu_ly", handlerDue?.ToString("yyyy-MM-dd") ?? string.Empty) } : []),
             ]);
             string body = $"\n# {Q(title)}\n\n{(string.IsNullOrWhiteSpace(request.Summary) ? "(chưa có mô tả)" : request.Summary!.Trim())}\n\n📎 Tệp gốc: {Q(Path.GetFileName(fileName))} – tải bằng nút **Tải file gốc** (cần quyền Xuất của vùng).\n";
             string full = Path.Combine(Root, filePath);
@@ -155,7 +182,20 @@ namespace AppDelicare.Services.Implement.Knowledge
             {
                 File.Delete(full);
             }
+            else if (regNo != null)
+            {
+                if (request.HandlerId is { } h && handlerName != null && handlerDue != null)
+                {
+                    await CreateFollowTaskAsync("CONG-VAN", $"Xử lý công văn {regNo}: {Q(title)}", $"Công văn {(type == "cong-van-di" ? "đi" : "đến")} {regNo}{(string.IsNullOrWhiteSpace(request.SoHieu) ? string.Empty : " (số " + Q(request.SoHieu) + ")")} – {Q(request.NoiGuiNhan)}.", h, handlerName, handlerDue.Value, notePath, actor.UserId);
+                }
+                r.ResponseMessage = $"Đã vào sổ {regNo}" + (handlerName != null ? $" · giao {handlerName} xử lý trước {handlerDue:dd/MM/yyyy}" : string.Empty);
+            }
             return r;
+            }
+            finally
+            {
+                gate?.Release();
+            }
         }
 
         public async Task<IResult<FileContentModel>> DownloadFile(string? path)
