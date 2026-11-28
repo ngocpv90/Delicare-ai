@@ -18,7 +18,7 @@ namespace AppDelicare.Tests.Agent
     public class AgentToolsAi3Tests
     {
         internal const string Key = "khoa-ai3-test";
-        private static readonly string[] Agents = ["VIVI", "WH", "KITCHEN", "QA"];
+        private static readonly string[] Agents = ["VIVI", "WH", "KITCHEN", "QA", "PROC"];
 
         private static Guid AgentUser(string code) => Guid.Parse($"a3a3a3a3-0000-4000-8000-0000000000{Array.IndexOf(Agents, code) + 10:D2}");
 

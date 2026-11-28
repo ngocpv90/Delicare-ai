@@ -3,4 +3,5 @@ doc_ghi_chu
 get_ton_kho
 ghi_nhat_ky
 ping
+propose_purchase_order
 tim_tri_thuc

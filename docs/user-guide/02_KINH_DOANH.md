@@ -15,6 +15,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 |---|---|---|---|---|---|
 | Việc của tôi › Việc của tôi | `hr-my` | X | X | X | X |
 | Phê duyệt › Đơn đặt suất (sửa sau chốt) | `wf-inbox?type=crm-order` | — | — | Duyệt | — |
+| Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | — | — | Duyệt | — |
 | Điều hành › Bảng điều hành | `dash-exec` | — | — | X | — |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | — | — | X | — |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | — | — | X | — |

@@ -234,6 +234,7 @@ namespace AppDelicare.Services.Implement.Agent
                     {
                         since = DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : throw new AgentToolException($"since «{s}» không hợp lệ – dùng yyyy-MM-ddTHH:mm:ss");
                     }
+                    await Svc<IAgentCommandService>(ctx).ExpireOverdueAsync(); // AI-9: đề xuất ghi quá hạn → đóng (5 phút / lần theo lịch VIVI)
                     return await Svc<IAgentEventService>(ctx).GetEvents(since, ctx.AgentCode);
                 },
             },

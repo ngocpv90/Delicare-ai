@@ -39,6 +39,7 @@ INSERT INTO @T VALUES
     (N'#/wf-inbox?type=log-load-short', 2, N'#/group/approve', 9923, N'Xếp xe chưa đủ hàng', N'P6', 1),
     (N'#/wf-inbox?type=crm-recon-reopen', 2, N'#/group/approve', 9924, N'Mở lại đối soát', N'ACC', 1),
     (N'#/wf-inbox?type=acc-period-unlock', 2, N'#/group/approve', 9925, N'Mở khóa kỳ', N'ACC', 1),
+    (N'#/wf-inbox?type=ai-agent-cmd', 2, N'#/group/approve', 9926, N'Lệnh của agent', N'AI', 1),
     (N'#/group/01', 1, NULL, 100, N'Điều hành', N'kpi', 1),
     (N'#/dash-exec', 2, N'#/group/01', 101, N'Bảng điều hành', N'', 1),
     (N'#/kpi-daily', 2, N'#/group/01', 102, N'Chỉ số kinh doanh', N'', 1),
