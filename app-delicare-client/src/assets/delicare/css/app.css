@@ -1115,3 +1115,15 @@ tr.bb-late td{background:#FFF5F4}
   .ac-task-a { justify-content: flex-start; }
 }
 @media (max-width: 480px) { .ac-steps { grid-template-columns: minmax(0, 1fr); } .ac-step { min-height: 0; } .ac-kpi .v { font-size: 20px; } .ac-pill { white-space: normal; } }
+
+/* UI-6.52 (D-139): Bảng điều hành – bộ lọc chung (ngày mở lịch + ◀ ▶ + Hôm nay · Ca · Chi nhánh) */
+.dx-bar { display: flex !important; flex-direction: row !important; justify-content: flex-start !important; text-align: left; flex-wrap: wrap; gap: 10px 20px; align-items: center; margin-bottom: 12px; padding: 12px 16px !important; }
+.dx-date { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dx-cal { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid #DCE2D3; border-radius: 10px; background: #fff; cursor: pointer; min-width: 150px; }
+.dx-cal input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; }
+.dx-cal input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+.dx-dow { font-size: 12px; color: #5E6853; } .dx-vn { font-weight: 600; white-space: nowrap; }
+.dx-cal:focus-within { border-color: #4F6B1F; box-shadow: 0 0 0 3px rgba(79, 107, 31, .15); }
+.dx-f { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; } .dx-f > span:first-child { font-size: 12px; color: #5E6853; }
+.dx-f.off select { opacity: .5; }
+@media (max-width: 760px) { .dx-bar { gap: 8px 12px; } .dx-f select { max-width: 60vw; } }

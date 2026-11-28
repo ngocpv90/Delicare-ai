@@ -219,6 +219,8 @@ namespace AppDelicare.Model.Request.Custom
         public Guid? OrderId { get; set; }
         public DateTime? From { get; set; }
         public DateTime? To { get; set; }
+        /// <summary>UI-6.52 (D-139 f): chi nhánh (gồm đơn vị con).</summary>
+        public Guid? BranchId { get; set; }
     }
 
     /// <summary>

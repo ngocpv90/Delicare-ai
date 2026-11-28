@@ -81,7 +81,11 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 ## 4. Thao tác từng bước
 
 ### 4.1 Dashboard điều hành – `dash-exec`
-1. Bộ lọc đầu trang: **Ngày** (6 ngày trước → 3 ngày tới, "Hôm nay" đánh dấu), **Ca** (Tất cả ca / từng ca), đơn vị làm việc (ô đầu trang). Số liệu do máy chủ tính, tự làm mới sau 60 giây.
+1. **Bảng điều hành có 3 tab** (UI-6.52, D-139): **Tổng quan · Chỉ số kinh doanh · Giá vốn & lãi gộp** – tab hiện theo quyền. Menu Điều hành chỉ còn **Bảng điều hành · Phê duyệt · Trung tâm Agent**; link cũ `#/kpi-daily`, `#/kpi-monthly`, `#/cost-meal` tự mở đúng tab.
+   **Bộ lọc chung** (một thanh cho cả 3 tab): ô **ngày** – bấm mở lịch, chọn mọi ngày đã qua, tối đa **hôm nay + 7**; nút **◀ ▶** lùi / tiến 1 ngày; **Hôm nay**; **Ca** (chỉ tab Tổng quan – 2 tab kia ô Ca mờ, "Không chia theo ca"); **Chi nhánh** = ô Đơn vị làm việc trên thanh trên cùng. **Mở từ menu luôn là hôm nay**; chuyển tab giữ ngày / ca đang chọn; link có `?date=` (cảnh báo, bot) mở đúng ngày. Số liệu do máy chủ tính, tự làm mới sau 60 giây.
+   - Tab **Chỉ số kinh doanh**: công tắc Theo ngày (30 ngày **kết thúc tại ngày chọn**) / Theo tháng (12 tháng kết thúc tại tháng của ngày chọn); lọc nhóm chỉ tiêu.
+   - Tab **Giá vốn & lãi gộp**: tháng = **tháng của ngày chọn** (không còn ◀ ▶ tháng riêng); lọc theo chi nhánh (khách thuộc chi nhánh, gồm đơn vị con); 3 tab con giữ nguyên; "Xu hướng theo ngày" đánh dấu ◆ ngày đang chọn.
+   - Người chỉ có quyền Chỉ số / Giá vốn (không có Tổng quan): mục **Bảng điều hành** vẫn hiện, mở thẳng tab được phép.
 2. **8 thẻ số liệu** (bấm thẻ để mở màn gốc). Mỗi thẻ: biểu tượng bên trái, tên + số chính, số phụ ngắn ngay sau số chính (vd "123 đơn", "350 / 1.000 phần"):
 
 | Thẻ | Ý nghĩa | Mở màn |

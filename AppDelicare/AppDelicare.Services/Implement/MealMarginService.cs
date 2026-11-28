@@ -30,8 +30,9 @@ namespace AppDelicare.Services.Implement
     /// StandardCost (chuẩn / phần), MaterialConsumptionVariance (nguyên nhân chênh). Đơn "tạm tính" = có món mà lệnh SX của ngày ăn chưa có giá thành thực tế.
     /// Không thêm bảng / cột. Nhân công / chung = 0 (chưa có định mức) → nhãn "Lãi sau nguyên liệu".
     /// </summary>
-    public class MealMarginService(IUnitOfWork unitOfWork, IClock clock, IOptions<BusinessRulesOptions> rules, IMealCostService mealCostService) : Interface.IMealMarginService
+    public class MealMarginService(IUnitOfWork unitOfWork, IClock clock, IOptions<BusinessRulesOptions> rules, IMealCostService mealCostService, ICommonService commonService) : Interface.IMealMarginService
     {
+        private readonly ICommonService _commonService = commonService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IClock _clock = clock;
         private readonly BusinessRulesOptions _rules = rules.Value;
@@ -72,11 +73,14 @@ namespace AppDelicare.Services.Implement
             return (first, last, first.ToString("yyyy-MM", CultureInfo.InvariantCulture));
         }
 
-        private async Task<List<OrderAgg>> AggregateAsync(DatabaseContext db, DateTime from, DateTime to, Guid? customerId, Guid? contractId)
+        private async Task<List<OrderAgg>> AggregateAsync(DatabaseContext db, DateTime from, DateTime to, Guid? customerId, Guid? contractId, List<Guid>? units = null)
         {
             DateTime end = to.AddDays(1);
+            // UI-6.52 (D-139 f): chi nhánh = khách thuộc đơn vị (gồm đơn vị con) – như Dashboard/GetExecutive.
+            IQueryable<Guid>? branchCustomers = units == null ? null : db.Customer.AsNoTracking().Where(c => c.BranchId != null && units.Contains(c.BranchId.Value)).Select(c => c.Id);
             var orders = await db.Order.AsNoTracking()
                 .Where(o => !o.IsDeleted && o.MealDate >= from && o.MealDate < end && (customerId == null || o.CustomerId == customerId) && (contractId == null || o.ContractId == contractId)
+                            && (branchCustomers == null || branchCustomers.Contains(o.CustomerId))
                             && db.MealCost.Any(m => !m.IsDeleted && m.OrderId == o.Id))
                 .Select(o => new { o.Id, o.MealDate, o.CustomerId, o.ContractId, o.Note, o.TotalAmount }).ToListAsync();
             var ids = orders.Select(o => o.Id).ToList();
@@ -104,7 +108,16 @@ namespace AppDelicare.Services.Implement
                 var db = _unitOfWork.DbContext;
                 var (from, to, month) = Period(request.Month, _clock.Today.Date);
                 string group = (request.GroupBy ?? "customer").Trim().ToLowerInvariant();
-                var aggs = await AggregateAsync(db, from, to, request.CustomerId, request.ContractId);
+                List<Guid>? units = null;
+                if (request.BranchId is { } bid && bid != Guid.Empty)
+                {
+                    units = await _commonService.GetUnitTree(bid);
+                    if (units == null)
+                    {
+                        return Result<MealMarginModel>.Fail(ConstantHelper.Message.AlertBranchNotFound);
+                    }
+                }
+                var aggs = await AggregateAsync(db, from, to, request.CustomerId, request.ContractId, units);
                 var sale = aggs.Where(a => !a.Fault).ToList();
                 var model = new MealMarginModel
                 {
@@ -113,7 +126,7 @@ namespace AppDelicare.Services.Implement
                 };
                 decimal meals = sale.Sum(a => a.Meals), rev = sale.Sum(a => a.Revenue), cost = sale.Sum(a => a.Cost);
                 var prevFrom = from.AddMonths(-1);
-                var prev = (await AggregateAsync(db, prevFrom, from.AddDays(-1), request.CustomerId, request.ContractId)).Where(a => !a.Fault).ToList();
+                var prev = (await AggregateAsync(db, prevFrom, from.AddDays(-1), request.CustomerId, request.ContractId, units)).Where(a => !a.Fault).ToList();
                 model.Summary = new MealMarginSummaryModel
                 {
                     OrderCount = aggs.Count, Meals = meals, Revenue = rev, Cost = cost, Margin = rev - cost, RatioPct = Pct(cost, rev), CostPerMeal = Per(cost, meals),
