@@ -129,7 +129,7 @@ namespace AppDelicare.ToolGateway
             };
         }
 
-        [GeneratedRegex("^[A-Za-z0-9._-]{1,64}$")]
+        [GeneratedRegex("^[A-Za-z0-9._:-]{1,100}$")] // AI-11: khóa sự kiện AI-4 (INC:… / ALERT:…) dùng làm mã tương quan của luồng
         private static partial Regex MakeSafeId();
     }
 }

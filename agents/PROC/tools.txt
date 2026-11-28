@@ -5,6 +5,7 @@ ds_cho_duyet
 du_bao_thieu_hut
 get_ton_kho
 ghi_nhat_ky
+gui_canh_bao
 ke_hoach_mua
 lay_su_kien
 ping

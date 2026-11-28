@@ -627,6 +627,15 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-11 – Cảnh báo chủ động, Luồng liên phòng, Lịch chạy (D-133)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | IT | Liên kết bot Vận hành cho 1 người Mua hàng; cho PROC gọi `gui_canh_bao` màn scm-requirement với 1 khóa sự kiện | Người đó nhận 1 tin "🤖 Trợ lý AI cảnh báo" có nhận xét + phương án; gọi lại cùng khóa → không gửi lại |
+| 2 | IT | PROC gọi `gui_canh_bao` với màn agent không được xem (vd adm-user) | Từ chối "không có quyền xem màn …" |
+| 3 | COO (uat.coo) | QA đề xuất giữ lô với mã tương quan của sự cố nhiệt độ → QA lead duyệt → mở Trợ lý AI › Luồng liên phòng | Thẻ luồng: Agent đọc → Đề xuất → Người duyệt → Kết quả, trạng thái Xong |
+| 4 | COO | Lịch chạy → tắt "Rà kế hoạch mua 14:30" → bật lại | agents/schedules.json đổi enabled; việc chưa có công cụ không bật được |
+
 ## AI-10 – Lệnh ghi của agent đợt 2 (D-133)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

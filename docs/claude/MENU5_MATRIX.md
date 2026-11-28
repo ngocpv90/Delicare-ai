@@ -127,14 +127,15 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S (IX) | — |
 | Trợ lý AI › Trung tâm agent | `ai-agents` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 | Trợ lý AI › Nhật ký agent | `ai-agent-log` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
-| Trợ lý AI › Lịch chạy | `ai-schedule` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Trợ lý AI › Luồng liên phòng | `ai-flow` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Trợ lý AI › Lịch chạy | `ai-schedule` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào 113 mục · ô quyền  144
+  CEO           vào 114 mục · ô quyền  147
   CEO-PMO       vào 105 mục · ô quyền  111
-  COO           vào 123 mục · ô quyền  164
+  COO           vào 124 mục · ô quyền  167
   OPS-PLAN      vào  46 mục · ô quyền   93
   OPS-SCM       vào  29 mục · ô quyền   67
   OPS-WH        vào  26 mục · ô quyền   79
@@ -149,7 +150,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   SAL-CS        vào  18 mục · ô quyền   26
   FIN-ACC       vào  43 mục · ô quyền  134
   FIN-HR        vào  17 mục · ô quyền   50
-  FIN-IT        vào 119 mục · ô quyền  238
+  FIN-IT        vào 120 mục · ô quyền  241
   QA            vào  39 mục · ô quyền   81
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; ai-agent-cmd = OPS-WH, OPS-KIT, QA, OPS-SCM, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-HR, COO; log-load-short = COO, OPS-SCM-HEAD
 ```

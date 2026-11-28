@@ -181,7 +181,8 @@ INSERT INTO @T VALUES
     (N'#/group/14', 1, NULL, 1060, N'Trợ lý AI', N'ai', 1),
     (N'#/ai-agents', 2, N'#/group/14', 1061, N'Trung tâm agent', N'AI', 1),
     (N'#/ai-agent-log', 2, N'#/group/14', 1062, N'Nhật ký agent', N'AI', 1),
-    (N'#/ai-schedule', 2, N'#/group/14', 1063, N'Lịch chạy', N'AI', 1);
+    (N'#/ai-flow', 2, N'#/group/14', 1063, N'Luồng liên phòng', N'AI', 1),
+    (N'#/ai-schedule', 2, N'#/group/14', 1064, N'Lịch chạy', N'AI', 1);
 INSERT INTO @Out
 SELECT N'Menu – thiếu', t.Link, ISNULL(t.Name, N'') FROM @T t
 WHERE NOT EXISTS (SELECT 1 FROM dbo.ObjectMenu m WHERE m.MetaLink = t.Link AND ISNULL(m.IsDeleted, 0) = 0);
@@ -331,7 +332,8 @@ INSERT INTO @Allow VALUES
     (N'CEO', N'#/int-outbound', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/ai-agents', 1, 1, 1, 0, 0, 0, 0),
     (N'CEO', N'#/ai-agent-log', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO', N'#/ai-schedule', 1, 0, 0, 0, 0, 0, 0),
+    (N'CEO', N'#/ai-flow', 1, 0, 0, 0, 0, 0, 0),
+    (N'CEO', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/wf-inbox?type=wf-inbox', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/dash-exec', 1, 0, 0, 0, 1, 1, 0),
@@ -559,7 +561,8 @@ INSERT INTO @Allow VALUES
     (N'COO', N'#/int-outbound', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/ai-agents', 1, 1, 1, 0, 0, 0, 0),
     (N'COO', N'#/ai-agent-log', 1, 0, 0, 0, 0, 0, 0),
-    (N'COO', N'#/ai-schedule', 1, 0, 0, 0, 0, 0, 0),
+    (N'COO', N'#/ai-flow', 1, 0, 0, 0, 0, 0, 0),
+    (N'COO', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/dash-exec', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
@@ -716,10 +719,10 @@ INSERT INTO @Allow VALUES
     (N'OPS-KIT', N'#/prod-order', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/prod-batch', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/prod-output', 1, 0, 0, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/prod-waste', 1, 1, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/qc-checklist-result', 1, 1, 1, 0, 0, 0, 0),
-    (N'OPS-KIT', N'#/qc-temperature', 1, 1, 1, 0, 0, 0, 0);
+    (N'OPS-KIT', N'#/prod-waste', 1, 1, 1, 0, 0, 0, 0);
 INSERT INTO @Allow VALUES
+    (N'OPS-KIT', N'#/qc-checklist-result', 1, 1, 1, 0, 0, 0, 0),
+    (N'OPS-KIT', N'#/qc-temperature', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/qc-cleaning', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/qc-cleaning-result', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/qc-checklist', 1, 0, 0, 0, 0, 0, 0),
@@ -1072,7 +1075,8 @@ INSERT INTO @Allow VALUES
     (N'FIN-IT', N'#/kpi-refresh', 1, 1, 1, 0, 1, 1, 0),
     (N'FIN-IT', N'#/ai-agents', 1, 1, 1, 0, 0, 0, 0),
     (N'FIN-IT', N'#/ai-agent-log', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/ai-schedule', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/ai-flow', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'QA', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/wf-inbox?type=qc-inspection', 1, 0, 1, 0, 0, 0, 0),
     (N'QA', N'#/wf-inbox?type=prod-batch', 1, 0, 1, 0, 0, 0, 0),

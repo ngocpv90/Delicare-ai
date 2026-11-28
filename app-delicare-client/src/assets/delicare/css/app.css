@@ -964,3 +964,7 @@ tr.bb-late td{background:#FFF5F4}
 .kn-body ul > li { list-style: disc outside !important; display: list-item !important; }
 .kn-body ol > li { list-style: decimal outside !important; display: list-item !important; }
 .kn-body li { margin: 2px 0; }
+/* AI-11 (D-133): Luồng liên phòng – thẻ bước theo hàng, viền trái theo trạng thái */
+.ai-flow-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
+.ai-flow-step { border: 1px solid #E5E9E0; border-left: 4px solid #CBD2C6; border-radius: 10px; padding: 10px 12px; background: #fff; }
+.ai-flow-step.green { border-left-color: #6E9F3A; } .ai-flow-step.orange { border-left-color: #E9A23B; } .ai-flow-step.red { border-left-color: #D64545; }

@@ -66,6 +66,7 @@ INSERT INTO @R VALUES
     (N'AGENT_VIVI', N'#/acc-voucher'),
     (N'AGENT_VIVI', N'#/ai-agent-log'),
     (N'AGENT_VIVI', N'#/ai-agents'),
+    (N'AGENT_VIVI', N'#/ai-flow'),
     (N'AGENT_VIVI', N'#/ai-schedule'),
     (N'AGENT_VIVI', N'#/cost-actual'),
     (N'AGENT_VIVI', N'#/cost-meal'),
@@ -458,9 +459,9 @@ INSERT INTO @R VALUES
     (N'AGENT_ACC', N'#/scm-consumption-var'),
     (N'AGENT_ACC', N'#/scm-gr'),
     (N'AGENT_ACC', N'#/scm-inv-balance'),
-    (N'AGENT_ACC', N'#/scm-inv-txn'),
-    (N'AGENT_ACC', N'#/scm-issue');
+    (N'AGENT_ACC', N'#/scm-inv-txn');
 INSERT INTO @R VALUES
+    (N'AGENT_ACC', N'#/scm-issue'),
     (N'AGENT_ACC', N'#/scm-lot'),
     (N'AGENT_ACC', N'#/scm-po'),
     (N'AGENT_ACC', N'#/scm-stockcount'),

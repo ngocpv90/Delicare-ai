@@ -4,6 +4,7 @@ doc_ghi_chu
 ds_cho_duyet
 get_lo_can_date
 ghi_nhat_ky
+gui_canh_bao
 lay_su_kien
 nhiet_do_ngay
 phan_anh_khach

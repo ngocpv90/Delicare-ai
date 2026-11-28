@@ -8,9 +8,9 @@
   const U = UTIL, I = U.icon, esc = U.esc;
   const FN = APP.FN || {};
   const def = (id, name, grp) => { if (!FN[id]) FN[id] = { extra: true, ph: 'AI', grp, fn: name, id, name, types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' }; };
-  def('ai-agents', 'Trung tâm agent', 'Trợ lý AI'); def('ai-agent-log', 'Nhật ký agent', 'Trợ lý AI'); def('ai-schedule', 'Lịch chạy', 'Trợ lý AI'); def('knowledge', 'Kho tri thức', 'Tri thức');
+  def('ai-agents', 'Trung tâm agent', 'Trợ lý AI'); def('ai-agent-log', 'Nhật ký agent', 'Trợ lý AI'); def('ai-flow', 'Luồng liên phòng', 'Trợ lý AI'); def('ai-schedule', 'Lịch chạy', 'Trợ lý AI'); def('knowledge', 'Kho tri thức', 'Tri thức');
 
-  const NAV = [['ai-agents', 'Trung tâm agent'], ['ai-agent-log', 'Nhật ký agent'], ['ai-schedule', 'Lịch chạy']];
+  const NAV = [['ai-agents', 'Trung tâm agent'], ['ai-agent-log', 'Nhật ký agent'], ['ai-flow', 'Luồng liên phòng'], ['ai-schedule', 'Lịch chạy']];
   const nav = cur => `<div class="acc-nav mb">${NAV.filter(([id]) => Store.perm(id).access !== false).map(([id, n]) => `<a href="#/${id}" class="acc-nav-i ${id === cur ? 'active' : ''}">${esc(n)}</a>`).join('')}</div>`;
   const icon = (code, size = 40) => `<img class="ai-ico" src="assets/delicare/img/agents/${esc(code)}.svg" width="${size}" height="${size}" alt="" onerror="this.style.visibility='hidden'">`;
   const STATUS = { Succeeded: ['Thành công', 'green'], Denied: ['Bị từ chối', 'orange'], Failed: ['Lỗi', 'red'] };
@@ -126,19 +126,44 @@
     return `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Giờ</th>${showAgent ? '<th>Agent</th>' : ''}<th>Việc</th><th>Công cụ</th><th>Job lõi</th><th>Trạng thái</th><th>Lần chạy gần nhất</th></tr></thead><tbody>
       ${rows.map(s => `<tr class="${s.enabled && s.agentActive ? '' : 'muted'}"><td class="nowrap"><b>${esc(s.at || s.cron || '')}</b></td>${showAgent ? `<td class="nowrap">${icon(s.agent, 20)} ${esc(s.agentName || s.agent)}</td>` : ''}
         <td>${esc(s.title || '')}</td><td class="small">${(s.listTool || []).map(t => `<code>${esc(t)}</code>`).join(' ')}</td><td class="small">${esc(s.coreJob ? (UI.JOB_VI && UI.JOB_VI[s.coreJob]) || s.coreJob : '–')}</td>
-        <td>${!s.enabled ? chip(`Chờ đợt ${s.wave}`) : s.agentActive ? chip('Đang chạy', 'green') : chip('Agent đang tắt', 'orange')}</td>
+        <td class="nowrap">${!s.enabled ? chip((s.listTool || []).length ? 'Đang tắt' : `Chờ đợt ${s.wave}`) : s.agentActive ? chip('Đang chạy', 'green') : chip('Agent đang tắt', 'orange')}${showAgent && Store.perm('ai-schedule').edit && (s.listTool || []).length ? ` <label class="ai-switch" title="Bật / tắt việc này"><input type="checkbox" data-sched="${esc(s.id)}" ${s.enabled ? 'checked' : ''}></label>` : ''}</td>
         <td class="small">${s.lastRunAt ? esc(when(s.lastRunAt)) + ' ' + chip((STATUS[s.lastRunStatus] || [s.lastRunStatus || ''])[0], (STATUS[s.lastRunStatus] || ['', ''])[1]) : '<span class="muted">chưa chạy</span>'}</td></tr>`).join('')}</tbody></table></div>`;
   }
 
   APP.register('ai-schedule', (el, f) => {
     el.innerHTML = APP.header(f || FN['ai-schedule'], '', { noNote: true }) + nav('ai-schedule')
-      + `<div class="notice info mb">${I('help')}<div>Lịch lấy từ <code>agents/schedules.json</code> – cùng một tệp sinh cron cho Hermes. Job lõi (khóa đơn, MRP, bản tin…) vẫn chạy đúng giờ dù agent tắt; agent chỉ đọc kết quả và báo. Bật / tắt từng lịch ở đợt 3 (AI-11).</div></div>
+      + `<div class="notice info mb">${I('help')}<div>Lịch lấy từ <code>agents/schedules.json</code> – cùng một tệp sinh cron cho Hermes. Job lõi (khóa đơn, MRP, bản tin…) vẫn chạy đúng giờ dù agent tắt; agent chỉ đọc kết quả và báo. Người có quyền Sửa Lịch chạy bật / tắt từng việc bằng công tắc ở cột Trạng thái – ghi lại tệp lịch, Hermes đọc lại.</div></div>
         <div class="card" id="scB">${loading}</div>`;
     Store.query('Agent/GetSchedules').then(x => {
       const b = el.querySelector('#scB'); if (!b) return;
       if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được lịch')}</div>`; return; }
       const list = x.list || [];
       b.innerHTML = list.length ? schedTable(list) : `<div class="muted">${esc((x.res && x.res.responseMessage) || 'Chưa có lịch')}</div>`;
+      // AI-11 (D-133): bật / tắt từng việc → agents/schedules.json (Hermes đọc lại khi sinh cron).
+      b.querySelectorAll('[data-sched]').forEach(cb => cb.onchange = () => Store.act('Agent/SaveSchedule', { form: { id: cb.dataset.sched, enabled: cb.checked } }).then(r => { if (r.ok) UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); APP.refresh(); }));
+    });
+  });
+
+  // ================= AI-11 (D-133): Luồng liên phòng – dựng từ CorrelationId (sự kiện → agent → đề xuất → duyệt → kết quả → tin) =================
+  const KIND = { EVENT: ['Sự kiện', 'alert'], CALL: ['Agent đọc', 'eye'], PROPOSAL: ['Đề xuất', 'edit'], DECISION: ['Người duyệt', 'check'], RESULT: ['Kết quả', 'ok'], MESSAGE: ['Tin gửi', 'bell'] };
+  const FST = { DONE: ['Xong', 'green'], WAITING: ['Chờ duyệt', 'orange'], FAILED: ['Lỗi / từ chối', 'red'], INFO: ['Đang theo dõi', 'blue'] };
+  const SST = { OK: 'green', WAIT: 'orange', FAIL: 'red' };
+  const fl = { day: null };
+  APP.register('ai-flow', (el, f) => {
+    if (!fl.day) fl.day = Store.ctx.date || U.iso(new Date());
+    const today = U.iso(new Date()), yest = U.addDays(today, -1);
+    el.innerHTML = APP.header(f || FN['ai-flow'], `<div class="row-flex"><button class="btn sm ${fl.day === today ? 'primary' : ''}" data-day="${today}">Hôm nay</button><button class="btn sm ${fl.day === yest ? 'primary' : ''}" data-day="${yest}">Hôm qua</button><input type="date" class="input" id="flDay" value="${fl.day}" style="width:auto"></div>`, { noNote: true, sub: 'Mỗi luồng nối các bước cùng mã tương quan: sự kiện → agent nhận xét → đề xuất → người duyệt → kết quả ghi nghiệp vụ → tin bot gửi người phụ trách.' })
+      + nav('ai-flow') + `<div id="flB">${loading}</div>`;
+    el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { fl.day = b.dataset.day; APP.refresh(); });
+    el.querySelector('#flDay').onchange = e => { if (e.target.value) { fl.day = e.target.value; APP.refresh(); } };
+    Store.query('Agent/GetFlows', { date: fl.day }).then(x => {
+      const b = el.querySelector('#flB'); if (!b) return;
+      if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được luồng')}</div>`; return; }
+      const d = x.data || {}, list = d.listFlow || [];
+      b.innerHTML = UI.kpis([UI.kpi('Luồng', U.num(d.total || 0), '', 'route', 'blue'), UI.kpi('Xong', U.num(d.done || 0), '', 'ok', 'green'), UI.kpi('Chờ duyệt', U.num(d.waiting || 0), '', 'clock', d.waiting ? 'orange' : 'green'), UI.kpi('Lỗi / từ chối', U.num(d.failed || 0), '', 'alert', d.failed ? 'red' : 'green'), UI.kpi('Tin đã gửi', U.num(d.messages || 0), '', 'bell', 'blue')])
+        + (list.length ? list.map(fw => `<div class="card panel mb"><div class="spread"><div><b>${esc(fw.title || '')}</b><div class="small muted">${(fw.agents || []).map(a => icon(a, 18) + ' ' + esc(a)).join(' · ')} · ${esc(when(fw.startedAt))} → ${esc(when(fw.lastAt))} · <code>${esc(fw.correlationId)}</code></div></div>${chip((FST[fw.status] || [fw.status])[0], (FST[fw.status] || ['', ''])[1])}</div>
+          <div class="ai-flow-steps">${(fw.steps || []).map((st, i) => `<div class="ai-flow-step ${SST[st.status] || ''}"><div class="small muted">BƯỚC ${i + 1} · ${esc((KIND[st.kind] || [st.kind])[0])}</div><b>${esc(st.title || '')}</b>${st.detail ? `<div class="small">${esc(st.detail)}</div>` : ''}<div class="small muted mt">${st.agent ? icon(st.agent, 16) + ' ' + esc(st.agent) + ' · ' : ''}${esc(when(st.at))}${st.link ? ` · <a href="${esc(st.link)}">Mở</a>` : ''}</div></div>`).join('')}</div></div>`).join('')
+          : '<div class="card panel empty">Chưa có luồng nào trong ngày. Luồng xuất hiện khi agent nhận sự kiện, đề xuất ghi hoặc gửi cảnh báo.</div>');
     });
   });
 

@@ -206,7 +206,8 @@ INSERT INTO @R VALUES
     (N'CEO', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO', N'#/ai-agents', 1, 1, 1, 0, 0, 0, 0),
     (N'CEO', N'#/ai-agent-log', 1, 0, 0, 0, 0, 0, 0),
-    (N'CEO', N'#/ai-schedule', 1, 0, 0, 0, 0, 0, 0),
+    (N'CEO', N'#/ai-flow', 1, 0, 0, 0, 0, 0, 0),
+    (N'CEO', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/wf-inbox?type=wf-inbox', 1, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/wf-inbox?type=crm-contract', 0, 0, 0, 0, 0, 0, 0),
@@ -361,6 +362,7 @@ INSERT INTO @R VALUES
     (N'CEO-PMO', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'CEO-PMO', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'CEO-PMO', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/wf-inbox?type=wf-inbox', 1, 0, 0, 0, 0, 0, 0),
@@ -516,7 +518,8 @@ INSERT INTO @R VALUES
     (N'COO', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'COO', N'#/ai-agents', 1, 1, 1, 0, 0, 0, 0),
     (N'COO', N'#/ai-agent-log', 1, 0, 0, 0, 0, 0, 0),
-    (N'COO', N'#/ai-schedule', 1, 0, 0, 0, 0, 0, 0),
+    (N'COO', N'#/ai-flow', 1, 0, 0, 0, 0, 0, 0),
+    (N'COO', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/wf-inbox?type=crm-contract', 0, 0, 0, 0, 0, 0, 0),
@@ -548,11 +551,11 @@ INSERT INTO @R VALUES
     (N'OPS-PLAN', N'#/kpi-daily', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/kpi-monthly', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/cost-meal', 1, 0, 0, 0, 1, 1, 0),
-    (N'OPS-PLAN', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0),
+    (N'OPS-PLAN', N'#/crm-customer', 1, 0, 0, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'OPS-PLAN', N'#/crm-contract', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-price-policy', 1, 0, 0, 0, 0, 0, 0),
-    (N'OPS-PLAN', N'#/crm-order-week', 1, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'OPS-PLAN', N'#/crm-order-week', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-order', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-forecast', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/crm-reconciliation', 0, 0, 0, 0, 0, 0, 0),
@@ -672,6 +675,7 @@ INSERT INTO @R VALUES
     (N'OPS-PLAN', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-PLAN', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-PLAN', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -827,6 +831,7 @@ INSERT INTO @R VALUES
     (N'OPS-SCM', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-SCM', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -982,6 +987,7 @@ INSERT INTO @R VALUES
     (N'OPS-WH', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-WH', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-WH', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -1046,14 +1052,14 @@ INSERT INTO @R VALUES
     (N'OPS-SCM-HEAD', N'#/scm-ingredient-cat', 1, 1, 1, 1, 0, 0, 1),
     (N'OPS-SCM-HEAD', N'#/scm-gr', 1, 1, 1, 0, 1, 1, 0),
     (N'OPS-SCM-HEAD', N'#/scm-supplier-return', 1, 1, 1, 0, 1, 1, 0),
-    (N'OPS-SCM-HEAD', N'#/scm-issue', 1, 1, 1, 0, 1, 1, 0),
+    (N'OPS-SCM-HEAD', N'#/scm-issue', 1, 1, 1, 0, 1, 1, 0);
+INSERT INTO @R VALUES
     (N'OPS-SCM-HEAD', N'#/scm-inv-balance', 1, 1, 1, 1, 1, 1, 1),
     (N'OPS-SCM-HEAD', N'#/scm-lot', 1, 1, 1, 0, 1, 1, 0),
     (N'OPS-SCM-HEAD', N'#/scm-inv-txn', 1, 1, 1, 0, 1, 1, 0),
     (N'OPS-SCM-HEAD', N'#/scm-reservation', 1, 1, 1, 0, 1, 1, 0),
     (N'OPS-SCM-HEAD', N'#/scm-stockcount', 1, 1, 1, 0, 1, 1, 0),
-    (N'OPS-SCM-HEAD', N'#/scm-consumption-var', 1, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'OPS-SCM-HEAD', N'#/scm-consumption-var', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/scm-inv-policy', 1, 1, 1, 1, 0, 0, 1),
     (N'OPS-SCM-HEAD', N'#/prod-plan', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/prod-order', 1, 0, 0, 0, 0, 0, 0),
@@ -1138,6 +1144,7 @@ INSERT INTO @R VALUES
     (N'OPS-SCM-HEAD', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-SCM-HEAD', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-SCM-HEAD', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -1293,6 +1300,7 @@ INSERT INTO @R VALUES
     (N'OPS-KIT', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-KIT', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-KIT', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -1448,6 +1456,7 @@ INSERT INTO @R VALUES
     (N'OPS-LOG', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-LOG', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-LOG', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -1544,7 +1553,8 @@ INSERT INTO @R VALUES
     (N'OPS-POS', N'#/log-pod', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/log-container-return', 1, 1, 1, 0, 0, 0, 0),
     (N'OPS-POS', N'#/log-return-inspection', 0, 0, 0, 0, 0, 0, 0),
-    (N'OPS-POS', N'#/log-packaging-ledger', 1, 1, 1, 0, 0, 0, 0),
+    (N'OPS-POS', N'#/log-packaging-ledger', 1, 1, 1, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'OPS-POS', N'#/log-packaging-norm', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/adm-employee', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/hr-shift-assign', 0, 0, 0, 0, 0, 0, 0),
@@ -1553,8 +1563,7 @@ INSERT INTO @R VALUES
     (N'OPS-POS', N'#/hr-swap', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/wf-inbox', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/adm-orgunit', 0, 0, 0, 0, 0, 0, 0),
-    (N'OPS-POS', N'#/adm-company', 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'OPS-POS', N'#/adm-company', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/adm-position', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/hr-shift', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/scm-uom', 0, 0, 0, 0, 0, 0, 0),
@@ -1604,6 +1613,7 @@ INSERT INTO @R VALUES
     (N'OPS-POS', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-POS', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-POS', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -1759,6 +1769,7 @@ INSERT INTO @R VALUES
     (N'OPS-MNT', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'OPS-MNT', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'OPS-MNT', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -1914,6 +1925,7 @@ INSERT INTO @R VALUES
     (N'SAL-SALES', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-SALES', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-SALES', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -2042,7 +2054,8 @@ INSERT INTO @R VALUES
     (N'SAL-CON', N'#/knowledge?folder=50', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/knowledge?folder=55', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/knowledge?folder=60', 0, 0, 0, 0, 0, 0, 0),
-    (N'SAL-CON', N'#/knowledge?folder=70', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CON', N'#/knowledge?folder=70', 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'SAL-CON', N'#/knowledge?folder=80', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/knowledge?folder=95', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/knowledge?folder=96', 0, 0, 0, 0, 0, 0, 0),
@@ -2054,8 +2067,7 @@ INSERT INTO @R VALUES
     (N'SAL-CON', N'#/adm-usergroup', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/adm-permission', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/adm-objectmenu', 0, 0, 0, 0, 0, 0, 0),
-    (N'SAL-CON', N'#/sys-import', 0, 0, 0, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'SAL-CON', N'#/sys-import', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/adm-document', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/adm-job', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/adm-audit', 0, 0, 0, 0, 0, 0, 0),
@@ -2070,6 +2082,7 @@ INSERT INTO @R VALUES
     (N'SAL-CON', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CON', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CON', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -2225,6 +2238,7 @@ INSERT INTO @R VALUES
     (N'SAL-HEAD', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-HEAD', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-HEAD', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -2380,6 +2394,7 @@ INSERT INTO @R VALUES
     (N'SAL-CS', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'SAL-CS', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'SAL-CS', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -2535,11 +2550,13 @@ INSERT INTO @R VALUES
     (N'FIN-ACC', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'FIN-ACC', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-ACC', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=crm-contract', 0, 0, 0, 0, 0, 0, 0),
-    (N'FIN-HR', N'#/wf-inbox?type=crm-price-policy', 0, 0, 0, 0, 0, 0, 0),
+    (N'FIN-HR', N'#/wf-inbox?type=crm-price-policy', 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO @R VALUES
     (N'FIN-HR', N'#/wf-inbox?type=crm-order', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=menu-recipe', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=menu-menu', 0, 0, 0, 0, 0, 0, 0),
@@ -2555,8 +2572,7 @@ INSERT INTO @R VALUES
     (N'FIN-HR', N'#/wf-inbox?type=qc-inspection', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=prod-batch', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=scm-lot', 0, 0, 0, 0, 0, 0, 0),
-    (N'FIN-HR', N'#/wf-inbox?type=hr-leave', 1, 0, 1, 0, 0, 0, 0);
-INSERT INTO @R VALUES
+    (N'FIN-HR', N'#/wf-inbox?type=hr-leave', 1, 0, 1, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=hr-swap', 1, 0, 1, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=scm-pr', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/wf-inbox?type=adm-user', 0, 0, 0, 0, 0, 0, 0),
@@ -2691,6 +2707,7 @@ INSERT INTO @R VALUES
     (N'FIN-HR', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'FIN-HR', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-HR', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'FIN-IT', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
@@ -2846,7 +2863,8 @@ INSERT INTO @R VALUES
     (N'FIN-IT', N'#/kpi-refresh', 1, 1, 1, 0, 1, 1, 0),
     (N'FIN-IT', N'#/ai-agents', 1, 1, 1, 0, 0, 0, 0),
     (N'FIN-IT', N'#/ai-agent-log', 1, 0, 0, 0, 0, 0, 0),
-    (N'FIN-IT', N'#/ai-schedule', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/ai-flow', 1, 0, 0, 0, 0, 0, 0),
+    (N'FIN-IT', N'#/ai-schedule', 1, 1, 1, 0, 0, 0, 0),
     (N'QA', N'#/hr-my', 1, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/wf-inbox?type=wf-inbox', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/wf-inbox?type=crm-contract', 0, 0, 0, 0, 0, 0, 0),
@@ -3001,6 +3019,7 @@ INSERT INTO @R VALUES
     (N'QA', N'#/kpi-refresh', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/ai-agents', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/ai-agent-log', 0, 0, 0, 0, 0, 0, 0),
+    (N'QA', N'#/ai-flow', 0, 0, 0, 0, 0, 0, 0),
     (N'QA', N'#/ai-schedule', 0, 0, 0, 0, 0, 0, 0);
 
 INSERT INTO [dbo].[UserRole] (Id, UserGroupId, ObjectMenuId, AllowAccess, AllowAdd, AllowEdit, AllowDelete, AllowPrint, AllowExport, AllowImport, CreatedDate, CreatedBy, IsDeleted)

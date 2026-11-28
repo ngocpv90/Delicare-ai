@@ -4,6 +4,7 @@ doc_ghi_chu
 don_hang_ngay
 ds_cho_duyet
 ghi_nhat_ky
+gui_canh_bao
 lay_su_kien
 phan_anh_khach
 ping
