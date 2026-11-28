@@ -1,7 +1,7 @@
 ---
 screens: [ai-agents?tab=overview, ai-agents?tab=tasks, ai-agents?tab=flow, ai-agents?tab=schedule, ai-agents?tab=log, ai-agents?tab=usage]
 roles: []
-updated: 2026-11-28
+updated: 2026-11-29
 ---
 # 15 – Trợ lý AI (agent)
 
@@ -86,6 +86,26 @@ Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa
 - **Ngân sách** `Agent:MonthlyBudget` (VND / tháng, IT đặt). Chạm **`Agent:CostAlertPct` % (mặc định 80 %)** và **100 %** → bot Điều hành gửi 1 tin "💰 Chi phí Trợ lý AI" tới người có quyền Thêm Trung tâm Agent (CEO, COO, FIN-IT) – mỗi ngưỡng mỗi tháng 1 lần. Chưa đặt ngân sách → thẻ ghi "Chưa đặt ngân sách", không cảnh báo.
 - **Chat trên web (tab Chat với agent):** chọn agent ở cột trái (agent chưa bật bị mờ, không chọn được), bấm câu hỏi gợi ý hoặc gõ câu hỏi (Enter gửi, Shift+Enter xuống dòng). Nút **Chat với agent / Hỏi agent** ở Tổng quan, Giao việc, Luồng mở đúng agent. Máy chủ Hermes tắt → câu trả lời báo "⚠ …" bằng tiếng Việt. Lịch sử hiển thị giữ trong phiên trình duyệt. Agent dùng **quyền của bạn ∩ quyền agent** như bot; đề xuất ghi vẫn chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.
 - Máy chủ Hermes chạy 3 container (AI-15): **hermes-vivi** (VIVI, KNOW – bot Trợ lý), **hermes-van-hanh** (KITCHEN, QA, LOG, PKG, WH), **hermes-van-phong** (SALES, PLAN, PROC, HR, ACC, CSKH). Một nhóm lỗi không làm dừng nhóm khác; IT xem `app-delicare-agents/README.md`.
+
+## 4e. Hỏi nhanh – không dùng AI, bản tin theo mẫu (AI-25, D-143)
+
+Phần lớn câu hỏi hằng ngày (tồn kho, lô cận hạn, tiến độ bếp, ai chưa vào ca, cảnh báo, việc chờ duyệt…) **không cần AI**: máy chủ lấy số liệu theo mẫu, trả ngay (< 2 giây), **không tốn chi phí**.
+
+| Bạn muốn | Làm thế nào | Dùng AI? |
+|---|---|---|
+| Xem nhanh một số liệu | Tab **Chat với agent** → bấm câu dưới khung chat (nhãn "Hỏi nhanh · không dùng AI"); hoặc thẻ agent ở **Tổng quan** › Hỏi nhanh | Không |
+| Câu cần nhập (số lô, tên nguyên liệu, từ khóa) | Bấm câu → ô nhập nhỏ hiện ra → gõ → **Xem** | Không |
+| Hiểu vì sao / nên làm gì | Dưới kết quả hỏi nhanh bấm **Phân tích thêm** → gửi số liệu vừa xem (đã lọc theo quyền) cho agent; câu trả lời gắn nhãn "Chat AI" | Có (tính chi phí) |
+| Hỏi tự do | Gõ câu hỏi vào ô chat | Có |
+| Xem trên điện thoại | Bot **Vận hành / Điều hành**: 📂 Chức năng › **💬 Hỏi nhanh** (hoặc gõ `/hoinhanh`) → chọn mảng → bấm câu (`20_BOT_TELEGRAM.md` mục 4b) | Không |
+
+- **Câu bạn thấy = câu bạn có quyền xem màn tương ứng** (vd không có quyền Kho thì không thấy câu tồn kho). Kết quả đã che dữ liệu cá nhân như chat. Nút **Mở màn** chỉ hiện khi bạn có quyền mở màn đó.
+- Kết quả hiện dạng thẻ / bảng / danh sách / biểu đồ; nhiều dòng thì ghi "Hiện n / tổng dòng" – bấm **Mở màn** để xem đủ.
+- **Bản tin tự động theo mẫu** (bot gửi đúng giờ, chạy câu nhanh **bằng quyền của chính người nhận**): Bản tin sáng Ban GĐ 07:00 · Báo cáo cuối ngày 17:00 · Bản tin kho 05:30 · Bản tin bếp đầu ca 05:45 · Nhắc chốt suất 19:00. Người nhận = người có quyền mục ẩn `ai-ban-tin-sang` / `ai-ban-tin-chieu` / `ai-ban-tin-kho` / `ai-ban-tin-bep` / `ai-ban-tin-kd` (Quản trị cấp ở màn Phân quyền – nằm dưới Trung tâm Agent; mặc định: Ban GĐ sáng + chiều, Thủ kho + Kế hoạch bản tin kho, Bếp bản tin bếp, Kinh doanh nhắc chốt suất). Khối không có số liệu bị ẩn hoặc ghi câu "tin tốt". Bản tin Ban GĐ còn lưu vào kho tri thức **10 Ban GĐ › Bản tin** (chỉ đọc). Bản tin vẫn gửi khi máy chủ Hermes tắt; tin rơi ngoài 07:00–21:00 chờ tới sáng (giờ yên lặng).
+- **Cảnh báo theo mẫu:** mỗi 5 phút hệ thống rà cảnh báo đang mở (tồn dưới mức, lô cận hạn, nhiệt độ, phản ánh, ca thiếu người, khay…) và gửi **1 tin / cảnh báo / ngày** cho người có quyền **Thêm** ở màn của cảnh báo.
+- **Tab Lịch chạy** có cột **Dùng AI**: "Không" = chạy ở máy chủ theo mẫu (0 token, ghi tên job chạy thay); "Có" = chỉ việc cần suy luận (rà ghi chú / SOP, tóm tắt tài liệu mới, tóm tắt đối chiếu tháng) chạy trên Hermes.
+- **Tab Sử dụng & chi phí** có bảng **Theo nguồn**: Hỏi nhanh (0 đ) · Chat AI · Theo lịch, kèm **ước tiết kiệm** = số lượt hỏi nhanh × bình quân 1 lượt Chat AI của tháng.
+- Cấu hình (IT): `Agent:BriefingAiComment` (thêm 2–3 dòng nhận xét AI cuối bản tin – mặc định tắt), `Agent:EventAiAnalysis` (nhận xét AI cho cảnh báo mức cao – mặc định tắt), `Agent:TemplateBriefings` (tắt = quay về bản tin bot cũ), `Agent:EventPumpMinutes` (5), `Messaging:WebUrl` (địa chỉ web cho nút 🌐 Mở trên web của bot). Câu hỏi nhanh viết ở `app-delicare-agents/<MÃ>/quick.yaml`, bản tin ở `app-delicare-agents/ban-tin.yaml` (cú pháp: `app-delicare-agents/QUICK_FORMAT.md`).
 
 ## 5. Đọc nhật ký agent
 

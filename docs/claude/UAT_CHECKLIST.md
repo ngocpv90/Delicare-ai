@@ -637,6 +637,22 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-25 – Hỏi nhanh không dùng AI, bản tin theo mẫu, lịch template (D-143, 29/11/2026) · thử: `node tools/agent-eval/run.mjs --quick` · test: `Agent/*Ai25Tests.cs`, `Messaging/MessagingQuickAi25Tests.cs`
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | CEO | Trung tâm Agent › Chat › Vivi › bấm "KPI 7 ngày qua" | Biểu đồ + tóm tắt, nhãn "Hỏi nhanh · không dùng AI", trả < 2 giây; nút Mở màn + Phân tích thêm |
+| 2 | Thủ kho | Chat › Kho › "Lô nào sắp hết hạn trong 7 ngày?" | Bảng lô (khớp màn Tồn kho › lô); chỉ thấy câu của mảng mình có quyền |
+| 3 | Thủ kho | Bấm "Truy xuất lô (nhập số lô)" → gõ số lô thật → Xem | Kết quả của đúng lô |
+| 4 | CEO | Bấm "Phân tích thêm" dưới 1 kết quả (Hermes bật) | Câu trả lời gắn "Chat AI"; tab Sử dụng: Chat AI +1, Hỏi nhanh không tính tiền |
+| 5 | CEO / FIN-IT | Tab Sử dụng & chi phí | Bảng Theo nguồn: Hỏi nhanh (0 đ) · Chat AI · Theo lịch + ước tiết kiệm |
+| 6 | Bếp (bot VH) | 📂 Chức năng › 💬 Hỏi nhanh → Nhân sự → "Ai chưa vào ca?" | Tin ≤ 10 dòng, "— Hỏi nhanh · không dùng AI", nút 🌐 Mở trên web (khi đặt Messaging:WebUrl) |
+| 7 | CEO (bot DH) | /hoinhanh → Vivi → "Đang có cảnh báo gì?" | Danh sách cảnh báo khớp chuông / Bảng điều hành |
+| 8 | Quản trị | Phân quyền › Trung tâm Agent › cấp "Bản tin kho buổi sáng" cho 1 thủ kho đã liên kết bot; Job tự động › chạy tay "Bản tin: Bản tin kho buổi sáng" (trong giờ 07:00–21:00) | Thủ kho nhận 1 tin "📰 Bản tin"; chạy lại cùng ngày không gửi trùng |
+| 9 | CEO | 07:00 nhận "Bản tin sáng – Ban GĐ" trên bot DH (tắt Hermes vẫn nhận) | Có Tình hình hôm nay, suất ngày mai, cảnh báo, thiếu NL, việc chờ duyệt; kho tri thức 10 › Bản tin có ghi chú cùng ngày; KHÔNG còn tin "Bản tin sáng" cũ thứ hai |
+| 10 | CEO | Trung tâm Agent › Lịch chạy | Cột Dùng AI: chỉ 4 việc "Có" (KNOW ×3, Kế toán tháng); còn lại "Không" + tên job chạy thay |
+| 11 | QA (bot VH) | Có lần đo nhiệt độ ngoài ngưỡng trong ngày | Trong ≤ 5 phút nhận 1 tin cảnh báo theo mẫu; không nhận lại trong ngày |
+
 ## AI-22.6 / 22.7 – Agent đọc nội dung tài liệu (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |
