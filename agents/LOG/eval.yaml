@@ -1,0 +1,16 @@
+# Bộ câu nghiệm thu agent LOG (AI-10, D-133). Chạy: node tools/agent-eval/run.mjs LOG
+agent: LOG
+webUser: uat.ops-log
+cases:
+  - id: log-chuyen-hom-nay
+    question: Hôm nay có bao nhiêu chuyến, điểm nào chưa xếp?
+    tool: chuyen_giao_ngay
+    args: {}
+    expect:
+      status: 200
+  - id: log-chuyen-sai
+    question: Chuyển đơn giao DG-KHONG-CO sang chuyến CH-KHONG-CO
+    tool: propose_route
+    args: { so_don_giao: DG-KHONG-CO, so_chuyen: CH-KHONG-CO, ly_do: kiem thu }
+    expect:
+      status: 400

@@ -1,0 +1,16 @@
+# Bộ câu nghiệm thu agent HR (AI-10, D-133). Chạy: node tools/agent-eval/run.mjs HR
+agent: HR
+webUser: uat.fin-hr
+cases:
+  - id: hr-cham-cong
+    question: Hôm nay ai chưa vào ca?
+    tool: cham_cong_ngay
+    args: {}
+    expect:
+      status: 200
+  - id: hr-nghi-nv-sai
+    question: Lập đơn nghỉ cho NV-KHONG-CO
+    tool: propose_leave
+    args: { ma_nv: NV-KHONG-CO, tu_ngay: "2026-12-01", den_ngay: "2026-12-01", loai_nghi: PHEP_NAM, ly_do: kiem thu }
+    expect:
+      status: 400

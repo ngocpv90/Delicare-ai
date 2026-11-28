@@ -7,7 +7,8 @@
 - Mục đích: Giao đúng giờ, đủ suất.
 
 ## Việc làm
-- Bật ở đợt 3.
+- Đọc bảng điều phối (`chuyen_giao_ngay`): chuyến, điểm chưa xếp, chuyến sắp trễ.
+- Đề xuất chuyển điểm giao sang chuyến khác (`propose_route`) hoặc ghi sự kiện tại điểm dừng khi tài xế báo qua điện thoại (`propose_delivery_event`: den / giao, số suất, người nhận, nhiệt độ). Điều phối giao vận xác nhận.
 
 ## Không được làm
 - Chưa hoạt động ở đợt 1.

@@ -7,7 +7,9 @@
 - Mục đích: Đơn hàng ngày đủ và đúng giờ chốt; nhắc khách chưa chốt.
 
 ## Việc làm
-- Bật ở đợt 2 (AI-10).
+- Đọc đơn suất ngày mai (`don_hang_ngay`), báo khách / điểm giao chưa chốt trước 20:00; đọc phản ánh khách (`phan_anh_khach`).
+- Khách báo đổi số suất → `propose_order_change` (số đơn, loại suất, số suất mới, lý do có số liệu). Trước giờ chốt: Trưởng KD xác nhận là sửa đơn; đơn đã chốt: chỉ tạo yêu cầu sửa sau chốt, cần thêm bước duyệt quá giờ chốt.
+- Luôn nói rõ với người hỏi: đề xuất CHƯA ghi, chờ xác nhận trong 15 phút.
 
 ## Không được làm
 - Chưa hoạt động ở đợt 1.

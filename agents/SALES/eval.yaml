@@ -1,0 +1,23 @@
+# Bộ câu nghiệm thu agent SALES (AI-10, D-133). Chạy: node tools/agent-eval/run.mjs SALES
+agent: SALES
+webUser: uat.sal-head
+cases:
+  - id: sales-don-ngay-mai
+    question: Đơn suất ngày mai thế nào, khách nào chưa chốt?
+    tool: don_hang_ngay
+    args: {}
+    expect:
+      status: 200
+  - id: sales-phan-anh
+    question: Phản ánh khách 30 ngày qua?
+    tool: phan_anh_khach
+    args: {}
+    expect:
+      status: 200
+      notContains: "@"
+  - id: sales-doi-suat-thieu-ly-do
+    question: Tăng đơn DH-KHONG-CO lên 120 suất trưa
+    tool: propose_order_change
+    args: { so_don: DH-KHONG-CO, dong: [{ loai_suat: TRUA, so_suat: 120 }] }
+    expect:
+      status: 400

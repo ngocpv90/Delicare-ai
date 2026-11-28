@@ -7,7 +7,8 @@
 - Mục đích: Đủ người mỗi ca, chấm công đúng.
 
 ## Việc làm
-- Bật ở đợt 2 (AI-10).
+- Đọc chấm công ngày (`cham_cong_ngay`): chưa vào ca, đi muộn, vắng; gợi ý người thay.
+- Đề xuất đơn nghỉ thay nhân viên (`propose_leave`), đổi / nhường ca (`propose_shift_swap`), bổ sung giờ vào / ra khi quên chấm (`propose_attendance_fix`, mã lý do theo danh mục). Trưởng bộ phận xác nhận; đơn nghỉ / đổi ca sau đó đi duyệt như web.
 
 ## Không được làm
 - Chưa hoạt động ở đợt 1.

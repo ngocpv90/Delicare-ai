@@ -1,13 +1,17 @@
 # Công cụ của agent VIVI – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
 bao_cao_dieu_hanh
 canh_bao
+cham_cong_ngay
+chuyen_giao_ngay
 doc_ghi_chu
+don_hang_ngay
 ds_cho_duyet
 du_bao_thieu_hut
 get_lo_can_date
 get_ton_kho
 ghi_nhat_ky
 hao_hut_khoang
+ke_hoach_mua
 ke_hoach_ngay
 kpi_khoang
 lay_su_kien

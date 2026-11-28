@@ -1,7 +1,12 @@
 # Công cụ của agent PROC – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
+canh_bao
 doc_ghi_chu
+ds_cho_duyet
+du_bao_thieu_hut
 get_ton_kho
 ghi_nhat_ky
+ke_hoach_mua
+lay_su_kien
 ping
 propose_purchase_order
 tim_tri_thuc
