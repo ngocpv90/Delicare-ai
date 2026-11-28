@@ -68,6 +68,14 @@ namespace AppDelicare.Services.Implement.Agent
         public decimal? PerTurnVnd { get; set; }
         public int DaysInMonth { get; set; }
         public int DaysPassed { get; set; }
+        /// <summary>AI-25.2 (D-143): lượt theo nguồn trong tháng – Hỏi nhanh (AGENT_QUICK, 0 token) · Chat AI · Theo lịch (CorrelationId <c>sched:</c>).</summary>
+        public int QuickRuns { get; set; }
+        public int ChatTurns { get; set; }
+        public decimal ChatVnd { get; set; }
+        public int ScheduleTurns { get; set; }
+        public decimal ScheduleVnd { get; set; }
+        /// <summary>Ước tiết kiệm = số lượt Hỏi nhanh × chi phí trung bình 1 lượt Chat AI (chưa có lượt Chat AI → trung bình mọi lượt; chưa có gì → null).</summary>
+        public decimal? SavedVnd { get; set; }
         public List<AgentCostAgentModel> ListAgent { get; set; } = [];
         public List<AgentCostDayModel> ListDay { get; set; } = [];
     }
@@ -83,7 +91,10 @@ namespace AppDelicare.Services.Implement.Agent
         public const string Operation = "agent_cost";
         public const string Direction = "COST";
 
-        private sealed record CostRow(string Agent, string? Model, long In, long Out, decimal Vnd);
+        private sealed record CostRow(string Agent, string? Model, long In, long Out, decimal Vnd)
+        {
+            public bool Sched { get; init; }
+        }
 
         public async Task<object> RecordAsync(string agent, string? correlationId, JsonElement a)
         {
@@ -120,7 +131,7 @@ namespace AppDelicare.Services.Implement.Agent
         private async Task<List<(DateTime At, CostRow Row)>> RowsAsync(DateTime from, DateTime to)
         {
             var rows = await unitOfWork.DbContext.IntegrationLog.AsNoTracking().Where(l => !l.IsDeleted && l.OperationCode == Operation && l.RequestAt >= from && l.RequestAt < to)
-                .Select(l => new { l.RequestAt, l.ErrorMessage }).ToListAsync();
+                .Select(l => new { l.RequestAt, l.ErrorMessage, l.CorrelationId }).ToListAsync();
             var list = new List<(DateTime, CostRow)>();
             foreach (var r in rows)
             {
@@ -128,7 +139,7 @@ namespace AppDelicare.Services.Implement.Agent
                 {
                     if (JsonSerializer.Deserialize<CostRow>(r.ErrorMessage ?? "{}") is { } c)
                     {
-                        list.Add((r.RequestAt, c));
+                        list.Add((r.RequestAt, c with { Sched = r.CorrelationId != null && r.CorrelationId.StartsWith("sched:", StringComparison.Ordinal) }));
                     }
                 }
                 catch (JsonException)
@@ -163,6 +174,14 @@ namespace AppDelicare.Services.Implement.Agent
             m.PerTurnVnd = rows.Count > 0 ? Math.Round(total / rows.Count, 0) : null;
             m.DaysInMonth = (m1 - m0).Days;
             m.DaysPassed = clock.Today < m0 ? 0 : daysPassed;
+            m.QuickRuns = await unitOfWork.DbContext.IntegrationLog.AsNoTracking().CountAsync(l => !l.IsDeleted && l.ErrorCode != null && l.ErrorCode.StartsWith(AgentQuickService.LogPrefix) && l.RequestAt >= m0 && l.RequestAt < m1);
+            var chat = rows.Where(r => !r.Row.Sched).ToList();
+            m.ChatTurns = chat.Count;
+            m.ChatVnd = chat.Sum(r => r.Row.Vnd);
+            m.ScheduleTurns = rows.Count - chat.Count;
+            m.ScheduleVnd = total - m.ChatVnd;
+            decimal? per = chat.Count > 0 ? m.ChatVnd / chat.Count : m.PerTurnVnd;
+            m.SavedVnd = per is { } pv ? Math.Round(pv * m.QuickRuns, 0) : null;
             return Result<AgentCostModel>.Success(m, ConstantHelper.Message.GetAllSuccessfully);
         }
 
