@@ -22,7 +22,8 @@ namespace AppDelicare.Messaging.Experience
         {
             var actions = registry.MenuAvailable(bot, identity);
             var modules = registry.ModulesFor(bot, identity);
-            bool flat = actions.Count <= KeyboardBuilder.FlatMax;
+            // AI-25.3: 💬 Hỏi nhanh không tính vào ngưỡng màn đầu phẳng (người ít chức năng vẫn 1 chạm như cũ, thêm 1 nút).
+            bool flat = actions.Count(a => a.Module != HoiNhanhActions.Module) <= KeyboardBuilder.FlatMax;
             NeutralMessage message;
             if (flat)
             {
@@ -43,7 +44,8 @@ namespace AppDelicare.Messaging.Experience
                 {
                     Title = "Chức năng",
                     Lines = ["Chọn phân hệ:"],
-                    Buttons = [.. modules.Select(m => new NeutralButton(BotActionRegistry.ModuleLabel(m), CallbackData.Build(CallbackData.Kinds.Menu, "mod", m)))],
+                    // AI-25.3: 💬 Hỏi nhanh chỉ 1 chức năng → bấm phân hệ là mở luôn danh sách câu.
+                    Buttons = [.. modules.Select(m => new NeutralButton(BotActionRegistry.ModuleLabel(m), m == HoiNhanhActions.Module ? CallbackData.Build(CallbackData.Kinds.Menu, "act", HoiNhanhActions.Code) : CallbackData.Build(CallbackData.Kinds.Menu, "mod", m)))],
                 };
             }
             // BOT-UX-1 (mục 9) / BOT-UX-2 (mục 13): ⭐ Hay dùng – chức năng gần nhất của người này (bộ nhớ; khởi động lại thì mất), 1 hàng riêng trên đầu.

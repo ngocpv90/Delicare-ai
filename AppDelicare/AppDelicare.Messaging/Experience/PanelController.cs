@@ -150,8 +150,9 @@ namespace AppDelicare.Messaging.Experience
         public void EnterAction(PanelState state, BotActionContext ctx, BotAction action)
         {
             var menu = actions.MenuAvailable(ctx.Bot, ctx.Identity);
-            bool flat = menu.Count <= KeyboardBuilder.FlatMax || menu.Select(a => a.Module).Distinct().Count() <= 1;
-            if (flat || !menu.Contains(action))
+            // AI-25.3: 💬 Hỏi nhanh không tính ngưỡng phẳng (khớp MenuNavigator) và là phân hệ 1 chức năng → không thêm bước phân hệ (tránh "Hỏi nhanh › Hỏi nhanh").
+            bool flat = menu.Count(a => a.Module != Audiences.Internal.Chung.HoiNhanhActions.Module) <= KeyboardBuilder.FlatMax || menu.Select(a => a.Module).Distinct().Count() <= 1;
+            if (flat || !menu.Contains(action) || action.Module == Audiences.Internal.Chung.HoiNhanhActions.Module)
             {
                 EnterRoot(state);
             }

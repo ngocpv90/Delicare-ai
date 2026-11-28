@@ -77,7 +77,7 @@ AppDelicare.Messaging/
 ├── appsettings.json                      cấu hình không bí mật
 ├── Dockerfile
 ├── Options/
-│   ├── MessagingHostOptions.cs           ApiBaseUrl, ClientKey, Mode (Polling | Webhook), WebhookBaseUrl
+│   ├── MessagingHostOptions.cs           ApiBaseUrl, ClientKey, Mode (Polling | Webhook), WebhookBaseUrl, WebUrl (AI-25.3 – nút 🌐 Mở trên web)
 │   ├── TelegramOptions.cs                Bots{VH|DH → Token, WebhookSecret, Username}
 │   └── SendingOptions.cs                 MaxPerSecond (25), PerChatPerSecond (1), BatchSize, UndoSeconds (10)
 ├── Channels/                             MỖI KÊNH MỘT THƯ MỤC – chỉ chứa phần "nói chuyện với nhà cung cấp"
@@ -233,7 +233,7 @@ AppDelicare.sln       (SỬA) thêm AppDelicare.Messaging
 |---|---|---|
 | `api` | `Clients__MESSAGING__KeyHash`, `Messaging__LinkSigningKey` | `Messaging:*` (thử lại, giờ yên lặng, leo thang, mức rủi ro duyệt, hạn token 10′) |
 | `job` | (như hiện tại) | `Jobs:<Code>:At` cho BotJobs |
-| `messaging` | `Messaging__ClientKey`, `Telegram__Bots__VH__Token`, `Telegram__Bots__VH__WebhookSecret`, `…__DH__…` | `Messaging:ApiBaseUrl = http://api:8080`, `Telegram:Mode`, `Telegram:WebhookBaseUrl`, `Sending:*` |
+| `messaging` | `Messaging__ClientKey`, `Telegram__Bots__VH__Token`, `Telegram__Bots__VH__WebhookSecret`, `…__DH__…` | `Messaging:ApiBaseUrl = http://api:8080`, `Telegram:Mode`, `Telegram:WebhookBaseUrl`, `Messaging:WebUrl` (https://… web người dùng – nút 🌐 Mở trên web của 💬 Hỏi nhanh, trống = không có nút), `Sending:*` |
 | `hermes` | `ANTHROPIC_API_KEY`, token bot Trợ lý, khóa client agent | URL Tool Gateway, mô hình |
 
 **Môi trường:** 3 bộ bot DEV / TEST / PROD (mỗi bộ: VH, DH, TRO_LY). DEV chạy polling trên máy anh; TEST / PROD webhook. `BotCode` giống nhau ở mọi môi trường, chỉ khác token.

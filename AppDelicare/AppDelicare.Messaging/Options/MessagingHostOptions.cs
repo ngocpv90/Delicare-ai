@@ -23,6 +23,9 @@ namespace AppDelicare.Messaging.Options
         /// <summary>Webhook: URL công khai (https://domain) – Telegram gọi {WebhookBaseUrl}/tg/{botCode}.</summary>
         public string? WebhookBaseUrl { get; set; }
 
+        /// <summary>AI-25.3: địa chỉ web người dùng (https://…, vd. https://erp.delicare.vn) – nút 🌐 Mở trên web của tin Hỏi nhanh; trống = không có nút.</summary>
+        public string? WebUrl { get; set; }
+
         /// <summary>InboundPump quét ClaimInbound mỗi N giây (ngoài lần xử lý ngay khi nhận) – khởi động lại không mất tin.</summary>
         public int InboundScanSeconds { get; set; } = 5;
 

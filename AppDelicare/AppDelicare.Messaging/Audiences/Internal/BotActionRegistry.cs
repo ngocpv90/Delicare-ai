@@ -19,6 +19,7 @@ namespace AppDelicare.Messaging.Audiences.Internal
         [
             ("CHUNG", "👤 Cá nhân"),
             ("DUYET", "⏳ Phê duyệt"),
+            ("HOINHANH", "💬 Hỏi nhanh"),
             ("BEP", "🍳 Bếp"),
             ("ATTP", "🧽 ATTP / QC"),
             ("GIAOVAN", "🚚 Giao vận"),
