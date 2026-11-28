@@ -1,0 +1,63 @@
+# Câu hỏi nhanh của agent ACC – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: ACC
+questions:
+  - id: acc-chung-tu
+    hoi: "Chứng từ kế toán cần xử lý"
+    tool: chung_tu_ke_toan
+    loc: "Trạng thái ≠ Đã gửi AMIS"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chứng từ chưa gửi AMIS"
+      tom_tat: "{so_dong} chứng từ · {dem.loi=true} có lỗi"
+      cot: ["Loại", "Số", "Ngày", "Giá trị", "Trạng thái", "Lỗi"]
+      sap_xep: "Có lỗi trước"
+      rong: "Mọi chứng từ đã gửi AMIS."
+    mo_man: "#/acc-voucher"
+    kenh: ["web"]
+  - id: acc-doi-chieu
+    hoi: "Đối chiếu với AMIS kỳ này"
+    tool: doi_chieu_amis
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đối chiếu AMIS"
+      tom_tat: "{dem.khop=true}/{so_dong} chỉ tiêu khớp"
+      cot: ["Chỉ tiêu", "Delicare", "AMIS", "Chênh lệch"]
+      sap_xep: "Lệch trước"
+    mo_man: "#/acc-reconcile"
+    phan_tich: "Nguyên nhân chênh lệch hay gặp và việc cần kiểm."
+    kenh: ["web"]
+  - id: acc-lai-gop
+    hoi: "Giá vốn & lãi gộp tháng này"
+    tool: gia_von_lai_gop
+    hien_thi:
+      kieu: bang
+      tieu_de: "Giá vốn & lãi gộp"
+      tom_tat: "Doanh thu tạm tính {tong.doanh_thu} · lãi gộp {tong.lai_gop_pct}%"
+      cot: ["Khách / loại suất", "Doanh thu", "Giá vốn", "Lãi gộp %"]
+    mo_man: "#/dash-exec?tab=margin"
+    kenh: ["web"]
+  - id: acc-khay
+    hoi: "Thất thoát khay hộp theo khách"
+    tool: hop_khay
+    hien_thi:
+      kieu: bang
+      tieu_de: "Thất thoát khay hộp"
+      tom_tat: "{dem.vuot_nguong=true} khách vượt ngưỡng hợp đồng"
+      cot: ["Khách", "Thất thoát", "Ngưỡng hợp đồng", "Phí dự kiến"]
+      sap_xep: "Thất thoát % giảm dần"
+    mo_man: "#/log-container"
+    kenh: ["web"]
+  - id: acc-cho-duyet
+    hoi: "Tôi đang có gì chờ duyệt?"
+    tool: ds_cho_duyet
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chờ anh / chị duyệt"
+      tom_tat: "{so_dong} yêu cầu"
+      cot: ["Loại", "Số chứng từ", "Giá trị", "Hạn"]
+      rong: "Không có yêu cầu chờ duyệt."
+    mo_man: "#/wf-inbox"
+    kenh: ["web", "DH"]

@@ -1,0 +1,91 @@
+# Câu hỏi nhanh của agent QA – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: QA
+questions:
+  - id: qa-nhiet-do
+    hoi: "Nhiệt độ hôm nay"
+    tool: nhiet_do_ngay
+    hien_thi:
+      kieu: bang
+      tieu_de: "Nhật ký nhiệt độ hôm nay"
+      tom_tat: "{so_dong} lần đo · {dem.vuot=true} vượt ngưỡng · thiếu {tong.thieu_lan_do} lần đo"
+      cot: ["Giờ", "Điểm đo", "Loại", "Nhiệt độ", "Ngưỡng", "Kết quả"]
+      sap_xep: "Vượt ngưỡng trước"
+    mo_man: "#/qc-temperature"
+    phan_tich: "Điểm đo nào cần kiểm tra thiết bị / quy trình."
+    kenh: ["web", "VH"]
+  - id: qa-su-co
+    hoi: "Sự cố ATTP hôm nay"
+    tool: su_co_ngay
+    hien_thi:
+      kieu: bang
+      tieu_de: "Sự cố hôm nay"
+      tom_tat: "{so_dong} sự cố"
+      cot: ["Giờ", "Loại", "Nội dung", "Mức", "Trạng thái"]
+      rong: "Hôm nay chưa ghi nhận sự cố."
+    mo_man: "#/qc-incident"
+    phan_tich: "Đối chiếu SOP ATTP, việc cần làm ngay."
+    kenh: ["web", "VH"]
+  - id: qa-cho-qc
+    hoi: "Mẻ nào đang chờ QC?"
+    tool: tien_do_bep
+    loc: "Trạng thái = Chờ QC"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Mẻ chờ QC"
+      tom_tat: "{so_dong} mẻ chờ QC"
+      cot: ["Mẻ", "Món", "Xong lúc", "Dây chuyền"]
+      rong: "Không có mẻ chờ QC."
+    mo_man: "#/prod-batch"
+    kenh: ["web", "VH"]
+  - id: qa-can-han
+    hoi: "Lô sắp hết hạn trong 3 ngày"
+    tool: get_lo_can_date
+    args: { so_ngay: 3 }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Lô hết hạn trong 3 ngày"
+      tom_tat: "{so_dong} lô"
+      cot: ["Nguyên liệu", "Số lô", "Hạn dùng", "Trạng thái QC"]
+      rong: "Không có lô hết hạn trong 3 ngày."
+    mo_man: "#/scm-inv-balance?tab=lot"
+    kenh: ["web", "VH"]
+  - id: qa-ve-sinh
+    hoi: "Lô vệ sinh khay hộp dở dang"
+    tool: lo_ve_sinh
+    loc: "Trạng thái ≠ Hoàn thành"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Lô vệ sinh chưa xong"
+      tom_tat: "{so_dong} lô chưa xong"
+      cot: ["Lô", "Bước hiện tại", "Bắt đầu", "Người làm"]
+      rong: "Mọi lô vệ sinh đã xong."
+    mo_man: "#/qc-clean"
+    kenh: ["web", "VH"]
+  - id: qa-phan-anh
+    hoi: "Phản ánh chất lượng đang mở"
+    tool: phan_anh_khach
+    args: { trang_thai: "Open" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Phản ánh đang mở"
+      tom_tat: "{so_dong} phản ánh"
+      cot: ["Số", "Khách", "Nội dung", "Tiếp nhận", "Hạn"]
+      rong: "Không có phản ánh đang mở."
+    mo_man: "#/log-complaint"
+    kenh: ["web", "VH"]
+  - id: qa-truy-xuat
+    hoi: "Truy xuất lô (nhập số lô)"
+    tool: truy_xuat_lo
+    nhap: { tu_khoa: "Số lô" }
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Truy xuất lô {args.tu_khoa}"
+      tom_tat: "{dem.buoc=Mẻ nấu} mẻ · {dem.buoc=Khách} khách đã nhận"
+      cot: ["Bước", "Chứng từ", "Ngày", "Đối tượng"]
+      rong: "Không tìm thấy lô {args.tu_khoa}."
+    mo_man: "#/scm-inv-balance?tab=lot"
+    phan_tich: "Phạm vi thu hồi nếu lô không đạt."
+    kenh: ["web", "VH"]

@@ -86,9 +86,9 @@
 
   APP.register('scm-uom', (el, f, p) => {
     if (!Store.isLive) return base0 ? base0(el, f, p) : APP.genericList(el, f);
-    el.innerHTML = APP.header(f, `<button class="btn" id="umTry">${I('calc')} Thử quy đổi</button>${can('add') ? `<button class="btn" id="umBase">${I('plus')} Đơn vị gốc</button><button class="btn primary" id="umPack">${I('plus')} Đơn vị đóng gói</button>` : ''}`, { noNote: true }) + `
+    el.innerHTML = APP.header(f, `<button class="btn" id="umTry" data-help="uom-try">${I('calc')} Thử quy đổi</button>${can('add') ? `<button class="btn" id="umBase">${I('plus')} Đơn vị gốc</button><button class="btn primary" id="umPack">${I('plus')} Đơn vị đóng gói</button>` : ''}`, { noNote: true }) + `
       <div class="notice info mb">${I('help')}<div>Đơn vị gốc (kg, g, lít, quả…) và đơn vị đóng gói có kích cỡ (thùng 10 kg, bao 25 kg…). Quy đổi lưu cùng đơn vị – không còn mục menu "Quy đổi đơn vị" riêng. Đơn vị đã dùng thì không đổi kích cỡ.</div></div>
-      <div id="umKpi"></div><div class="card panel"><div class="row-flex mb" id="umChips"></div><div id="umBody"><div class="muted small">Đang tải…</div></div></div>`;
+      <div id="umKpi"></div><div class="card panel"><div class="row-flex mb" id="umChips"></div><div id="umBody" data-help="uom-list"><div class="muted small">Đang tải…</div></div></div>`;
     const g = s => el.querySelector(s);
     if (g('#umBase')) g('#umBase').onclick = () => baseForm(null);
     g('#umTry').onclick = () => tryConvert();

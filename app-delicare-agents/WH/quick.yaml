@@ -1,0 +1,93 @@
+# Câu hỏi nhanh của agent WH – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: WH
+questions:
+  - id: wh-duoi-toi-thieu
+    hoi: "Mặt hàng nào dưới tồn tối thiểu?"
+    tool: get_ton_kho
+    args: { duoi_toi_thieu: true }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Dưới tồn tối thiểu"
+      tom_tat: "{so_dong} mặt hàng dưới tối thiểu"
+      cot: ["Nguyên liệu", "Tồn", "Tối thiểu", "Đơn vị", "Kho"]
+      sap_xep: "Tồn / tối thiểu tăng dần"
+      rong: "Không có mặt hàng dưới tối thiểu."
+    mo_man: "#/scm-inv-balance"
+    kenh: ["web", "VH"]
+  - id: wh-can-han-3
+    hoi: "Lô nào sắp hết hạn trong 3 ngày?"
+    tool: get_lo_can_date
+    args: { so_ngay: 3 }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Lô hết hạn trong {args.so_ngay} ngày"
+      tom_tat: "{so_dong} lô – xuất trước theo FEFO hoặc báo QA"
+      cot: ["Nguyên liệu", "Số lô", "Hạn dùng", "Còn (ngày)", "Tồn", "Trạng thái QC"]
+      sap_xep: "Hạn dùng tăng dần"
+      rong: "Không có lô hết hạn trong {args.so_ngay} ngày tới."
+    mo_man: "#/scm-inv-balance?tab=lot"
+    phan_tich: "Thứ tự xuất dùng, lô nên báo QA / trả NCC."
+    kenh: ["web", "VH"]
+  - id: wh-can-han-7
+    hoi: "Lô nào sắp hết hạn trong 7 ngày?"
+    tool: get_lo_can_date
+    args: { so_ngay: 7 }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Lô hết hạn trong {args.so_ngay} ngày"
+      tom_tat: "{so_dong} lô"
+      cot: ["Nguyên liệu", "Số lô", "Hạn dùng", "Còn (ngày)", "Tồn", "Trạng thái QC"]
+      sap_xep: "Hạn dùng tăng dần"
+      rong: "Không có lô hết hạn trong {args.so_ngay} ngày tới."
+    mo_man: "#/scm-inv-balance?tab=lot"
+    kenh: ["web", "VH"]
+  - id: wh-ton-kho
+    hoi: "Tồn kho hiện tại"
+    tool: get_ton_kho
+    hien_thi:
+      kieu: bang
+      tieu_de: "Tồn kho"
+      tom_tat: "{so_dong} mặt hàng đang có tồn"
+      cot: ["Nguyên liệu", "Tồn", "Đơn vị", "Kho", "Giá trị"]
+    mo_man: "#/scm-inv-balance"
+    kenh: ["web"]
+  - id: wh-tim-ton
+    hoi: "Còn bao nhiêu… (nhập tên nguyên liệu)"
+    tool: get_ton_kho
+    nhap: { tu_khoa: "Tên hoặc mã nguyên liệu" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Tồn \"{args.tu_khoa}\""
+      tom_tat: "{so_dong} dòng khớp"
+      cot: ["Nguyên liệu", "Tồn", "Đơn vị", "Kho"]
+      rong: "Không tìm thấy nguyên liệu \"{args.tu_khoa}\"."
+    mo_man: "#/scm-inv-balance"
+    kenh: ["web", "VH"]
+  - id: wh-truy-xuat
+    hoi: "Truy xuất lô (nhập số lô)"
+    tool: truy_xuat_lo
+    nhap: { tu_khoa: "Số lô hoặc mã nguyên liệu" }
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Truy xuất lô {args.tu_khoa}"
+      tom_tat: "NCC {nha_cung_cap} → {dem.buoc=Phiếu xuất} phiếu xuất → {dem.buoc=Mẻ nấu} mẻ → {dem.buoc=Khách} khách"
+      cot: ["Bước", "Chứng từ", "Ngày", "Số lượng", "Đối tượng"]
+      rong: "Không tìm thấy lô {args.tu_khoa}."
+    mo_man: "#/scm-inv-balance?tab=lot"
+    phan_tich: "Phạm vi ảnh hưởng nếu lô có vấn đề."
+    kenh: ["web", "VH"]
+  - id: wh-thieu-mai
+    hoi: "Ngày mai thiếu nguyên liệu gì?"
+    tool: du_bao_thieu_hut
+    args: { so_ngay: 1 }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Thiếu cho ngày mai"
+      tom_tat: "{so_dong} nguyên liệu thiếu"
+      cot: ["Nguyên liệu", "Cần", "Tồn", "Thiếu"]
+      rong: "Ngày mai đủ nguyên liệu."
+    mo_man: "#/scm-requirement"
+    kenh: ["web", "VH"]

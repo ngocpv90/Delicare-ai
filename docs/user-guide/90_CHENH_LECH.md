@@ -1,3 +1,8 @@
+---
+screens: []
+roles: []
+updated: 2026-11-28
+---
 # 90 – Chênh lệch tài liệu – code
 
 Danh sách chỗ **code chưa có** hoặc **khác tài liệu** phát hiện khi viết hướng dẫn sử dụng (rà soát code ngày 19/11/2026). Mỗi mục là đầu việc cho Claude Code (task **UG-1** trong `docs/claude/ROADMAP.md`).

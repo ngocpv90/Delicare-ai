@@ -1,3 +1,8 @@
+---
+screens: [hr-my, dash-exec, kpi-daily, ai-tasks, log-complaint, menu-menu, menu-recipe, menu-dish, scm-supplier, scm-ingredient, scm-gr, scm-inv-balance, prod-plan, prod-batch, qc-inspection, qc-checklist-result, qc-temperature, qc-cleaning, qc-supplier-issue, qc-checklist, log-route, log-execution, knowledge, knowledge?folder=30, knowledge?folder=40, knowledge?folder=45, knowledge?folder=50, knowledge?folder=55, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=15, knowledge?folder=80-hdsd]
+roles: [QA]
+updated: 2026-11-28
+---
 # 06 – QC / An toàn thực phẩm
 
 ## 1. Bạn là ai

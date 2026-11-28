@@ -1,0 +1,101 @@
+# Câu hỏi nhanh của agent VIVI – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: VIVI
+questions:
+  - id: vivi-tinh-hinh
+    hoi: "Tình hình hôm nay thế nào?"
+    tool: bao_cao_dieu_hanh
+    hien_thi:
+      kieu: the
+      tieu_de: "Tình hình hôm nay {ngay}"
+      tom_tat: "{tong.suat} suất · sản xuất {tong.me_xong}/{tong.me} mẻ · giao {tong.chuyen_xong}/{tong.chuyen} chuyến · {tong.canh_bao} cảnh báo đang mở"
+      cot: ["Đơn / suất", "Sản xuất", "Giao hàng", "Chất lượng", "Kho", "Cảnh báo chính"]
+    mo_man: "#/dash-exec"
+    phan_tich: "So với hôm qua và cùng thứ tuần trước; nêu 3 việc Ban GĐ nên chú ý."
+    kenh: ["web", "DH"]
+  - id: vivi-canh-bao
+    hoi: "Đang có cảnh báo gì?"
+    tool: canh_bao
+    hien_thi:
+      kieu: bang
+      tieu_de: "Cảnh báo đang mở"
+      tom_tat: "{so_dong} cảnh báo – {dem.muc=Cao} mức cao"
+      cot: ["Mức", "Loại", "Nội dung", "Từ lúc", "Bộ phận"]
+      sap_xep: "Mức cao trước, mới nhất trước"
+      rong: "Không có cảnh báo nào đang mở."
+    mo_man: "#/dash-exec"
+    phan_tich: "Gom theo nguyên nhân, cảnh báo nào cần xử lý trước."
+    kenh: ["web", "DH"]
+  - id: vivi-cho-duyet
+    hoi: "Tôi đang có gì chờ duyệt?"
+    tool: ds_cho_duyet
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chờ anh / chị duyệt"
+      tom_tat: "{so_dong} yêu cầu – {dem.qua_han=true} quá hạn"
+      cot: ["Loại", "Số chứng từ", "Người gửi", "Gửi lúc", "Hạn"]
+      sap_xep: "Quá hạn trước, hạn gần trước"
+      rong: "Không có yêu cầu nào chờ anh / chị duyệt."
+    mo_man: "#/wf-inbox"
+    kenh: ["web", "DH"]
+  - id: vivi-su-co
+    hoi: "Hôm nay có sự cố gì?"
+    tool: su_co_ngay
+    hien_thi:
+      kieu: bang
+      tieu_de: "Sự cố hôm nay"
+      tom_tat: "{dem.loai=Cảnh báo} cảnh báo cao / trung bình · {dem.loai=Nhiệt độ} lần đo vượt ngưỡng · {dem.loai=Phản ánh} phản ánh mới"
+      cot: ["Giờ", "Loại", "Nội dung", "Mức", "Trạng thái"]
+      rong: "Hôm nay chưa ghi nhận sự cố."
+    mo_man: "#/dash-exec"
+    phan_tich: "Sự cố nào ảnh hưởng tới khách / ATTP và hướng xử lý theo SOP."
+    kenh: ["web", "DH"]
+  - id: vivi-don-mai
+    hoi: "Ngày mai bao nhiêu suất?"
+    tool: don_hang_ngay
+    args: { ngay: "ngay_mai" }
+    hien_thi:
+      kieu: tom_tat
+      tieu_de: "Suất ăn ngày {args.ngay}"
+      tom_tat: "{tong.suat} suất · {tong.khach} khách · {dem.trang_thai=Chưa chốt} đơn chưa chốt"
+      cot: ["Khách", "Điểm giao", "Loại suất", "Số suất", "Trạng thái"]
+    mo_man: "#/crm-order"
+    kenh: ["web", "DH"]
+  - id: vivi-thieu-nl
+    hoi: "7 ngày tới thiếu nguyên liệu gì?"
+    tool: du_bao_thieu_hut
+    hien_thi:
+      kieu: bang
+      tieu_de: "Nguyên liệu thiếu 7 ngày tới"
+      tom_tat: "{so_dong} nguyên liệu thiếu – sớm nhất phải đặt ngày {min.ngay_dat}"
+      cot: ["Nguyên liệu", "Ngày cần", "Cần", "Tồn lũy kế", "Thiếu", "Phải đặt trước"]
+      sap_xep: "Phải đặt trước tăng dần"
+      rong: "7 ngày tới đủ nguyên liệu theo kế hoạch."
+    mo_man: "#/scm-requirement"
+    phan_tich: "Rủi ro thiếu hàng ảnh hưởng ca nào; phương án món thay."
+    kenh: ["web", "DH"]
+  - id: vivi-kpi-7
+    hoi: "KPI 7 ngày qua"
+    tool: kpi_khoang
+    hien_thi:
+      kieu: bieu_do
+      tieu_de: "KPI 7 ngày gần nhất"
+      tom_tat: "Trung bình {tb.suat} suất / ngày · giao đúng giờ {tb.dung_gio}% · hao hụt {tb.hao_hut}%"
+      cot: ["Ngày", "Suất", "Giao đúng giờ %", "Hao hụt %", "Phản ánh"]
+    mo_man: "#/dash-exec?tab=kpi"
+    phan_tich: "Xu hướng, ngày bất thường và nguyên nhân có thể."
+    kenh: ["web", "DH"]
+  - id: vivi-lai-gop
+    hoi: "Giá vốn và lãi gộp tuần này"
+    tool: gia_von_lai_gop
+    hien_thi:
+      kieu: bang
+      tieu_de: "Giá vốn & lãi gộp"
+      tom_tat: "Doanh thu tạm tính {tong.doanh_thu} · giá vốn {tong.gia_von} · lãi gộp {tong.lai_gop_pct}%"
+      cot: ["Khách / loại suất", "Suất", "Doanh thu", "Giá vốn", "Lãi gộp %"]
+      sap_xep: "Lãi gộp % tăng dần"
+    mo_man: "#/dash-exec?tab=margin"
+    phan_tich: "Khách / món nào kéo lãi gộp xuống và gợi ý điều chỉnh."
+    kenh: ["web"]

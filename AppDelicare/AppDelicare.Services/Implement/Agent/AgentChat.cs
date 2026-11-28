@@ -26,6 +26,8 @@ namespace AppDelicare.Services.Implement.Agent
     {
         public string? Agent { get; set; }
         public string? Message { get; set; }
+        /// <summary>AI-22.3: màn người hỏi đang mở (nút "?" › Hỏi Vivi) – gửi kèm làm ngữ cảnh.</summary>
+        public string? Screen { get; set; }
         public List<AgentChatTurn>? History { get; set; }
     }
 
@@ -120,6 +122,10 @@ namespace AppDelicare.Services.Implement.Agent
             if (message.Length == 0)
             {
                 return Result<AgentChatReplyModel>.Fail("Nhập câu hỏi");
+            }
+            if (request.Screen is { Length: > 0 and <= 80 } scr && message.Length <= 1900)
+            {
+                message = $"[Người hỏi đang ở màn {scr} – trả lời theo Hướng dẫn sử dụng trong kho, nêu nguồn] " + message;
             }
             if (message.Length > 2000)
             {

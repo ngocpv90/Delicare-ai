@@ -1,0 +1,88 @@
+# Câu hỏi nhanh của agent KITCHEN – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: KITCHEN
+questions:
+  - id: kit-tien-do
+    hoi: "Tiến độ bếp hôm nay"
+    tool: tien_do_bep
+    hien_thi:
+      kieu: the
+      tieu_de: "Tiến độ bếp"
+      tom_tat: "{dem.trang_thai=Xong} xong · {dem.trang_thai=Đang nấu} đang nấu · {dem.tre=true} trễ · {dem.trang_thai=Chờ QC} chờ QC"
+      cot: ["Mẻ", "Món", "Dây chuyền", "Trạng thái", "Giờ xong dự kiến"]
+      sap_xep: "Trễ trước"
+    mo_man: "#/prod-batch"
+    phan_tich: "Mẻ nào có nguy cơ trễ giờ xuất bếp và cách điều phối."
+    kenh: ["web", "VH"]
+  - id: kit-me-tre
+    hoi: "Mẻ nào đang trễ?"
+    tool: tien_do_bep
+    loc: "Trễ = có"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Mẻ đang trễ"
+      tom_tat: "{so_dong} mẻ trễ"
+      cot: ["Mẻ", "Món", "Dây chuyền", "Trễ (phút)"]
+      rong: "Không có mẻ trễ."
+    mo_man: "#/prod-batch"
+    kenh: ["web", "VH"]
+  - id: kit-cong-doan
+    hoi: "Tiến độ theo công đoạn"
+    tool: tien_do_bep_chi_tiet
+    hien_thi:
+      kieu: bang
+      tieu_de: "Theo công đoạn"
+      tom_tat: "Sơ chế {pct.so_che}% · nấu {pct.nau}% · chia suất {pct.chia}%"
+      cot: ["Công đoạn", "Xong", "Tổng", "%"]
+    mo_man: "#/prod-batch"
+    kenh: ["web", "VH"]
+  - id: kit-hom-nay
+    hoi: "Hôm nay nấu gì?"
+    tool: thuc_don_tuan
+    args: { tuan: "hom_nay" }
+    loc: "Ngày = hôm nay"
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Thực đơn hôm nay"
+      tom_tat: "{so_dong} món"
+      cot: ["Buổi", "Lựa chọn", "Món", "Suất"]
+    mo_man: "#/menu-menu"
+    kenh: ["web", "VH"]
+  - id: kit-nhiet-do
+    hoi: "Nhiệt độ hôm nay có vượt ngưỡng?"
+    tool: nhiet_do_ngay
+    loc: "Vượt ngưỡng = có"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Lần đo vượt ngưỡng"
+      tom_tat: "{so_dong} lần vượt ngưỡng · thiếu {tong.thieu_lan_do} lần đo"
+      cot: ["Giờ", "Điểm đo", "Loại", "Nhiệt độ", "Ngưỡng"]
+      rong: "Không có lần đo vượt ngưỡng."
+    mo_man: "#/qc-temperature"
+    kenh: ["web", "VH"]
+  - id: kit-hao-hut
+    hoi: "Hao hụt 7 ngày qua"
+    tool: hao_hut_khoang
+    hien_thi:
+      kieu: bang
+      tieu_de: "Hao hụt 7 ngày"
+      tom_tat: "{tong.suat_huy} suất hủy · {tong.pct}% hao hụt"
+      cot: ["Loại", "Món", "Suất", "%"]
+      sap_xep: "Suất giảm dần"
+    mo_man: "#/prod-waste"
+    phan_tich: "Món / ca hao hụt cao và nguyên nhân hay gặp."
+    kenh: ["web"]
+  - id: kit-truy-xuat-me
+    hoi: "Truy xuất mẻ (nhập số mẻ)"
+    tool: truy_xuat_me
+    nhap: { tu_khoa: "Số mẻ" }
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Truy xuất mẻ {args.tu_khoa}"
+      tom_tat: "{dem.buoc=Lô} lô nguyên liệu · {dem.buoc=Khách} khách nhận"
+      cot: ["Bước", "Chứng từ", "Đối tượng", "Số lượng"]
+      rong: "Không tìm thấy mẻ {args.tu_khoa}."
+    mo_man: "#/prod-batch"
+    kenh: ["web", "VH"]

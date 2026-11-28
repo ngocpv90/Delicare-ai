@@ -414,7 +414,7 @@
     const st = { tree: [], folder: p.folder || '', path: p.path || '', q: p.q || '' };
     el.innerHTML = APP.header(f || FN.knowledge, '', { noNote: true })
       + `<div class="notice info mb">${I('help')}<div>Kho chứa tri thức: cách làm, quy định, bài học, bản chụp báo cáo có ngày. Số liệu hiện tại luôn xem trên màn nghiệp vụ. Ghi chú tự sinh (lõi xuất) chỉ đọc; SOP / quyết định có hiệu lực sau khi duyệt.</div></div>
-        <div class="kn-wrap"><aside class="card kn-side"><div class="row-flex mb" style="gap:6px"><input class="input" id="knQ" placeholder="Tìm trong kho (gõ không dấu được)…" value="${esc(st.q)}"><button class="btn" id="knGo" aria-label="Tìm">${I('search')}</button></div><div id="knTree">${loading}</div></aside>
+        <div class="kn-wrap"><aside class="card kn-side"><div class="row-flex mb" style="gap:6px" data-help="kn-search"><input class="input" id="knQ" placeholder="Tìm trong kho (gõ không dấu được)…" value="${esc(st.q)}"><button class="btn" id="knGo" aria-label="Tìm">${I('search')}</button></div><div id="knTree" data-help="kn-tree">${loading}</div></aside>
         <section class="card kn-main" id="knMain">${loading}</section></div>`;
     const allNotes = () => st.tree.flatMap(x => x.listNote || []);
     const main = el.querySelector('#knMain');
@@ -427,8 +427,9 @@
     };
     const folderView = () => {
       const fd = st.tree.find(x => x.code === st.folder);
+      if (fd && fd.code === '80-HDSD' && APP.helpLibrary) { APP.helpLibrary(main); return; } // AI-22.3: thư viện Hướng dẫn sử dụng
       if (!fd) { main.innerHTML = `<h2>Kho tri thức</h2><p class="muted">Chọn thư mục bên trái hoặc tìm theo từ khóa.</p>${UI.kpis(st.tree.slice(0, 4).map(x => UI.kpi(x.name, U.num(x.noteCount), x.owner, 'file', 'blue')))}`; return; }
-      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(kfName(fd.name))}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px">${fd.code !== '80-HDSD' ? `<button class="btn sm" id="knUp">${I('up')} Tải tài liệu lên</button>` : ''}<button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
+      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(kfName(fd.name))}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px">${fd.code !== '80-HDSD' ? `<button class="btn sm" id="knUp" data-help="kn-upload">${I('up')} Tải tài liệu lên</button>` : ''}<button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
         <div class="table-wrap mt"><table class="table dc-table"><thead><tr><th>Ghi chú</th><th>Loại</th><th>Trạng thái</th><th>Hiệu lực từ</th><th>Nguồn</th></tr></thead><tbody>
         ${(fd.listNote || []).slice(0, 200).map(n => `<tr><td><a href="#/knowledge?folder=${esc(fd.code)}&path=${encodeURIComponent(n.path)}">${esc(n.title)}</a>${n.needsReview ? ' ' + chip('cần rà soát', 'orange') : ''}</td><td>${esc(typeName(n.type))}</td><td>${esc(n.status || '')}</td><td>${esc(U.date(n.validFrom))}</td><td class="small">${esc(n.source || '')}</td></tr>`).join('')}</tbody></table></div>`;
       const nb = main.querySelector('#knNew'); if (nb) nb.onclick = () => editor(fd, null);
@@ -479,6 +480,7 @@
         ${n.refs && n.refs.length ? `<div class="small mb">Liên quan: ${md(n.refs.join(', '), allNotes()).replace(/^<p>|<\/p>$/g, '')}</div>` : ''}
         <article class="kn-body">${md(n.body, allNotes())}</article>
         <div class="kn-back mt"><h4>Liên kết ngược</h4>${(n.listBacklink || []).length ? n.listBacklink.map(b => `<a href="#/knowledge?path=${encodeURIComponent(b.path)}" class="kn-link">${esc(b.title)}</a>`).join(' · ') : '<span class="muted small">Chưa có ghi chú nào liên kết tới đây.</span>'}</div>`;
+      if (/^hdsd$/i.test(n.type || '') && APP.helpGuidePage) APP.helpGuidePage(main, n); // AI-22.3: Mở màn / In / Hỏi Vivi + mục lục
       const e = main.querySelector('#knEdit'); if (e) e.onclick = () => editor(st.tree.find(t => t.code === n.folder) || { code: n.folder, name: n.folder }, n);
       // AI-12 (D-133): SOP / hướng dẫn / quyết định – Nháp → Gửi duyệt (Phê duyệt › Duyệt SOP); Hiệu lực → Phiên bản mới (bản cũ giữ tới khi bản mới được duyệt, rồi Lưu trữ).
       const sb = main.querySelector('#knSubmit'); if (sb) sb.onclick = () => UI.confirm('Gửi duyệt <b>' + esc(n.title) + '</b>? Sau khi gửi không sửa được cho tới khi duyệt / từ chối.', note => Store.act('Knowledge/SubmitSop', { json: { path: n.path, prevHash: n.hash, note } }).then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã gửi duyệt'), 'ok'); APP.refresh(); } }), { input: 'Ghi chú cho người duyệt', ok: 'Gửi duyệt' });

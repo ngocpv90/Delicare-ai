@@ -1,3 +1,8 @@
+---
+screens: [ai-agents?tab=overview, ai-agents?tab=tasks, ai-agents?tab=flow, ai-agents?tab=schedule, ai-agents?tab=log, ai-agents?tab=usage]
+roles: []
+updated: 2026-11-28
+---
 # 15 – Trợ lý AI (agent)
 
 Viết theo code AI-1 … AI-21 (D-133, D-138, cập nhật 28/11/2026). Trợ lý AI gồm 13 agent; **đợt 1 bật 5 agent chỉ đọc**: VIVI (điều phối), WH (kho), KITCHEN (bếp), QA (ATTP), KNOW (thủ thư tri thức). Agent trả lời bằng số liệu lấy thẳng từ DELI-CARE (cùng cách tính với màn hình) và kho tri thức; **đợt 1 agent không ghi gì vào nghiệp vụ** (chỉ ghi nhật ký vào kho tri thức 96 / 97 / 98).

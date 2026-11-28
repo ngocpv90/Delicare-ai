@@ -31,5 +31,8 @@ namespace AppDelicare.Model.Option
 
         /// <summary>AI-22.2 (§7.9 luật 7): dung lượng tối đa 1 tệp gốc tải lên kho (MB).</summary>
         public int MaxFileMb { get; set; } = 20;
+
+        /// <summary>AI-22.3 (§7.11): thư mục nguồn Hướng dẫn sử dụng (docs/user-guide). Trống = tìm "docs/user-guide" đi ngược lên từ thư mục chạy (máy dev); Docker: /app/user-guide (mount chỉ đọc).</summary>
+        public string? UserGuidePath { get; set; }
     }
 }

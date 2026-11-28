@@ -1,3 +1,8 @@
+---
+screens: [acc-voucher, crm-billing, acc-amis-code, acc-amis-recon, acc-period]
+roles: []
+updated: 2026-11-28
+---
 # 14 – Kế toán (kết nối MISA AMIS)
 
 Viết theo code ACC-1 … ACC-8 (D-131, 26/11/2026). Delicare tự lập chứng từ từ nghiệp vụ đã xong; Kế toán chỉ xử lý dòng lỗi, gửi sang AMIS (hiện bằng file Excel mẫu AMIS – gửi qua API làm ở ACC-7), rồi khóa kỳ. Hạch toán, hóa đơn, công nợ, giá vốn chính thức làm trên **AMIS**.

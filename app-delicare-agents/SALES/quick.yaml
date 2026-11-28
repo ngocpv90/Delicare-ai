@@ -1,0 +1,77 @@
+# Câu hỏi nhanh của agent SALES – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: SALES
+questions:
+  - id: sales-chua-chot
+    hoi: "Khách nào chưa chốt suất ngày mai?"
+    tool: don_hang_ngay
+    args: { ngay: "ngay_mai" }
+    loc: "Trạng thái = Chưa chốt"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chưa chốt suất ngày {args.ngay}"
+      tom_tat: "{so_dong} điểm giao chưa chốt – giờ chốt 20:00"
+      cot: ["Khách", "Điểm giao", "Loại suất", "Số suất dự kiến", "Người phụ trách"]
+      rong: "Mọi khách đã chốt suất ngày mai."
+    mo_man: "#/crm-order"
+    kenh: ["web", "VH"]
+  - id: sales-don-mai
+    hoi: "Đơn ngày mai"
+    tool: don_hang_ngay
+    args: { ngay: "ngay_mai" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đơn ngày {args.ngay}"
+      tom_tat: "{tong.suat} suất · {tong.khach} khách"
+      cot: ["Khách", "Điểm giao", "Loại suất", "Số suất", "Trạng thái"]
+    mo_man: "#/crm-order"
+    kenh: ["web", "VH"]
+  - id: sales-don-nay
+    hoi: "Đơn hôm nay"
+    tool: don_hang_ngay
+    args: { ngay: "hom_nay" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đơn hôm nay"
+      tom_tat: "{tong.suat} suất · {tong.khach} khách"
+      cot: ["Khách", "Điểm giao", "Loại suất", "Số suất", "Trạng thái"]
+    mo_man: "#/crm-order"
+    kenh: ["web", "VH"]
+  - id: sales-pa-qua-han
+    hoi: "Phản ánh nào quá hạn?"
+    tool: phan_anh_khach
+    args: { qua_han: true }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Phản ánh quá hạn"
+      tom_tat: "{so_dong} phản ánh quá hạn xử lý"
+      cot: ["Số", "Khách", "Nội dung", "Tiếp nhận", "Hạn", "Người xử lý"]
+      rong: "Không có phản ánh quá hạn."
+    mo_man: "#/log-complaint"
+    phan_tich: "Phản ánh nào có nguy cơ mất khách, đề xuất cách trả lời."
+    kenh: ["web", "VH"]
+  - id: sales-pa-mo
+    hoi: "Phản ánh đang mở"
+    tool: phan_anh_khach
+    args: { trang_thai: "Open" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Phản ánh đang mở"
+      tom_tat: "{so_dong} phản ánh đang mở"
+      cot: ["Số", "Khách", "Nội dung", "Tiếp nhận", "Hạn", "Người xử lý"]
+      rong: "Không có phản ánh đang mở."
+    mo_man: "#/log-complaint"
+    kenh: ["web", "VH"]
+  - id: sales-cho-duyet
+    hoi: "Tôi đang có gì chờ duyệt?"
+    tool: ds_cho_duyet
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chờ anh / chị duyệt"
+      tom_tat: "{so_dong} yêu cầu"
+      cot: ["Loại", "Số chứng từ", "Người gửi", "Hạn"]
+      rong: "Không có yêu cầu chờ duyệt."
+    mo_man: "#/wf-inbox"
+    kenh: ["web", "DH"]

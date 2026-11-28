@@ -1,3 +1,8 @@
+---
+screens: [hr-my, ai-tasks, crm-customer, crm-order, sal-retail-order, menu-menu, menu-recipe, menu-dish, scm-issue, scm-inv-balance, prod-plan, prod-batch, prod-waste, qc-checklist-result, qc-temperature, qc-cleaning, qc-checklist, log-packing-order, log-route, log-execution, log-packaging-ledger, log-packaging-type, log-packaging-norm, hr-shift-assign, hr-attendance, hr-leave, hr-shift, prod-line, log-vehicle, knowledge, knowledge?folder=20, knowledge?folder=30, knowledge?folder=45, knowledge?folder=50, knowledge?folder=55, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=15, knowledge?folder=80-hdsd]
+roles: [OPS-KIT, OPS-LOG]
+updated: 2026-11-28
+---
 # 08 – Chia suất / đóng gói
 
 ## 1. Bạn là ai

@@ -109,7 +109,7 @@ namespace AppDelicare.Services.Implement.Knowledge
             public string Confidentiality => Slug(Meta.GetValueOrDefault("confidentiality"));
             public DateTime? ValidFrom => ParseDate(Meta.GetValueOrDefault("valid_from"));
             public DateTime? ReviewBy => ParseDate(Meta.GetValueOrDefault("review_by"));
-            public bool Generated => Source == CoreSource;
+            public bool Generated => Source == CoreSource || Source == "delicare-docs"; // AI-22.3: HDSD tự nhập – chỉ đọc
             public bool IsBod => Folder == Bod || Confidentiality == "bod";
             /// <summary>Dạng gấp (không dấu, thường) của tiêu đề + nội dung – chỉ mục tìm.</summary>
             public string FoldedTitle { get; init; } = string.Empty;

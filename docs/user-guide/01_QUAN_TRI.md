@@ -1,3 +1,8 @@
+---
+screens: [dash-pl, ai-agents, ai-tasks, ai-schedule, adm-orgunit, adm-reference, adm-admin-unit, kpi-definition, knowledge?folder=95, knowledge?folder=99, adm-user, adm-usergroup, adm-objectmenu, sys-import, adm-document, adm-job, adm-audit, adm-access-log, adm-merge-conflict, int-channel, int-bot, int-identity, int-inbound, int-outbound, int-log, kpi-refresh, scm-uom]
+roles: [FIN-IT]
+updated: 2026-11-28
+---
 # 01 – Quản trị hệ thống (IT / quản trị)
 
 ## 1. Bạn là ai
@@ -234,9 +239,13 @@ Chỉ xem / lọc / xuất. Audit log ghi mọi thêm / sửa / xóa; tab **Lị
 - Nhận cảnh báo 🔴 job lỗi, 🔴 tin gửi thất bại nhiều lần.
 - Gỡ liên kết Telegram của người dùng: hiện chưa có màn web (màn `int-identity` đang ẩn) – người dùng tự gửi `/huylienket` trên bot, hoặc IT gọi API.
 
-## Thử quy đổi đơn vị (FE-2, 28/11/2026)
+## Thử quy đổi đơn vị (FE-2, 28/11/2026) – `scm-uom`
 
-- **Danh mục hệ thống › Đơn vị tính** → **Thử quy đổi**: nhập số lượng, chọn *Từ đơn vị* / *Sang đơn vị* → **Quy đổi** → kết quả theo quy đổi đang hiệu lực (vd 1 kg = 1.000 g; thùng 10 kg → kg). Chưa có quy đổi giữa 2 đơn vị → báo "Chưa có quy đổi".
+Kiểm nhanh một quy đổi trước khi dùng trong công thức / phiếu nhập.
+
+1. **Mở Thử quy đổi** – Danh mục hệ thống › Đơn vị tính → nút **Thử quy đổi** trên đầu màn. {target: uom-try}
+2. **Nhập số lượng, chọn Từ đơn vị / Sang đơn vị** → bấm **Quy đổi**.
+3. **Đọc kết quả** – theo quy đổi đang hiệu lực (vd 1 kg = 1.000 g; thùng 10 kg → kg). Chưa có quy đổi giữa 2 đơn vị → báo "Chưa có quy đổi" – thêm quy đổi ở cột trái của màn. {target: uom-list}
 
 ## Tab của một màn trong phân quyền (MENU-TAB, 28/11/2026)
 

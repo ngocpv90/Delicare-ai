@@ -1,0 +1,46 @@
+# Câu hỏi nhanh của agent CSKH – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: CSKH
+questions:
+  - id: kh-don-mai
+    hoi: "Đơn của tôi ngày mai"
+    tool: khach_don_hang
+    args: { ngay: "ngay_mai" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đơn ngày {args.ngay}"
+      tom_tat: "{tong.suat} suất · trạng thái {trang_thai}"
+      cot: ["Điểm giao", "Loại suất", "Số suất", "Trạng thái"]
+      rong: "Chưa có đơn ngày mai."
+    kenh: ["ZALO"]
+  - id: kh-don-nay
+    hoi: "Đơn của tôi hôm nay"
+    tool: khach_don_hang
+    args: { ngay: "hom_nay" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đơn hôm nay"
+      tom_tat: "{tong.suat} suất"
+      cot: ["Điểm giao", "Loại suất", "Số suất", "Giờ giao dự kiến"]
+      rong: "Hôm nay không có đơn."
+    kenh: ["ZALO"]
+  - id: kh-thuc-don
+    hoi: "Thực đơn tuần này"
+    tool: khach_thuc_don
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Thực đơn tuần này"
+      cot: ["Ngày", "Buổi", "Món"]
+    kenh: ["ZALO"]
+  - id: kh-thuc-don-sau
+    hoi: "Thực đơn tuần sau"
+    tool: khach_thuc_don
+    args: { tuan: "{ngay+7}" }
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Thực đơn tuần sau"
+      cot: ["Ngày", "Buổi", "Món"]
+      rong: "Thực đơn tuần sau chưa công bố."
+    kenh: ["ZALO"]

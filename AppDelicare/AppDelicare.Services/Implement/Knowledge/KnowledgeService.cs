@@ -140,6 +140,11 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResult<AppDelicare.Model.Model.FileContentModel>> DownloadFile(string? path);
         Task<IResult<KnowledgeSaveResultModel>> Archive(KnowledgePathRequest request);
         Task<IResults<KnowledgeAccessModel>> GetAccessLog(string? path);
+        // AI-22.3 (D-141 l, §7.11): Hướng dẫn sử dụng trên giao diện.
+        Task<int> ExportUserGuideAsync();
+        Task<IResult<KnowledgeHelpModel>> GetHelp(string? screen);
+        Task<IResults<KnowledgeGuideModel>> GetGuides();
+        Task<IResult<bool>> HelpFeedback(KnowledgeHelpFeedbackRequest request);
         Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
         /// <summary>AI-21 (D-138 d): sổ việc theo ngày (thư mục 98) – mở / tự đóng / đã xử lý việc của Trung tâm Agent.</summary>

@@ -1,3 +1,8 @@
+---
+screens: []
+roles: []
+updated: 2026-11-28
+---
 # 00 – Thao tác chung trên web DELICARE
 
 > Áp dụng cho mọi vai trò. Đọc phần này trước rồi mới đọc file của vai trò mình.
@@ -163,3 +168,13 @@ Hệ thống tự sinh số, dạng `<tiền tố>-<YYMMDD>-<số>`:
 | Lý do là bắt buộc (3–1000 ký tự) / Nhập lý do hủy (tối thiểu 3 ký tự) | Mọi thao tác Hủy / Từ chối / Thanh lý đều phải ghi lý do |
 | Tệp vượt quá … MB / Không nhận tệp … | Tệp đính kèm tối đa 20 MB, chỉ pdf, jpg, png, xlsx, docx |
 | Màn hình trắng / "Không tải được dữ liệu" | Mạng chập chờn – F5; còn lỗi thì chụp màn hình gửi IT |
+
+## Nút "?" – Hướng dẫn sử dụng ngay trên màn (AI-22.3, 28/11/2026)
+
+- Mọi màn có nút **?** cạnh tiêu đề → ngăn **Hướng dẫn sử dụng** mở bên phải (điện thoại: tấm trượt từ dưới lên), 3 tab:
+  - **Các bước** – từng bước của màn; bấm **Chỉ cho tôi** để hệ thống tô viền đúng chỗ trên màn.
+  - **Câu hỏi thường gặp** – bấm câu hỏi để xem trả lời.
+  - **Hỏi Vivi** – hỏi trợ lý AI về màn đang mở (trả lời theo hướng dẫn, có nêu nguồn; trợ lý tắt thì 2 tab kia vẫn dùng được).
+- Cuối ngăn: **Hướng dẫn có giúp được không? Có / Chưa** (góp ý để bổ sung) và **Mở toàn bộ hướng dẫn**.
+- **Thư viện**: Tri thức › Kho tri thức › **80 › Hướng dẫn sử dụng** – mục lục theo nhóm, **Màn tôi dùng | Tất cả**, nhãn **Mới**, ô tìm (gõ không dấu được), dải **Có gì mới**; trong trang có **Mở màn**, **In / tải PDF**, **Hỏi Vivi**, mục lục.
+- Hướng dẫn tự cập nhật theo mỗi bản phát hành (người dùng không sửa được trực tiếp).

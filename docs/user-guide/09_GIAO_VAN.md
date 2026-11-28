@@ -1,3 +1,8 @@
+---
+screens: [hr-my, crm-customer, crm-order, prod-plan, qc-temperature, log-packing-order, log-route, log-execution, log-packaging-ledger, log-vehicle, log-complaint]
+roles: [OPS-LOG]
+updated: 2026-11-28
+---
 # 09 – Giao vận (điều phối, tài xế, thu hồi khay)
 
 ## 1. Bạn là ai

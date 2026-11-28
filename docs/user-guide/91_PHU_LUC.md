@@ -1,3 +1,8 @@
+---
+screens: []
+roles: []
+updated: 2026-11-28
+---
 # 91 – Phụ lục: trạng thái, số chứng từ, ngưỡng, thuật ngữ
 
 ## 1. Trạng thái chứng từ (theo máy chủ)

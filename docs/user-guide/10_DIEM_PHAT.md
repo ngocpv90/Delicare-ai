@@ -1,3 +1,8 @@
+---
+screens: [hr-my, crm-customer, crm-order-week, crm-order, crm-reconciliation, log-complaint, sal-retail-order, sal-retail-product, menu-menu, log-execution, log-packaging-ledger, log-packaging-type, knowledge, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=80-hdsd]
+roles: [OPS-POS]
+updated: 2026-11-28
+---
 # 10 – Điểm phát / CSKH (nhận hàng, đối soát suất, phản ánh)
 
 ## 1. Bạn là ai
