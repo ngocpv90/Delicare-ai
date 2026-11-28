@@ -54,7 +54,7 @@ Máy tự xuất (job **Xuất kho tri thức** 23:30, **Bản tin sáng / Báo 
 - **Phiên bản mới:** ghi chú đang Hiệu lực có nút **Phiên bản mới** → tạo tệp "… (bản N)" cùng mã, trạng thái Nháp. Bản cũ vẫn dùng cho tới khi bản mới được duyệt, sau đó chuyển **Lưu trữ** (không xóa, xem lại được). Agent và tìm kiếm theo mã luôn lấy bản Hiệu lực.
 - **Nhập Word:** trong thư mục có quyền Sửa → **Nhập Word** → chọn tệp .docx và loại → ghi chú Nháp (giữ tiêu đề, danh sách, bảng, chữ đậm). Tệp có số điện thoại / CCCD / số tài khoản bị chặn. PDF chưa nhập được (GAP-KB-PDF) – lưu tài liệu dạng Word rồi nhập.
 - **Agent đề xuất sửa ghi chú:** agent không sửa thẳng thư mục nghiệp vụ; đề xuất (`propose_note_update`) vào Phê duyệt › Lệnh của agent, người có quyền Sửa thư mục xác nhận mới lưu (nguồn ghi là người duyệt). SOP sửa qua đề xuất vẫn phải Gửi duyệt mới có hiệu lực.
-- **Trợ lý AI › Việc agent theo dõi:** việc agent ghi ở thư mục 98 (hạn, người phụ trách) – 4 chỉ số (đang mở, quá hạn, hạn hôm nay, agent đang theo dõi); **Xong**, **Giao lại** (người phụ trách mới), **Mở lại**; mỗi thao tác có lịch sử.
+- **Điều hành › Trung tâm Agent › tab Giao việc** (AI-21; trước là Trợ lý AI › Việc agent theo dõi): việc agent ghi ở thư mục 98 (hạn, người phụ trách) – 4 chỉ số (đang mở, quá hạn, hạn hôm nay, agent đang theo dõi); **Xong**, **Giao lại** (người phụ trách mới), **Mở lại**; mỗi thao tác có lịch sử.
 - **Bảo trì (thứ Hai 22:30):** nhắc chủ thư mục ghi chú quá hạn rà soát (1 tin / thư mục); nhật ký agent quá `Knowledge:LogRetentionDays` (90) ngày gộp thành "Tóm tắt yyyy-MM" của agent; bản tin ngày quá `Knowledge:BriefKeepMonths` (13) tháng chuyển sang "10 Ban GĐ/Lưu trữ bản tin".
 
 ## AI-17 – Tab "Tri thức" trên trang chi tiết

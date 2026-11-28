@@ -35,6 +35,9 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) |
+| Điều hành › Trung tâm Agent | `ai-agents` | S | — | S | — |
+| Điều hành › Giao việc | `ai-tasks` | S | — | S | — |
+| Điều hành › Lịch chạy | `ai-schedule` | S | — | S | — |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X (IX) |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | X (IX) |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X | X | X | X (IX) |
@@ -62,9 +65,6 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Tri thức › 60 Kế toán | `knowledge?folder=60` | X | X | X | S |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X |
 | Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — |
-| Trợ lý AI › Trung tâm agent | `ai-agents` | S | — | S | — |
-| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S | — | S | — |
-| Trợ lý AI › Lịch chạy | `ai-schedule` | S | — | S | — |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

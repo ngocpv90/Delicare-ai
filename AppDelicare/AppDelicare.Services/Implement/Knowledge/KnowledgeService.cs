@@ -133,6 +133,8 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResult<KnowledgeSaveResultModel>> Import(string? folderCode, string? type, string fileName, Stream file);
         Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
+        /// <summary>AI-21 (D-138 d): sổ việc theo ngày (thư mục 98) – mở / tự đóng / đã xử lý việc của Trung tâm Agent.</summary>
+        Task<Dictionary<string, KnowledgeTaskMark>> UpdateTaskLedger(DateTime day, IReadOnlyCollection<KnowledgeTaskOpen> open, Func<string, bool> canJudge, KnowledgeTaskDone? done);
         /// <summary>AI-17: ghi chú gắn 1 đối tượng (type = customer | supplier | dish | lot | batch | route, id = Id bản ghi) – theo refs (ưu tiên) hoặc nhắc mã trong nội dung; chỉ ghi chú người hỏi được xem.</summary>
         Task<IResults<KnowledgeEntityNoteModel>> GetByEntity(string? type, Guid id);
         /// <summary>AI-18: danh sách ghi chú người dùng được tải về Obsidian máy cá nhân (đường dẫn + băm; KHÔNG BOD), thư mục được đồng bộ hai chiều (80 khi bật). Ghi AuditChange KnowledgeSync.</summary>

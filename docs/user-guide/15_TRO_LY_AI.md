@@ -1,22 +1,30 @@
 # 15 – Trợ lý AI (agent)
 
-Viết theo code AI-1 … AI-15 (D-133, cập nhật 28/11/2026). Trợ lý AI gồm 13 agent; **đợt 1 bật 5 agent chỉ đọc**: VIVI (điều phối), WH (kho), KITCHEN (bếp), QA (ATTP), KNOW (thủ thư tri thức). Agent trả lời bằng số liệu lấy thẳng từ DELI-CARE (cùng cách tính với màn hình) và kho tri thức; **đợt 1 agent không ghi gì vào nghiệp vụ** (chỉ ghi nhật ký vào kho tri thức 96 / 97 / 98).
+Viết theo code AI-1 … AI-21 (D-133, D-138, cập nhật 28/11/2026). Trợ lý AI gồm 13 agent; **đợt 1 bật 5 agent chỉ đọc**: VIVI (điều phối), WH (kho), KITCHEN (bếp), QA (ATTP), KNOW (thủ thư tri thức). Agent trả lời bằng số liệu lấy thẳng từ DELI-CARE (cùng cách tính với màn hình) và kho tri thức; **đợt 1 agent không ghi gì vào nghiệp vụ** (chỉ ghi nhật ký vào kho tri thức 96 / 97 / 98).
 
 ## 1. Bạn là ai
 
-- **CEO / COO / FIN-IT**: xem nhóm menu **Trợ lý AI**; **bật / tắt agent** (quyền Sửa Trung tâm agent).
-- **Ban GĐ + trưởng bộ phận** (theo cấu hình `Agent:AskingGroups`): hỏi Trợ lý qua bot Telegram **Trợ lý** sau khi đã liên kết tài khoản (như bot Vận hành – `20_BOT_TELEGRAM.md`).
-- **Mọi người đăng nhập web** (AI-14): nút **Trò chuyện** trên thẻ agent đang bật ở Trung tâm agent – agent chỉ trả lời số liệu bạn được xem.
-- Người chưa liên kết tài khoản nhắn bot Trợ lý: bot **không trả lời số liệu**.
+- **CEO / COO / FIN-IT**: thấy **Điều hành › Trung tâm Agent** đủ 7 tab, kể cả **chi phí AI**; **bật / tắt agent** (quyền Sửa Trung tâm Agent), bật / tắt việc theo lịch.
+- **Trưởng bộ phận / người xác nhận lệnh agent** (thủ kho, bếp, QA, mua hàng, KD trưởng, giao vận, nhân sự – quyền mục Giao việc): mục **Trung tâm Agent** chỉ có tab **Giao việc** + **Chat với agent**; thấy việc của màn mình được xem.
+- **Ban GĐ + trưởng bộ phận** (theo cấu hình `Agent:AskingGroups`): hỏi Trợ lý qua bot Telegram **Trợ lý** sau khi đã liên kết tài khoản (`20_BOT_TELEGRAM.md`).
+- Người chưa liên kết tài khoản nhắn bot Trợ lý: bot **không trả lời số liệu**. Người không có quyền mục nào của Trung tâm Agent: không thấy mục, mở link → "chưa được cấp quyền".
 
-## 2. Màn hình được dùng
+## 2. Trung tâm Agent – một màn 7 tab (AI-21, D-138)
 
-| Menu › Mục | screen-id | Dùng để |
-|---|---|---|
-| Trợ lý AI › Trung tâm agent | `ai-agents` | 13 thẻ agent: đang bật / tắt, số công cụ, lời gọi hôm nay, bị từ chối; nút **Chi tiết**; công tắc **Bật / Tắt** |
-| Trợ lý AI › Trung tâm agent › Chi tiết | `ai-agents?code=WH` | Mục đích, công cụ được dùng (và màn kiểm quyền), thư mục tri thức được đọc, lịch chạy, hoạt động gần đây |
-| Trợ lý AI › Nhật ký agent | `ai-agent-log` | Mọi lời gọi công cụ: lúc, agent, công cụ, người hỏi, kết quả (Thành công / Bị từ chối / Lỗi), thời gian xử lý, số dòng |
-| Trợ lý AI › Lịch chạy | `ai-schedule` | Việc theo giờ của từng agent (05:30 kho, 07:00 bản tin sáng, 08:30 QA, 10:00 bếp, 17:00 cuối ngày, mỗi 5 phút lấy sự kiện…), lần chạy gần nhất |
+Menu: **Điều hành › Trung tâm Agent** (ngay dưới Phê duyệt). Nhóm sidebar "Trợ lý AI" cũ đã bỏ; Nhật ký agent, Lịch chạy, Luồng liên phòng, Việc agent theo dõi thành **tab** (link cũ `#/ai-agent-log`, `#/ai-schedule`, `#/ai-flow`, `#/ai-tasks` tự chuyển sang tab). Tab hiện theo quyền Xem của mục tương ứng (mục ẩn khỏi sidebar nhưng vẫn phân quyền ở ma trận):
+
+| Tab | Đường dẫn | Quyền (mục) | Dùng để |
+|---|---|---|---|
+| Tổng quan | `ai-agents?tab=overview` | `ai-agents` (CEO, COO, FIN-IT) | Hàng robot 13 agent (màu theo agent, xám = chưa bật, số lượt hôm nay); 3 nhóm chỉ số: **Cần xử lý hôm nay** (việc đang mở, bước luồng cần chú ý), **Hoạt động agent** (agent đang chạy, lượt hỏi, lịch tự động, kho tri thức), **Chi phí AI · tháng**; danh sách agent (lần gọi gần nhất), thẻ agent đang chọn (hỏi nhanh, Chat, Chi tiết, công tắc Bật / Tắt), chi phí chi tiết, hoạt động gần đây |
+| Chat với agent | `ai-agents?tab=chat&agent=WH` | ai vào được màn | Danh sách agent · khung chat (nguồn ghi dưới câu trả lời) · câu hỏi gợi ý · "Agent này làm được" / "Giới hạn" |
+| Giao việc | `ai-agents?tab=tasks` | `ai-tasks` | Việc agent phát hiện + việc nên làm + phụ trách + hạn + **điều kiện tự đóng** (mục 4d) |
+| Luồng liên phòng | `ai-agents?tab=flow` | `ai-flow` (CEO, COO, FIN-IT) | 12 bước QT-SX-01 của 1 ngày (mục 4b) |
+| Lịch chạy | `ai-agents?tab=schedule` | `ai-schedule` | Việc theo giờ của từng agent, lần chạy gần nhất, công tắc bật / tắt (quyền Sửa) |
+| Nhật ký agent | `ai-agents?tab=log` | `ai-agent-log` | Mọi lời gọi công cụ: lúc, agent, công cụ, người hỏi, kết quả, thời gian xử lý, số dòng |
+| Sử dụng & chi phí | `ai-agents?tab=usage` | `ai-cost` – **chỉ CEO, COO, FIN-IT** | Chi phí tháng (chọn tháng): % ngân sách, dự báo cuối tháng, tháng trước, bình quân / lượt, token; biểu đồ theo ngày + theo agent; bảng theo agent |
+| Chi tiết agent | `ai-agents?code=WH` | `ai-agents` | Mục đích, công cụ (màn kiểm quyền), thư mục tri thức, lịch chạy, hoạt động gần đây |
+
+Người không thuộc CEO / COO / FIN-IT **không thấy** nhóm Chi phí AI và tab Sử dụng & chi phí; gọi API chi phí bị từ chối (403). Màn hẹp (điện thoại): hàng robot vuốt ngang, các khung xếp dọc, thanh tab vuốt ngang.
 
 ## 3. Agent làm gì (đợt 1 – 4)
 
@@ -46,25 +54,32 @@ Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa
 
 ## 4. Bật / tắt agent
 
-1. **Trợ lý AI › Trung tâm agent** → công tắc trên thẻ agent.
+1. **Điều hành › Trung tâm Agent** (tab Tổng quan) → bấm robot / dòng agent → công tắc **Bật / Tắt** trên thẻ agent bên phải.
 2. Tắt: hộp xác nhận → **Tắt agent**. Có hiệu lực **ngay** từ lời gọi sau (bot không trả lời bằng agent đó, lịch của agent dừng). Job lõi (khóa đơn, MRP, bản tin bot Điều hành…) vẫn chạy đúng giờ.
 3. Bật lại: gạt công tắc – không cần xác nhận.
 4. Thẻ ghi "máy chủ chưa có khóa agent": IT cần đặt biến môi trường `AGENT_KEY_<MÃ>` trên server (`app-delicare-agents/README.md`).
 
-## 4b. Cảnh báo chủ động và Luồng liên phòng (AI-11)
+## 4b. Cảnh báo chủ động và Luồng liên phòng (AI-11, AI-21)
 
-- **Cảnh báo chủ động:** khi có sự kiện (sự cố, cảnh báo, job xong, phản ánh…), agent nhận xét và đưa phương án rồi gửi **1 tin bot** (bot Vận hành; VIVI gửi bot Điều hành) tới người **có quyền Thêm** trên màn liên quan (vd Mua hàng cho Kế hoạch mua). Mỗi sự kiện chỉ gửi 1 lần. Agent chỉ cảnh báo được màn mà chính agent được xem. Người chưa liên kết bot không nhận được tin.
-- **Trợ lý AI › Luồng liên phòng:** mỗi thẻ là một luồng nối các bước cùng mã tương quan: sự kiện → agent đọc dữ liệu → đề xuất → người duyệt → kết quả ghi nghiệp vụ → tin đã gửi. Chọn **Hôm nay / Hôm qua** hoặc ngày; 5 chỉ số: luồng, xong, chờ duyệt, lỗi / từ chối, tin đã gửi. Viền trái bước: xanh = xong, cam = chờ, đỏ = lỗi / từ chối. Quyền xem: như Nhật ký agent (CEO, COO, FIN-IT).
-- **Lịch chạy:** người có quyền Sửa màn Lịch chạy (CEO, COO, FIN-IT) bật / tắt từng việc bằng công tắc ở cột Trạng thái. Tệp lịch `app-delicare-agents/schedules.json` được ghi lại, Hermes đọc lại khi sinh cron. Việc chưa có công cụ (agent chưa bật) không bật được.
-- 4 luồng liên phòng (AGENTS §3): (1) chốt đơn → thiếu hụt → PROC đề xuất đơn mua → duyệt → WH chờ nhận; (4) sự cố ATTP: nhiệt độ lõi < 70°C / giao < 60°C → QA đề xuất giữ lô + cảnh báo, VIVI báo Ban GĐ. Luồng (2) khách báo thiếu suất và (3) hộp thất thoát cần agent CSKH / ACC – bật ở đợt 3.
+- **Cảnh báo chủ động:** khi có sự kiện (sự cố, cảnh báo, job xong, phản ánh…), agent nhận xét và đưa phương án rồi gửi **1 tin bot** (bot Vận hành; VIVI gửi bot Điều hành) tới người **có quyền Thêm** trên màn liên quan. Mỗi sự kiện chỉ gửi 1 lần. Người chưa liên kết bot không nhận được tin.
+- **Tab Luồng liên phòng:** 12 bước quy trình QT-SX-01 của ngày đang chọn (‹ › đổi ngày, nút Hôm nay): 1 Nhận & chốt đơn · 2 Thực đơn · 3 Đổi món chờ khách · 4 Kế hoạch sản xuất · 5 Nguyên liệu & thiếu hụt · 6 Mua hàng (PO) · 7 Sản xuất · 8 An toàn thực phẩm · 9 Giao vận · 10 Thu hồi hộp khay · 11 Phản ánh khách · 12 Báo cáo cuối ngày. Trạng thái **tính từ dữ liệu** lúc mở màn: **Đạt** / **Đang chạy** / **Cần chú ý** / **Có vấn đề** / **Chờ dữ liệu** (vd bước 1 ngày mai chưa có đơn → Có vấn đề; có đơn chưa xác nhận → Cần chú ý; đơn đã khóa → Đạt kèm số suất; bước 4 đơn đã khóa mà chưa có kế hoạch → Có vấn đề).
+- Bấm 1 bước → khung bên phải: ghi chú, **chuỗi xử lý** (sự kiện → agent đọc → đề xuất → người duyệt → kết quả → tin bot theo mã tương quan; việc đã giao; lần kiểm tra), nút **Mở màn …** (nếu bạn có quyền màn đó), **Hỏi agent**, **Xem việc đã sinh**.
+- Bước **Có vấn đề / Cần chú ý** của hôm nay và ngày mai **tự sinh việc** ở tab Giao việc cho agent phòng đó (trừ bước 5, 8, 11 – đã có việc từ cảnh báo kho / ATTP / phản ánh).
+- **Lịch chạy:** người có quyền Sửa Lịch chạy (CEO, COO, FIN-IT) bật / tắt từng việc ở cột Trạng thái; tệp `app-delicare-agents/schedules.json` được ghi lại, Hermes đọc lại khi sinh cron.
 
-- **Việc agent theo dõi** (AI-12): xem ở Trợ lý AI › Việc agent theo dõi – chi tiết ở 16_KHO_TRI_THUC.md.
+## 4d. Giao việc (AI-21, D-138 d)
+
+- Mỗi thẻ việc: tiêu đề + mức (**Cần xử lý ngay** đỏ / **Cần chú ý** vàng), chi tiết, **Việc nên làm (agent đề xuất)**, Nguồn, Phụ trách (theo vai trò), Hạn, **Tự đóng khi …**, nhãn agent; nút **Mở chứng từ ↗** (màn nguồn), **Hỏi agent** (mở Chat đúng agent với câu hỏi sẵn), **Đã xử lý** (quyền Sửa Giao việc).
+- Việc đến từ: (1) **cảnh báo đang mở** (nguyên liệu dưới định mức, lô cận hạn, lô tạm giữ, QC đầu vào chờ, nhiệt độ ngoài ngưỡng, phản ánh, ca thiếu người, khay sạch thiếu, chuyến chưa đủ hàng…), (2) **bước luồng kẹt**, (3) việc agent ghi ở kho tri thức 98 Công việc. **Chỉ hiện việc của màn bạn được Xem**; "Chỉ việc tôi phụ trách" = màn bạn có quyền Thêm.
+- **Tự đóng:** nguồn hết điều kiện (vd phản ánh đã xử lý, tồn đã đủ) → việc chuyển sang **Đã xử lý hôm nay** với nhãn **Tự đóng**, không cần bấm. Nguồn có lại trong ngày → việc mở lại.
+- **Đã xử lý:** ghi chú ngắn (đã làm gì) → lưu vào **kho tri thức › 98 Công việc › _so-viec › <ngày>** (người, giờ, ghi chú). Việc đã bấm Đã xử lý không mở lại trong ngày.
+- **Yêu cầu duyệt không nằm ở Giao việc:** thẻ "N yêu cầu chờ anh / chị duyệt" dẫn sang **Phê duyệt**.
 
 ## 4c. Chi phí Trợ lý AI và chat trên web (AI-13, AI-14)
 
-- **Thẻ Chi phí Trợ lý AI tháng** (đầu màn Trung tâm agent): Đã dùng / ngân sách, Hôm nay, Ước cả tháng (theo bình quân ngày), Token vào / ra, cột chi phí từng ngày, chi phí theo agent. Mỗi lượt trả lời Hermes báo token + chi phí (USD quy VND theo `Agent:UsdToVnd`); cùng một lượt báo 2 lần chỉ tính 1.
-- **Ngân sách** `Agent:MonthlyBudget` (VND / tháng, IT đặt). Chạm **`Agent:CostAlertPct` % (mặc định 80 %)** và **100 %** → bot Điều hành gửi 1 tin "💰 Chi phí Trợ lý AI" tới người có quyền Thêm Trung tâm agent (CEO, FIN-IT) – mỗi ngưỡng mỗi tháng 1 lần. Chưa đặt ngân sách → thẻ ghi "Chưa đặt ngân sách", không cảnh báo.
-- **Chat trên web:** bấm **Trò chuyện** → ngăn bên phải (không che hết trang), chọn agent ở hàng tab, gõ câu hỏi (Enter gửi, Shift+Enter xuống dòng). Lịch sử hiển thị giữ trong phiên trình duyệt. Agent dùng **quyền của bạn ∩ quyền agent** như bot; đề xuất ghi vẫn chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.
+- **Chi phí Trợ lý AI tháng** (chỉ CEO / COO / FIN-IT): nhóm **Chi phí AI · tháng MM/yyyy** trên Tổng quan (đã dùng / ngân sách, thanh % có vạch mốc ngày, so tháng trước) + khung chi tiết (dự báo cuối tháng, tháng trước, bình quân / lượt, theo agent) + tab **Sử dụng & chi phí**. Chưa có lượt nào báo chi phí → "Chưa có dữ liệu chi phí" (không phải lỗi). Mỗi lượt trả lời Hermes báo token + chi phí (USD quy VND theo `Agent:UsdToVnd`); cùng một lượt báo 2 lần chỉ tính 1.
+- **Ngân sách** `Agent:MonthlyBudget` (VND / tháng, IT đặt). Chạm **`Agent:CostAlertPct` % (mặc định 80 %)** và **100 %** → bot Điều hành gửi 1 tin "💰 Chi phí Trợ lý AI" tới người có quyền Thêm Trung tâm Agent (CEO, COO, FIN-IT) – mỗi ngưỡng mỗi tháng 1 lần. Chưa đặt ngân sách → thẻ ghi "Chưa đặt ngân sách", không cảnh báo.
+- **Chat trên web (tab Chat với agent):** chọn agent ở cột trái (agent chưa bật bị mờ, không chọn được), bấm câu hỏi gợi ý hoặc gõ câu hỏi (Enter gửi, Shift+Enter xuống dòng). Nút **Chat với agent / Hỏi agent** ở Tổng quan, Giao việc, Luồng mở đúng agent. Máy chủ Hermes tắt → câu trả lời báo "⚠ …" bằng tiếng Việt. Lịch sử hiển thị giữ trong phiên trình duyệt. Agent dùng **quyền của bạn ∩ quyền agent** như bot; đề xuất ghi vẫn chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.
 - Máy chủ Hermes chạy 3 container (AI-15): **hermes-vivi** (VIVI, KNOW – bot Trợ lý), **hermes-van-hanh** (KITCHEN, QA, LOG, PKG, WH), **hermes-van-phong** (SALES, PLAN, PROC, HR, ACC, CSKH). Một nhóm lỗi không làm dừng nhóm khác; IT xem `app-delicare-agents/README.md`.
 
 ## 5. Đọc nhật ký agent

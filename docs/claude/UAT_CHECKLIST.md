@@ -627,6 +627,22 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-21 – Trung tâm Agent: một màn 7 tab trong Điều hành (D-138, 28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | CEO (uat.ceo) | Sidebar Điều hành | Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt · **Trung tâm Agent**; không còn nhóm "Trợ lý AI" |
+| 2 | CEO | Trung tâm Agent | 7 tab: Tổng quan · Chat với agent · Giao việc · Luồng liên phòng · Lịch chạy · Nhật ký agent · Sử dụng & chi phí; hàng robot 13 agent; 3 nhóm chỉ số (Cần xử lý hôm nay, Hoạt động agent, Chi phí AI) |
+| 3 | COO / FIN-IT | Tổng quan + tab Sử dụng & chi phí | Thấy chi phí tháng (chưa có lượt báo chi phí → "Chưa có dữ liệu chi phí") |
+| 4 | Thủ kho (uat.ops-wh) | Điều hành › Trung tâm Agent | Chỉ tab Giao việc + Chat; không có Tổng quan / chi phí; mở link `#/ai-agents?tab=usage` → về tab được phép |
+| 5 | Kế toán (uat.fin-acc) | Mở `#/ai-agents` | "Chưa được cấp quyền"; không có mục trên sidebar |
+| 6 | QA (uat.qa) | Giao việc | Chỉ việc màn QA được xem (nhiệt độ, lô tạm giữ…); "Chỉ việc tôi phụ trách" lọc theo quyền Thêm |
+| 7 | QA | Xử lý nguồn (vd thả lô tạm giữ) → Làm mới | Việc chuyển "Đã xử lý hôm nay" nhãn **Tự đóng** |
+| 8 | QA | Bấm **Đã xử lý** một việc, ghi chú | Thẻ Đã xử lý (người, giờ, ghi chú); kho tri thức 98 Công việc › _so-viec › ngày có dòng [xu-ly] |
+| 9 | CEO | Luồng liên phòng ‹ › đổi ngày | 12 bước; bước 1 ngày mai chưa có đơn → Có vấn đề + việc ở Giao việc; so bước 5 / 6 / 11 với Tồn kho (lô quá hạn), Đơn mua (quá hẹn), Phản ánh (quá hạn) |
+| 10 | CEO | Chat với agent → chọn Kho → câu gợi ý | Gửi được; Hermes tắt → "⚠ …" tiếng Việt, không lỗi JS |
+| 11 | Mọi vai trò | Điện thoại 390 px | Thanh tab + hàng robot vuốt ngang, khung xếp dọc, không tràn chữ |
+
 ## PKG-FEE – Loại hộp / khay + phí thất thoát; thủ kho xem lô (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

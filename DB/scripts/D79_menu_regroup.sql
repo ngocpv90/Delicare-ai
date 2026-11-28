@@ -65,6 +65,12 @@ INSERT INTO @P VALUES
     (N'#/kpi-daily', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 102, N'', N'', NULL),
     (N'#/kpi-monthly', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 103, N'', N'', 0),
     (N'#/cost-meal', 2, N'#/group/05', 501, 599, N'', N'#/group/01', 104, N'', N'', NULL),
+    (N'#/ai-agents', 2, NULL, 0, -1, N'', N'#/group/01', 105, N'Trung tâm Agent', N'AI', NULL),
+    (N'#/ai-agent-log', 2, NULL, 0, -1, N'', N'#/group/01', 106, N'Nhật ký agent', N'AI', NULL),
+    (N'#/ai-flow', 2, NULL, 0, -1, N'', N'#/group/01', 107, N'Luồng liên phòng', N'AI', NULL),
+    (N'#/ai-tasks', 2, NULL, 0, -1, N'', N'#/group/01', 108, N'Giao việc', N'AI', NULL),
+    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/01', 109, N'Lịch chạy', N'AI', NULL),
+    (N'#/ai-cost', 2, NULL, 0, -1, N'', N'#/group/01', 110, N'Sử dụng & chi phí', N'AI', NULL),
     (N'#/group/02', 1, NULL, 200, 200, N'Kinh doanh & Đơn hàng', NULL, 200, N'Kinh doanh', N'sales', NULL),
     (N'#/crm-customer', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 201, N'', N'', NULL),
     (N'#/crm-contract', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 202, N'', N'', NULL),
@@ -204,12 +210,7 @@ INSERT INTO @P VALUES
     (N'#/kpi-refresh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1061, N'', N'', NULL),
     (N'#/bot-van-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1062, N'', N'', NULL),
     (N'#/bot-dieu-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1063, N'', N'', NULL),
-    (N'#/group/14', 1, NULL, 1400, 1400, N'', NULL, 1060, N'Trợ lý AI', N'ai', NULL),
-    (N'#/ai-agents', 2, NULL, 0, -1, N'', N'#/group/14', 1061, N'Trung tâm agent', N'AI', NULL),
-    (N'#/ai-agent-log', 2, NULL, 0, -1, N'', N'#/group/14', 1062, N'Nhật ký agent', N'AI', NULL),
-    (N'#/ai-flow', 2, NULL, 0, -1, N'', N'#/group/14', 1063, N'Luồng liên phòng', N'AI', NULL),
-    (N'#/ai-tasks', 2, NULL, 0, -1, N'', N'#/group/14', 1064, N'Việc agent theo dõi', N'AI', NULL),
-    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/14', 1065, N'Lịch chạy', N'AI', NULL);
+    (N'#/group/14', 1, NULL, 1400, 1400, N'', NULL, 1060, N'Trợ lý AI', N'ai', NULL);
 INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), p.NewName, p.ShortName, p.Link, NULL, 1, p.NewOrder, 1, 0, @Now, @By, 0
 FROM @P p WHERE p.Lvl = 1 AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);

@@ -36,9 +36,13 @@ public static partial class Seeds
     public static Guid AgentUserId(string code) => new(MD5.HashData(Encoding.UTF8.GetBytes("delicare-agent-" + code.ToUpperInvariant())));
 
     /// <summary>Màn agent được Xem: màn vai trò soi có Truy cập, trừ mục duyệt / quản trị / "Việc của tôi".</summary>
+    /// <summary>AI-21 (D-138 g): mục agent KHÔNG bao giờ có (chi phí AI chỉ CEO / COO / FIN-IT) – seed thu quyền nếu DB đã cấp (đặt AllowAccess = 0, không xóa dòng).</summary>
+    public static readonly string[] AgentNeverScreens = ["ai-cost"];
+
     public static IEnumerable<string> AgentScreens(string? mirror)
         => mirror == null || !ScreenMatrix.TryGetValue(mirror, out var m) ? []
-            : m.Where(kv => kv.Value.A && !kv.Key.StartsWith("wf-inbox", StringComparison.Ordinal) && kv.Key != "hr-my" && !kv.Key.StartsWith("adm-", StringComparison.Ordinal))
+            : m.Where(kv => kv.Value.A && !kv.Key.StartsWith("wf-inbox", StringComparison.Ordinal) && kv.Key != "hr-my" && !kv.Key.StartsWith("adm-", StringComparison.Ordinal)
+                && !AgentNeverScreens.Contains(kv.Key))
                 .Select(kv => kv.Key).OrderBy(s => s, StringComparer.Ordinal);
 
     public static string AgentSeed()
@@ -114,6 +118,11 @@ public static partial class Seeds
             JOIN [dbo].[UserGroup] g ON ISNULL(NULLIF(g.Code, N''), g.Name) = r.GroupName AND g.IsDeleted = 0
             JOIN [dbo].[ObjectMenu] m ON m.MetaLink = r.MetaLink AND m.IsDeleted = 0
             WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id AND ur.ObjectMenuId = m.Id AND ur.IsDeleted = 0);
+
+            -- AI-21 (D-138 g): nhóm agent không bao giờ có mục chi phí AI – thu quyền nếu đã cấp (giữ dòng).
+            UPDATE ur SET AllowAccess = 0, AllowAdd = 0, AllowEdit = 0, AllowDelete = 0, AllowPrint = 0, AllowExport = 0, AllowImport = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy
+            FROM [dbo].[UserRole] ur JOIN [dbo].[UserGroup] g ON g.Id = ur.UserGroupId JOIN [dbo].[ObjectMenu] m ON m.Id = ur.ObjectMenuId
+            WHERE ISNULL(NULLIF(g.Code, N''), g.Name) LIKE N'AGENT[_]%' AND m.MetaLink IN (N'#/ai-cost') AND ur.IsDeleted = 0 AND ISNULL(ur.AllowAccess, 0) = 1;
 
             COMMIT;
             SELECT (SELECT COUNT(*) FROM [dbo].[BotConfiguration] WHERE IntegrationChannelId = @Ch AND IsDeleted = 0) AS [Agent],

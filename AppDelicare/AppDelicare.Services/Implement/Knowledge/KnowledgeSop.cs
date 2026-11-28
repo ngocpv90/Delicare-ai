@@ -255,7 +255,7 @@ namespace AppDelicare.Services.Implement.Knowledge
         public async Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone)
         {
             var rights = await RightsAsync(WebCaller());
-            var list = All().Where(n => n.Folder == "98" && rights.NoteVisible(n)).Select(n =>
+            var list = All().Where(n => n.Folder == "98" && !IsTaskLedger(n.Path) && rights.NoteVisible(n)).Select(n =>
             {
                 var lines = TaskLine.Matches(n.Body).ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value.Trim());
                 string st = Slug(lines.GetValueOrDefault("Trạng thái") ?? "đang theo dõi");

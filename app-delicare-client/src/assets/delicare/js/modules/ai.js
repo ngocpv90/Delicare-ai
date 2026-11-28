@@ -1,142 +1,279 @@
-/* AI-6 (D-133): nhóm "Trợ lý AI" + "Tri thức" theo mockup docs/frontend-handoff/assets/ai-agent/ (Main, AgentDetail, AgentLog, Schedule, Knowledge).
- * Trung tâm agent (#/ai-agents, chi tiết #/ai-agents?code=WH): thẻ 13 agent (icon img/agents/<MÃ>.svg, trạng thái, công cụ, lời gọi hôm nay), bật / tắt
- * (= BotStatus, có hiệu lực ngay ở ToolGateway – quyền Sửa). Nhật ký agent (#/ai-agent-log): mọi lời gọi công cụ (IntegrationLog kênh HERMES).
- * Lịch chạy (#/ai-schedule): đọc app-delicare-agents/schedules.json (một nguồn cho cron Hermes). Kho tri thức (#/knowledge, #/knowledge?folder=45&path=…): cây thư mục
- * theo quyền, đọc markdown, [[liên kết]], liên kết ngược, mã chứng từ thành link, tìm không dấu, soạn ghi chú (quyền Sửa thư mục, kiểm băm chống đè).
- * API: Agent/GetAll · GetById · SaveIsActive · GetActivity · GetSchedules; Knowledge/GetTree · GetNote · Search · GetHistory · Save. */
+/* AI-21 (D-138): Trung tâm Agent – MỘT màn 7 tab trong nhóm Điều hành (#/ai-agents?tab=overview|chat|tasks|flow|schedule|log|usage), nền sáng theo
+ * mockup docs/frontend-handoff/assets/ai-center/ (Overview, Chat, Tasks, Flow). Tab hiện theo quyền Xem của mục tương ứng (mục ẩn khỏi sidebar, giữ dòng quyền):
+ * Tổng quan = ai-agents · Giao việc = ai-tasks · Luồng = ai-flow · Lịch chạy = ai-schedule · Nhật ký = ai-agent-log · Sử dụng & chi phí = ai-cost (CEO / COO / FIN-IT);
+ * Chat mở cho người vào được màn (API Agent/Chat – quyền giao nhau agent ∩ người hỏi). #/ai-agent-log, #/ai-schedule, #/ai-flow, #/ai-tasks cũ → chuyển sang tab.
+ * Chi tiết 1 agent: #/ai-agents?code=WH (AI-6). Bật / tắt agent = Sửa Trung tâm Agent (BotStatus, có hiệu lực ngay ở ToolGateway).
+ * API: Agent/GetOverview · GetChatAgents · GetTasks · CloseTask · GetFlowDay · GetFlows · GetSchedules · SaveSchedule · GetActivity · GetCost · Chat · GetAll · GetById · SaveIsActive;
+ * Knowledge/GetTree · GetNote · Search · GetHistory · Save. */
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const FN = APP.FN || {};
   const def = (id, name, grp) => { if (!FN[id]) FN[id] = { extra: true, ph: 'AI', grp, fn: name, id, name, types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' }; };
-  def('ai-agents', 'Trung tâm agent', 'Trợ lý AI'); def('ai-agent-log', 'Nhật ký agent', 'Trợ lý AI'); def('ai-flow', 'Luồng liên phòng', 'Trợ lý AI'); def('ai-tasks', 'Việc agent theo dõi', 'Trợ lý AI'); def('ai-schedule', 'Lịch chạy', 'Trợ lý AI'); def('knowledge', 'Kho tri thức', 'Tri thức');
+  def('ai-agents', 'Trung tâm Agent', 'Điều hành'); def('knowledge', 'Kho tri thức', 'Tri thức');
+  ['ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost'].forEach(id => def(id, id, 'Điều hành'));
 
-  const NAV = [['ai-agents', 'Trung tâm agent'], ['ai-agent-log', 'Nhật ký agent'], ['ai-flow', 'Luồng liên phòng'], ['ai-tasks', 'Việc agent theo dõi'], ['ai-schedule', 'Lịch chạy']];
-  const nav = cur => `<div class="acc-nav mb">${NAV.filter(([id]) => Store.perm(id).access !== false).map(([id, n]) => `<a href="#/${id}" class="acc-nav-i ${id === cur ? 'active' : ''}">${esc(n)}</a>`).join('')}</div>`;
-  const icon = (code, size = 40) => `<img class="ai-ico" src="assets/delicare/img/agents/${esc(code)}.svg" width="${size}" height="${size}" alt="" onerror="this.style.visibility='hidden'">`;
+  const TABS = [['overview', 'Tổng quan', 'ai-agents'], ['chat', 'Chat với agent', null], ['tasks', 'Giao việc', 'ai-tasks'], ['flow', 'Luồng liên phòng', 'ai-flow'],
+    ['schedule', 'Lịch chạy', 'ai-schedule'], ['log', 'Nhật ký agent', 'ai-agent-log'], ['usage', 'Sử dụng & chi phí', 'ai-cost']];
+  const SUB = {
+    overview: '13 agent vận hành bếp ăn · lệnh ghi luôn có người xác nhận ở Phê duyệt',
+    chat: 'Agent chỉ trả lời trong phạm vi quyền của anh / chị · đề xuất ghi chờ xác nhận ở Phê duyệt › Lệnh của agent',
+    tasks: 'Sự cố agent phát hiện, kèm việc nên làm · chỉ hiện việc thuộc quyền của anh / chị · yêu cầu duyệt vẫn ở màn Phê duyệt',
+    flow: 'Quy trình QT-SX-01 từ đơn hàng đến báo cáo · trạng thái từng bước tính từ dữ liệu · bước kẹt tự sinh việc cho agent phòng đó',
+    schedule: 'Lịch lấy từ app-delicare-agents/schedules.json – cùng một tệp sinh cron cho Hermes',
+    log: 'Mọi lời gọi công cụ của agent (kênh HERMES) – ai hỏi, kết quả, thời gian',
+    usage: 'Chi phí mô hình theo token Hermes báo mỗi lượt × đơn giá · ngân sách Agent:MonthlyBudget',
+  };
+  const isOverview = () => { const p = Store.perm('ai-agents'); return p.access !== false && !p.tabsOnly; };
+  const tabOk = ([key, , id]) => key === 'overview' ? isOverview() : !id || Store.perm(id).access !== false;
+  const tabsFor = () => TABS.filter(tabOk);
+  const go = (tab, extra) => { location.hash = '#/ai-agents?tab=' + tab + (extra ? '&' + Object.entries(extra).filter(([, v]) => v != null && v !== '').map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&') : ''); };
+  APP.agentChat = (code, q) => go('chat', { agent: code || 'VIVI', q });
+
   const STATUS = { Succeeded: ['Thành công', 'green'], Denied: ['Bị từ chối', 'orange'], Failed: ['Lỗi', 'red'] };
+  const ST = { ok: ['Đang chạy', 'ok'], key: ['Thiếu khóa', 'key'], off: ['Chưa bật', 'off'] };
   const chip = (txt, color) => `<span class="badge ${color || ''}">${esc(txt)}</span>`;
+  const stChip = s => `<span class="ac-chip ${(ST[s] || ST.off)[1]}">${esc((ST[s] || ST.off)[0])}</span>`;
   const when = d => (d ? U.dt(d) : '–');
+  const hm = d => (d ? String(d).slice(11, 16) : '');
   const loading = '<div class="muted small">Đang tải…</div>';
   const TODAY = () => U.day(U.iso(new Date()));
+  const money = v => U.num(Math.round(v || 0)) + ' đ';
+  const shortMoney = v => Math.abs(v || 0) >= 1e6 ? U.num((v || 0) / 1e6, 2) + ' tr đ' : money(v);
+  /** Avatar robot SVG theo màu agent (mockup ai-center); agent chưa bật → xám. */
+  const robot = (c, on, size, mini) => `<span class="ac-ring ${on ? '' : 'off'}" style="--c:${esc(c || '#4F6B1F')};width:${size}px;height:${size}px"><svg width="${Math.round(size * .64)}" height="${Math.round(size * .64)}" viewBox="0 0 40 40" aria-hidden="true">${mini ? '' : `<line x1="20" y1="3" x2="20" y2="9" stroke="${esc(c)}" stroke-width="2"/><circle cx="20" cy="3" r="2.5" fill="${esc(c)}"/>`}<rect x="7" y="9" width="26" height="22" rx="9" fill="#fff" stroke="${esc(c)}" stroke-width="${mini ? 2 : 1.5}"/><rect x="11" y="14" width="18" height="10" rx="5" fill="#1F2A1A"/><path d="M14 19.5q2-2.5 4 0M22 19.5q2-2.5 4 0" stroke="${on ? '#7CE0A8' : '#9AA391'}" stroke-width="1.8" fill="none" stroke-linecap="round"/>${mini ? '' : `<circle cx="20" cy="28" r="1.8" fill="${esc(c)}"/>`}</svg></span>`;
+  const cache = { agents: null, board: null, boardAt: 0 };
+  const chatAgents = () => cache.agents ? Promise.resolve(cache.agents) : Store.query('Agent/GetChatAgents').then(x => (cache.agents = x.ok ? (x.list || []) : []));
+  const loadBoard = force => (!force && cache.board && Date.now() - cache.boardAt < 30000) ? Promise.resolve(cache.board)
+    : Store.query('Agent/GetTasks', { includeDone: true }).then(x => { if (x.ok && x.data) { cache.board = x.data; cache.boardAt = Date.now(); } return x.ok ? x.data : null; });
 
-  // ================= Trung tâm agent =================
-  // AI-13 (D-133): chi phí Trợ lý AI tháng – Hermes báo mỗi lượt (bao_chi_phi); ngân sách Agent:MonthlyBudget, cảnh báo CostAlertPct % tới CEO / FIN-IT.
-  const amt = v => Math.abs(v || 0) >= 1e6 ? U.num((v || 0) / 1e6, 2) + '\u00a0tr' : U.num(Math.round(v || 0));
-  const money = v => (Math.abs(v || 0) >= 1e6 ? U.num((v || 0) / 1e6, 2) + '\u00a0tr' : U.num(Math.round(v || 0))) + '\u00a0đ';
-  function costCard(box) {
-    if (!box) return;
-    Store.query('Agent/GetCost').then(x => {
-      if (!box.isConnected) return;
-      if (!x.ok || !x.data) { box.innerHTML = ''; return; }
-      const d = x.data, pct = d.pct, max = Math.max(1, ...d.listDay.map(z => z.costVnd));
-      const color = pct == null ? 'blue' : pct >= 100 ? 'red' : pct >= d.alertPct ? 'orange' : 'green';
-      box.innerHTML = `<div class="card panel"><div class="spread"><div><b>Chi phí Trợ lý AI tháng ${esc(d.month.slice(5))}/${esc(d.month.slice(0, 4))}</b><div class="small muted">Hermes báo token / chi phí mỗi lượt trả lời · quy đổi VND</div></div>${pct == null ? chip('Chưa đặt ngân sách (Agent:MonthlyBudget)') : chip(U.num(pct, 1) + '% ngân sách', color)}</div>
-        ${UI.kpis([UI.kpi('Đã dùng (đ)', amt(d.totalVnd), d.budget ? 'ngân sách ' + money(d.budget) : 'chưa đặt ngân sách', 'chart', color), UI.kpi('Hôm nay (đ)', amt(d.todayVnd), U.num(d.turns) + ' lượt cả tháng', 'clock', 'blue'), UI.kpi('Ước cả tháng (đ)', amt(d.forecastVnd), 'theo bình quân ngày', 'trend', d.budget && d.forecastVnd > d.budget ? 'red' : 'blue'), UI.kpi('Token', U.num((d.tokensIn + d.tokensOut) / 1000, 1) + 'k', 'vào ' + U.num(d.tokensIn / 1000, 1) + 'k · ra ' + U.num(d.tokensOut / 1000, 1) + 'k', 'layers', 'blue')])}
-        ${d.budget ? `<div class="track mt" style="height:8px"><div class="fill ${color === 'green' ? '' : color}" style="width:${Math.min(100, pct)}%"></div></div>` : ''}
-        <div class="row-flex mt" style="align-items:flex-end;gap:2px;height:44px" title="Chi phí theo ngày">${d.listDay.map(z => `<div title="${esc(U.date(z.date))}: ${esc(money(z.costVnd))}" style="flex:1;background:#91AF42;opacity:.85;height:${Math.max(2, Math.round(z.costVnd / max * 40))}px;border-radius:2px"></div>`).join('')}</div>
-        ${d.listAgent.length ? `<div class="small mt">${d.listAgent.map(a => icon(a.agent, 16) + ' ' + esc(a.agent) + ' ' + esc(money(a.costVnd)) + ` (${a.turns} lượt)`).join(' · ')}</div>` : '<div class="small muted mt">Chưa có lượt nào báo chi phí trong tháng.</div>'}</div>`;
+  /** Khung chung: tiêu đề + thanh tab (theo quyền) + vùng nội dung. */
+  function frame(el, f, tab, actions) {
+    const name = (TABS.find(t => t[0] === tab) || TABS[0])[1];
+    el.innerHTML = APP.header(Object.assign({}, f || FN['ai-agents'], { name: 'Trung tâm Agent', grp: 'Điều hành' }), actions || '', { noNote: true, title: name, sub: esc(SUB[tab] || '') })
+      + `<nav class="ac-tabs" aria-label="Trung tâm Agent">${tabsFor().map(([k, n]) => `<a href="#/ai-agents?tab=${k}" class="ac-tab ${k === tab ? 'on' : ''}" ${k === tab ? 'aria-current="page"' : ''}>${esc(n)}${k === 'tasks' ? '<span class="ac-cnt" data-taskcnt hidden></span>' : ''}</a>`).join('')}</nav><div id="acBody">${loading}</div>`;
+    if (Store.perm('ai-tasks').access !== false) loadBoard(false).then(b => { const c = el.querySelector('[data-taskcnt]'); if (c && b && b.open) { c.textContent = b.open; c.hidden = false; } });
+    return el.querySelector('#acBody');
+  }
+
+  APP.register('ai-agents', (el, f, p) => {
+    p = p || {};
+    if (p.code) return detail(el, f, p.code);
+    const list = tabsFor();
+    let tab = p.tab && list.some(t => t[0] === p.tab) ? p.tab : (list.find(t => t[0] !== 'chat') || list[0] || TABS[1])[0]; // không có Tổng quan → tab đầu có quyền (vd Giao việc), Chat sau cùng
+    if (p.tab && p.tab !== tab && TABS.some(t => t[0] === p.tab)) UI.toast('Anh / chị chưa có quyền xem tab này', 'warn');
+    ({ overview, chat, tasks, flow, schedule, log, usage })[tab](el, f, p);
+  });
+  // Mục cũ (AI-6 / AI-11 / AI-12) → tab của Trung tâm Agent.
+  [['ai-agent-log', 'log'], ['ai-schedule', 'schedule'], ['ai-flow', 'flow'], ['ai-tasks', 'tasks'], ['ai-cost', 'usage']].forEach(([id, tab]) => APP.register(id, (el, f, p) => {
+    const q = Object.entries(p || {}).filter(([k]) => k !== 'tab').map(([k, v]) => '&' + k + '=' + encodeURIComponent(v)).join('');
+    location.replace('#/ai-agents?tab=' + tab + q);
+  }));
+
+  // ================= Tổng quan =================
+  const ov = { cur: 'VIVI' };
+  function overview(el, f) {
+    const b = frame(el, f, 'overview', `<span class="ac-pill" id="acPill"><span class="dot"></span>Đang tải…</span><button class="btn" id="acRefresh">${I('refresh')} Làm mới</button><a class="btn primary" href="#/ai-agents?tab=chat&agent=VIVI">Hỏi Vivi</a>`);
+    el.querySelector('#acRefresh').onclick = () => { cache.board = null; APP.refresh(); };
+    const canCost = Store.perm('ai-cost').access !== false;
+    Store.query('Agent/GetOverview').then(x => {
+      if (!b.isConnected) return;
+      if (!x.ok || !x.data) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được Trung tâm Agent')}</div>`; return; }
+      const d = x.data, agents = d.listAgent || [];
+      el.querySelector('#acPill').innerHTML = `<span class="dot"></span>${d.running} đang chạy · ${d.total} agent · cập nhật ${esc(hm(d.generatedAt))}`;
+      if (!agents.some(a => a.code === ov.cur)) ov.cur = (agents[0] || {}).code;
+      const group = (cls, title, href, link, items) => `<section class="ac-group ${cls}"><div class="ac-group-h"><h2>${esc(title)}</h2>${href ? `<a href="${href}">${esc(link)} ›</a>` : ''}</div><div class="ac-group-g">${items.map(k => `<a class="ac-kpi" href="${k.href || '#'}"><div class="l">${esc(k.label)}</div><div class="v" style="${k.color ? 'color:' + k.color : ''}">${esc(k.v)}<span>${esc(k.sub || '')}</span></div><div class="n">${esc(k.note || '')}</div></a>`).join('')}</div></section>`;
+      const canTasks = Store.perm('ai-tasks').access !== false, canFlow = Store.perm('ai-flow').access !== false;
+      const g1 = [];
+      if (canTasks) g1.push({ label: 'Việc đang mở', v: U.num(d.tasksOpen), note: d.tasksHot ? `${d.tasksHot} cần xử lý ngay` : 'không có việc gấp', color: d.tasksHot ? '#A12B1F' : '', href: '#/ai-agents?tab=tasks' });
+      if (canFlow) g1.push({ label: 'Luồng liên phòng', v: U.num(d.flowAttention), sub: ` / ${d.flowSteps} bước`, note: 'cần chú ý hôm nay', color: d.flowAttention ? '#8A5A00' : '', href: '#/ai-agents?tab=flow' });
+      const logOk = Store.perm('ai-agent-log').access !== false, schOk = Store.perm('ai-schedule').access !== false;
+      b.innerHTML = `<div class="ac-tiles">${agents.map(a => `<button class="ac-tile ${a.code === ov.cur ? 'on' : ''}" data-pick="${esc(a.code)}" title="${esc(a.name)}">${robot(a.color, a.state !== 'off', 58)}<span class="ell b">${esc(a.short)}</span><span class="ac-tile-n"><i class="ac-dot ${esc(a.state)}"></i>${U.num(a.callsToday)} lượt</span></button>`).join('')}</div>
+        <div class="ac-groups">${g1.length ? group('hot', 'Cần xử lý hôm nay', canTasks ? '#/ai-agents?tab=tasks' : '', 'Giao việc', g1) : ''}
+          ${group('', 'Hoạt động agent', logOk ? '#/ai-agents?tab=log' : '', 'Nhật ký agent', [
+            { label: 'Agent đang chạy', v: U.num(d.running), sub: ` / ${d.total}`, note: `${d.total - d.running} chưa bật / thiếu khóa` },
+            { label: 'Lượt hỏi hôm nay', v: U.num(d.callsToday), note: `${d.askers} người · ${d.failedToday} lỗi · ${d.deniedToday} từ chối`, href: logOk ? '#/ai-agents?tab=log' : '' },
+            { label: 'Lịch tự động', v: U.num(d.schedulesOn), sub: ` / ${d.schedulesTotal}`, note: 'việc đang bật', href: schOk ? '#/ai-agents?tab=schedule' : '' },
+            { label: 'Kho tri thức', v: U.num(d.knowledgeNotes), note: 'ghi chú, SOP anh / chị xem được', href: '#/knowledge' }])}
+          ${canCost ? '<a class="ac-group cost" id="acCostTile" href="#/ai-agents?tab=usage"><div class="ac-group-h"><h2>Chi phí AI</h2><span class="small">Chi tiết ›</span></div><div class="muted small">Đang tải…</div></a>' : ''}</div>
+        <div class="ac-main"><section class="card ac-list"><div class="ac-list-h"><h2>Agent</h2><span class="small muted">Bấm để xem nhanh · lần gần nhất lấy từ nhật ký</span></div>
+          ${agents.map(a => `<button class="ac-row ${a.code === ov.cur ? 'on' : ''}" data-pick="${esc(a.code)}">${robot(a.color, a.state !== 'off', 30, true)}<span class="ac-row-t"><span class="ell"><b>${esc(a.name)}</b> <span class="small muted">${a.toolCount} chức năng · ${a.scheduleCount} lịch</span></span><span class="ell small muted">${esc(a.lastLine || (a.state === 'off' ? `Đợt ${a.wave} – ${a.configured ? 'đang tắt' : 'chưa bật'}` : 'Chưa có lượt nào'))}</span></span><span class="small muted nowrap">${U.num(a.callsToday)} lượt</span>${stChip(a.state)}</button>`).join('')}</section>
+          <div class="ac-side"><div id="acCur"></div><div id="acCost"></div>
+            <section class="card ac-feed"><div class="ac-list-h"><h2>Hoạt động gần đây</h2></div>${(d.listFeed || []).length ? d.listFeed.map(r => `<div class="ac-feed-r"><i class="ac-dot ${r.status === 'Succeeded' ? 'ok' : r.status === 'Denied' ? 'key' : 'bad'}"></i><div class="ac-row-t"><div class="ell"><b>${esc(r.agent || '')}</b> · ${esc(r.text)}</div><div class="small muted ell">${esc(r.who || '')}</div></div><span class="small muted nowrap">${esc(hm(r.at))}</span></div>`).join('') : '<div class="muted small" style="padding:12px 16px">Chưa có hoạt động trong 7 ngày.</div>'}</section></div></div>`;
+      const paintCur = () => {
+        const a = agents.find(z => z.code === ov.cur); const box = b.querySelector('#acCur'); if (!a || !box) return;
+        const canEdit = Store.perm('ai-agents').edit === true && a.configured;
+        box.innerHTML = `<section class="card ac-cur"><div class="row-flex" style="gap:12px;align-items:center">${robot(a.color, a.state !== 'off', 52)}<div style="flex:1;min-width:0"><b class="ell" style="font-size:16px;display:block">${esc(a.name)}</b><div class="small muted ell">Phục vụ: ${esc(a.serves)}</div></div>${stChip(a.state)}</div>
+          <div class="ac-desc">${esc(a.purpose)}</div>
+          <div class="ac-mini"><div><div class="l">Lượt hôm nay</div><b>${U.num(a.callsToday)}</b></div><div><div class="l">Chức năng</div><b>${U.num(a.toolCount)}</b></div><div><div class="l">Việc đang theo</div><b>${U.num(a.openTasks)}</b></div></div>
+          ${a.listAsk.length && a.state !== 'off' ? `<div class="small muted">Hỏi nhanh</div><div class="ac-asks">${a.listAsk.map(q => `<a href="#/ai-agents?tab=chat&agent=${esc(a.code)}&q=${encodeURIComponent(q)}">${esc(q)}</a>`).join('')}</div>` : ''}
+          <div class="row-flex" style="gap:8px">${a.state !== 'off' ? `<a class="btn primary" style="flex:1;justify-content:center" href="#/ai-agents?tab=chat&agent=${esc(a.code)}">Chat với agent</a>` : `<span class="muted small" style="flex:1">Agent đợt ${a.wave} – chưa bật</span>`}<a class="btn" href="#/ai-agents?code=${esc(a.code)}">Chi tiết</a>${canEdit ? `<label class="ai-switch" title="${a.active ? 'Tắt' : 'Bật'} agent"><input type="checkbox" data-code="${esc(a.code)}" ${a.active ? 'checked' : ''}><span>${a.active ? 'Bật' : 'Tắt'}</span></label>` : ''}</div></section>`;
+        const sw = box.querySelector('.ai-switch input'); if (sw) sw.onchange = () => toggle(sw.dataset.code, sw.checked, () => APP.refresh());
+      };
+      b.querySelectorAll('[data-pick]').forEach(x => x.onclick = () => { ov.cur = x.dataset.pick; b.querySelectorAll('[data-pick]').forEach(y => y.classList.toggle('on', y.dataset.pick === ov.cur)); paintCur(); });
+      paintCur();
+      if (canCost) Store.query('Agent/GetCost').then(c => costPanels(b, c.ok ? c.data : null, agents));
     });
   }
 
-  // ================= AI-14 (D-133): chat với agent trên web – ngăn bên phải nổi đè (không làm hẹp trang), cao bằng màn hình, tin nhắn cuộn bên trong, ô nhập ở đáy.
-  // Lịch sử hiển thị giữ trong phiên trình duyệt; Hermes dùng chung lịch sử với bot Trợ lý theo người dùng (userKey). Hermes tắt → thông báo tiếng Việt.
-  const CHAT_KEY = 'dc-agent-chat';
-  const chatStore = () => { try { return JSON.parse(sessionStorage.getItem(CHAT_KEY) || '{}'); } catch (e) { return {}; } };
-  const chatSave = h => { try { sessionStorage.setItem(CHAT_KEY, JSON.stringify(h)); } catch (e) { /* đầy bộ nhớ – bỏ qua */ } };
-  APP.agentChat = (code, agents) => {
-    let cur = code || 'VIVI';
-    const list = agents && agents.length ? agents : [{ code: cur, name: cur }];
-    document.querySelectorAll('.ai-chat').forEach(x => x.remove());
-    const box = document.createElement('aside');
-    box.className = 'ai-chat'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Trò chuyện với Trợ lý AI');
-    document.body.appendChild(box);
-    const draw = () => {
-      const h = chatStore()[cur] || [];
-      box.innerHTML = `<div class="ai-chat-head"><b>Trợ lý AI</b><button class="btn-close" data-x aria-label="Đóng"></button></div>
-        <div class="ai-chat-tabs">${list.map(a => `<button class="ai-chat-tab ${a.code === cur ? 'on' : ''}" data-ag="${esc(a.code)}">${icon(a.code, 18)} ${esc(a.code)}</button>`).join('')}</div>
-        <div class="ai-chat-msgs" id="acMsgs">${h.length ? h.map(m => `<div class="ai-msg ${m.role}">${m.role === 'assistant' ? md(m.content, []) : esc(m.content)}</div>`).join('') : `<div class="muted small">Hỏi ${esc(cur)} về số liệu bạn được xem. Đề xuất ghi (nếu có) chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.</div>`}</div>
-        <form class="ai-chat-input" id="acForm"><textarea class="input" id="acText" rows="2" maxlength="2000" placeholder="Nhập câu hỏi… (Enter gửi, Shift+Enter xuống dòng)"></textarea><button class="btn primary" type="submit">Gửi</button></form>`;
-      const msgs = box.querySelector('#acMsgs'); msgs.scrollTop = msgs.scrollHeight;
-      box.querySelector('[data-x]').onclick = () => box.remove();
-      box.querySelectorAll('[data-ag]').forEach(b => b.onclick = () => { cur = b.dataset.ag; draw(); });
-      const ta = box.querySelector('#acText'); ta.focus();
-      ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); box.querySelector('#acForm').requestSubmit(); } };
-      box.querySelector('#acForm').onsubmit = e => {
-        e.preventDefault();
-        const text = ta.value.trim(); if (!text) return;
-        const all = chatStore(), hist = all[cur] || [];
-        hist.push({ role: 'user', content: text }); all[cur] = hist.slice(-40); chatSave(all); draw();
-        const wait = document.createElement('div'); wait.className = 'ai-msg assistant muted'; wait.textContent = 'Đang trả lời…'; box.querySelector('#acMsgs').appendChild(wait);
-        Store.act('Agent/Chat', { json: { agent: cur, message: text, history: hist.slice(-21, -1) }, quiet: true }).then(r => {
-          const a2 = chatStore(), h2 = a2[cur] || [];
-          h2.push({ role: 'assistant', content: r.ok ? (r.data || {}).reply || '' : '⚠ ' + (r.message || 'Trợ lý không phản hồi') });
-          a2[cur] = h2.slice(-40); chatSave(a2); if (box.isConnected) draw();
-        });
-      };
-    };
-    draw();
-  };
-
-  APP.register('ai-agents', (el, f, p) => {
-    if (p && p.code) return detail(el, f, p.code);
-    el.innerHTML = APP.header(f || FN['ai-agents'], '', { noNote: true }) + nav('ai-agents')
-      + `<div class="notice info mb">${I('help')}<div><b>Đợt 3 – đủ phòng ban.</b> Agent trả lời bằng số liệu lõi và kho tri thức, đề xuất ghi chờ người có quyền xác nhận (Phê duyệt › Lệnh của agent), cảnh báo chủ động tới người phụ trách. Tắt một agent → cổng công cụ từ chối ngay từ lời gọi sau.</div></div>`
-      + `<div id="aiKpi">${loading}</div><div id="aiCost" class="mt"></div><div id="aiGrid" class="ai-grid mt"></div>`;
-    costCard(el.querySelector('#aiCost'));
-    const canEdit = Store.perm('ai-agents').edit !== false;
-    const paint = list => {
-      const on = list.filter(a => a.active), calls = U.sum(list, 'callsToday'), denied = U.sum(list, 'deniedToday'), failed = U.sum(list, 'failedToday');
-      el.querySelector('#aiKpi').innerHTML = UI.kpis([
-        UI.kpi('Agent đang bật', `${on.length} / ${list.length}`, `${list.length - on.length} agent chưa bật`, 'check', on.length ? 'green' : 'orange'),
-        UI.kpi('Lời gọi hôm nay', U.num(calls), 'mọi công cụ, mọi agent', 'chart', 'blue', '#/ai-agent-log'),
-        UI.kpi('Bị từ chối quyền', U.num(denied), 'agent ∩ người hỏi không đủ quyền / tắt / vượt giới hạn', 'shield', denied ? 'orange' : 'green', '#/ai-agent-log?status=Denied'),
-        UI.kpi('Lỗi', U.num(failed), 'lỗi khi chạy công cụ', 'alert', failed ? 'red' : 'green', '#/ai-agent-log?status=Failed'),
-      ]);
-      el.querySelector('#aiGrid').innerHTML = list.map(a => `<div class="card ai-card ${a.active ? '' : 'off'}">
-          <div class="row-flex" style="gap:10px;align-items:flex-start">${icon(a.code)}<div style="flex:1;min-width:0"><div class="spread"><b>${esc(a.name)}</b>${chip(a.active ? 'Đang bật' : a.status ? 'Đang tắt' : 'Chưa cấu hình', a.active ? 'green' : '')}</div>
-            <div class="muted small">${esc(a.code)} · đợt ${a.wave} · phục vụ ${esc(a.serves)}</div></div></div>
-          <p class="small mt">${esc(a.purpose)}</p>
-          <div class="muted small">${U.num(a.listTool.length)} công cụ · hôm nay ${U.num(a.callsToday)} lời gọi${a.deniedToday ? ` · ${U.num(a.deniedToday)} bị từ chối` : ''}${a.lastCallAt ? ` · gần nhất ${esc(U.time(a.lastCallAt))}` : ''}${a.active && !a.hasKey ? ' · <span class="txt-orange">máy chủ chưa có khóa agent</span>' : ''}</div>
-          <div class="spread mt"><span class="row-flex" style="gap:6px"><a class="btn sm" href="#/ai-agents?code=${esc(a.code)}">Chi tiết</a>${a.active ? `<button class="btn sm primary" data-chat="${esc(a.code)}">Trò chuyện</button>` : ''}</span>${canEdit && a.status ? `<label class="ai-switch" title="${a.active ? 'Tắt' : 'Bật'} agent"><input type="checkbox" data-code="${esc(a.code)}" ${a.active ? 'checked' : ''}><span>${a.active ? 'Bật' : 'Tắt'}</span></label>` : ''}</div>
-        </div>`).join('');
-      el.querySelectorAll('[data-chat]').forEach(b => b.onclick = () => APP.agentChat(b.dataset.chat, list.filter(x => x.active)));
-      el.querySelectorAll('.ai-switch input').forEach(cb => cb.onchange = () => toggle(cb.dataset.code, cb.checked, load));
-    };
-    const load = () => Store.query('Agent/GetAll').then(x => {
-      if (!el.isConnected) return;
-      if (!x.ok) { el.querySelector('#aiKpi').innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được danh sách agent')}</div>`; return; }
-      paint(x.list || []);
-    });
-    load();
-  });
+  /** Nhóm "Chi phí AI · tháng" + khung chi tiết (D-138 g) – chỉ người có quyền ai-cost; chưa có lượt nào báo chi phí → "Chưa có dữ liệu chi phí". */
+  function costPanels(b, d, agents) {
+    const tile = b.querySelector('#acCostTile'), box = b.querySelector('#acCost'); if (!tile || !box) return;
+    if (!d) { tile.remove(); return; }
+    const mm = d.month.slice(5) + '/' + d.month.slice(0, 4), dayPct = d.daysInMonth ? Math.round(d.daysPassed / d.daysInMonth * 1000) / 10 : 0;
+    const pct = d.pct == null ? null : d.pct, change = d.prevTotalVnd > 0 ? Math.round((d.totalVnd - d.prevTotalVnd) / d.prevTotalVnd * 100) : null;
+    const none = !d.turns;
+    const bar = cls => `<div class="ac-bar ${cls || ''}"><div style="width:${Math.min(100, pct || 0)}%"></div>${d.budget ? `<span title="Mốc ngày ${d.daysPassed}/${d.daysInMonth}" style="left:${Math.min(100, dayPct)}%"></span>` : ''}</div>`;
+    tile.innerHTML = `<div class="ac-group-h"><h2>Chi phí AI · tháng ${esc(mm)}</h2><span class="small">Chi tiết ›</span></div>${none ? '<div class="muted small">Chưa có dữ liệu chi phí (Hermes chưa báo token)</div>'
+      : `<div class="ac-cost-v"><b>${esc(shortMoney(d.totalVnd))}</b><span>${d.budget ? '/ ' + esc(shortMoney(d.budget)) : 'chưa đặt ngân sách'}</span></div>${d.budget ? bar('amber') : ''}<div class="spread small muted"><span>${pct == null ? U.num(d.turns) + ' lượt' : U.num(pct, 1) + ' % ngân sách'}</span><span>${change == null ? '' : (change >= 0 ? '+' : '') + change + ' % so T' + esc(d.prevMonth.slice(5))}</span></div>`}`;
+    const name = c => (agents.find(a => a.code === c) || {}).short || c, color = c => (agents.find(a => a.code === c) || {}).color || '#4F6B1F';
+    const max = Math.max(1, ...(d.listAgent || []).map(a => a.costVnd));
+    box.innerHTML = `<section class="card ac-costd" id="chi-phi"><div class="spread"><h2>Chi phí Trợ lý AI · tháng ${esc(mm)}</h2><span class="small muted">đến ${esc(String(d.daysPassed).padStart(2, '0'))}/${esc(d.month.slice(5))}</span></div>
+      ${none ? '<div class="notice info small">Chưa có dữ liệu chi phí – số liệu có khi Hermes báo token / chi phí mỗi lượt (công cụ bao_chi_phi, AI-13).</div>' : `<div class="ac-cost-v big"><b>${esc(money(d.totalVnd))}</b><span>${d.budget ? '/ ngân sách ' + esc(money(d.budget)) : '· chưa đặt ngân sách (Agent:MonthlyBudget)'}</span></div>${d.budget ? bar() : ''}
+      <div class="spread small muted"><span>${pct == null ? 'Chưa đặt ngân sách' : 'Đã dùng ' + U.num(pct, 1) + ' %'}</span><span>Mốc thời gian ${U.num(dayPct, 0)} % tháng</span></div>
+      <div class="ac-mini"><div><div class="l">Dự báo cuối tháng</div><b>≈ ${esc(shortMoney(d.forecastVnd))}</b></div><div><div class="l">Tháng ${esc(d.prevMonth.slice(5))}</div><b>${esc(shortMoney(d.prevTotalVnd))}</b></div><div><div class="l">Bình quân</div><b>${d.perTurnVnd == null ? '–' : '≈ ' + esc(money(d.perTurnVnd)) + ' / lượt'}</b></div></div>
+      <div class="small muted">Theo agent · ${U.num(d.turns)} lượt</div>${d.listAgent.slice(0, 6).map(a => `<div class="ac-cost-r"><span class="ell">${esc(name(a.agent))}</span><span class="ac-cost-t"><span style="width:${Math.round(a.costVnd / max * 100)}%;background:${esc(color(a.agent))}"></span></span><span class="num nowrap">${esc(money(a.costVnd))}</span></div>`).join('')}`}
+      <div class="small muted ac-foot">Tính từ số token trong nhật ký agent × đơn giá model · cảnh báo khi vượt ${U.num(d.alertPct)} % ngân sách · <a href="#/ai-agents?tab=usage">Xem Sử dụng &amp; chi phí</a></div></section>`;
+  }
 
   function toggle(code, active, after) {
-    const go = () => Store.act('Agent/SaveIsActive', { form: { code, active } }).then(r => { if (r.ok) UI.toast(esc(r.res && r.res.responseMessage || 'Đã lưu'), 'ok'); after(); });
-    if (active) return go();
+    const run = () => Store.act('Agent/SaveIsActive', { form: { code, active } }).then(r => { if (r.ok) UI.toast(esc(r.res && r.res.responseMessage || 'Đã lưu'), 'ok'); cache.agents = null; after(); });
+    if (active) return run();
     UI.modal({
       title: `Tắt agent ${esc(code)}?`, body: '<p>Agent sẽ bị từ chối ngay từ lời gọi công cụ tiếp theo (lịch chạy của agent cũng dừng). Nghiệp vụ lõi và job vẫn chạy bình thường.</p>',
       foot: '<button class="btn" data-close>Hủy</button><button class="btn danger" id="aiOff">Tắt agent</button>',
-      onMount: (m, close) => { m.querySelector('#aiOff').onclick = () => { close(); go(); }; m.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', after)); },
+      onMount: (m, close) => { m.querySelector('#aiOff').onclick = () => { close(); run(); }; m.querySelectorAll('[data-close]').forEach(x => x.addEventListener('click', after)); },
     });
   }
 
   function detail(el, f, code) {
-    el.innerHTML = APP.header(f || FN['ai-agents'], '', { noNote: true }) + nav('ai-agents') + `<div id="aiD">${loading}</div>`;
+    el.innerHTML = APP.header(Object.assign({}, f || FN['ai-agents'], { name: 'Trung tâm Agent', grp: 'Điều hành' }), '', { noNote: true, title: 'Chi tiết agent', sub: 'Công cụ, thư mục tri thức, lịch chạy và hoạt động gần đây' }) + `<div id="aiD">${loading}</div>`;
     Store.query('Agent/GetById', { code }).then(x => {
       const box = el.querySelector('#aiD'); if (!box) return;
       if (!x.ok || !x.data) { box.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được agent')}</div>`; return; }
       const d = x.data, a = d.agent;
-      box.innerHTML = `<a href="#/ai-agents" class="small">← Trung tâm agent</a>
-        <div class="card mt"><div class="row-flex" style="gap:14px;align-items:center">${icon(a.code, 56)}<div style="flex:1"><h2 style="margin:0">${esc(a.name)} <span class="muted">(${esc(a.code)})</span></h2>
+      box.innerHTML = `<a href="#/ai-agents?tab=overview" class="small">← Trung tâm Agent</a>
+        <div class="card mt"><div class="row-flex" style="gap:14px;align-items:center">${robot(a.color, a.active, 56)}<div style="flex:1;min-width:0"><h2 style="margin:0">${esc(a.name)} <span class="muted">(${esc(a.code)})</span></h2>
           <div class="muted">Đợt ${a.wave} · phục vụ ${esc(a.serves)}</div></div>${chip(a.active ? 'Đang bật' : 'Đang tắt', a.active ? 'green' : '')}</div>
-          <div class="grid2 mt"><div><div class="muted small">Mục đích</div><div>${esc(a.purpose)}</div></div><div><div class="muted small">Ghi (từ đợt 2, luôn có người xác nhận)</div><div>${esc(a.writes)}</div></div></div></div>
+          <div class="grid2 mt"><div><div class="muted small">Mục đích</div><div>${esc(a.purpose)}</div></div><div><div class="muted small">Ghi (luôn có người xác nhận)</div><div>${esc(a.writes)}</div></div></div>
+          ${a.active ? `<div class="mt"><a class="btn primary" href="#/ai-agents?tab=chat&agent=${esc(a.code)}">Chat với agent</a></div>` : ''}</div>
         ${UI.kpis([UI.kpi('Lời gọi hôm nay', U.num(a.callsToday), `${U.num(a.okToday)} thành công`, 'chart', 'blue'), UI.kpi('Bị từ chối', U.num(a.deniedToday), 'quyền / tắt / giới hạn', 'shield', a.deniedToday ? 'orange' : 'green'),
           UI.kpi('Công cụ', U.num(d.listTool.length), 'quyền theo màn web tương ứng', 'settings', 'blue'), UI.kpi('Lịch chạy', U.num(d.listSchedule.filter(s => s.enabled).length), 'việc theo giờ đang bật', 'history', 'blue')], 'mt')}
         <div class="card mt"><h3>Công cụ được dùng</h3><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Công cụ</th><th>Làm gì</th><th>Quyền theo màn</th></tr></thead><tbody>
           ${d.listTool.map(t => `<tr><td><code>${esc(t.name)}</code>${t.write ? ' ' + chip('ghi', 'orange') : ''}</td><td class="small">${esc(t.description)}</td><td>${t.screenId ? `<code>${esc(t.screenId)}</code>` : '<span class="muted small">theo người hỏi / dữ liệu chung</span>'}</td></tr>`).join('')}</tbody></table></div></div>
-        <div class="card mt"><h3>Thư mục tri thức được đọc</h3><div class="row-flex" style="flex-wrap:wrap;gap:6px">${d.listFolder.map(x => chip(x)).join('')}</div><div class="muted small mt">Không bao giờ đọc BOD Bảo mật; phạm vi lọc cứng ở máy chủ (§7.8) và giao với quyền của người hỏi.</div></div>
+        <div class="card mt"><h3>Thư mục tri thức được đọc</h3><div class="row-flex" style="flex-wrap:wrap;gap:6px">${d.listFolder.map(z => chip(z)).join('')}</div><div class="muted small mt">Không bao giờ đọc BOD Bảo mật; phạm vi lọc cứng ở máy chủ (§7.8) và giao với quyền của người hỏi.</div></div>
         <div class="card mt"><h3>Lịch chạy</h3>${schedTable(d.listSchedule, false)}</div>
-        <div class="card mt"><div class="spread"><h3>Hoạt động gần đây</h3><a class="small" href="#/ai-agent-log?agent=${esc(a.code)}">Xem nhật ký</a></div>${logTable(d.listActivity, false)}</div>`;
+        ${Store.perm('ai-agent-log').access !== false ? `<div class="card mt"><div class="spread"><h3>Hoạt động gần đây</h3><a class="small" href="#/ai-agents?tab=log&agent=${esc(a.code)}">Xem nhật ký</a></div>${logTable(d.listActivity, false)}</div>` : ''}`;
+    });
+  }
+
+  // ================= Chat với agent (D-138 f – thay ngăn chat nổi AI-14) =================
+  // Lịch sử hiển thị giữ trong phiên trình duyệt; Hermes dùng chung lịch sử với bot Trợ lý theo người dùng. Hermes tắt → API trả thông báo tiếng Việt.
+  const CHAT_KEY = 'dc-agent-chat';
+  const chatStore = () => { try { return JSON.parse(sessionStorage.getItem(CHAT_KEY) || '{}'); } catch (e) { return {}; } };
+  const chatSave = h => { try { sessionStorage.setItem(CHAT_KEY, JSON.stringify(h)); } catch (e) { /* đầy bộ nhớ – bỏ qua */ } };
+  function chat(el, f, p) {
+    const b = frame(el, f, 'chat');
+    chatAgents().then(list => {
+      if (!b.isConnected) return;
+      if (!list.length) { b.innerHTML = '<div class="notice warn">Không tải được danh sách agent.</div>'; return; }
+      const live = list.filter(a => a.state !== 'off');
+      let cur = (list.find(a => a.code === (p.agent || '').toUpperCase() && a.state !== 'off') || live[0] || list[0]).code;
+      const draw = () => {
+        const a = list.find(z => z.code === cur), h = chatStore()[cur] || [];
+        b.innerHTML = `<div class="ac-chat"><aside class="card ac-chat-list"><div class="ac-chat-lh">Agent của tôi</div><div class="ac-chat-ag">${list.map(z => `<button class="ac-ag ${z.code === cur ? 'on' : ''} ${z.state === 'off' ? 'off' : ''}" data-ag="${esc(z.code)}" ${z.state === 'off' ? 'disabled title="Agent chưa bật"' : ''}>${robot(z.color, z.state !== 'off', 34, true)}<span class="ac-row-t"><b class="ell">${esc(z.short)}</b><span class="small muted ell">${esc(z.state === 'off' ? `Đợt ${z.wave} – chưa bật` : z.serves)}</span></span><i class="ac-dot ${esc(z.state)}"></i></button>`).join('')}</div></aside>
+          <section class="card ac-chat-main"><div class="ac-chat-h">${robot(a.color, a.state !== 'off', 30, true)}<b class="ell">${esc(a.name)}</b><span class="small muted ell">${esc(a.serves)}</span><span class="ac-chip off" style="margin-left:auto">Ghi qua Phê duyệt</span></div>
+            <div class="ac-msgs" id="acMsgs">${h.length ? h.map(m => `<div class="ac-msg ${m.role === 'user' ? 'me' : ''}">${m.role === 'assistant' ? APP.knowledgeMd(m.content, []) : esc(m.content)}${m.role === 'assistant' && !m.err ? `<div class="ac-src"><span>Nguồn: số liệu lõi trong quyền của anh / chị</span>${m.corr ? `<span>${esc(m.corr.slice(0, 8))}</span>` : ''}</div>` : ''}</div>`).join('') : `<div class="muted small ac-empty">Hỏi ${esc(a.short)} về số liệu anh / chị được xem. Câu trả lời ghi nguồn; đề xuất ghi (nếu có) chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.</div>`}</div>
+            ${a.listAsk.length ? `<div class="ac-asks">${a.listAsk.map(q => `<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
+            <form class="ac-input" id="acForm"><textarea class="input" id="acText" rows="1" maxlength="2000" placeholder="Hỏi ${esc(a.short)}… (Enter gửi, Shift+Enter xuống dòng)" aria-label="Câu hỏi"></textarea><button class="btn primary" type="submit">Gửi</button></form></section>
+          <aside class="ac-chat-side"><section class="card"><h3>Agent này làm được</h3>${a.listCan.map(c => `<div class="small">✓ ${esc(c)}</div>`).join('')}<div class="small muted mt">${a.toolCount} chức năng · ${a.scheduleCount} lịch tự động</div></section>
+            <section class="card"><h3>Giới hạn</h3><div class="small">Không xem số liệu ngoài quyền của anh / chị (giá vốn, lương…). Lệnh ghi (tạo phiếu, đổi trạng thái) chỉ là đề xuất – người có quyền xác nhận ở Phê duyệt › Lệnh của agent.</div></section>
+            <section class="card"><h3>Cũng có trên bot</h3><div class="small">Telegram (bot Trợ lý) · lịch sử chat đồng bộ theo người dùng</div></section></aside></div>`;
+        const msgs = b.querySelector('#acMsgs'); msgs.scrollTop = msgs.scrollHeight;
+        b.querySelectorAll('[data-ag]').forEach(x => x.onclick = () => { cur = x.dataset.ag; draw(); });
+        const ta = b.querySelector('#acText');
+        if (p.q && cur === (p.agent || '').toUpperCase()) { ta.value = p.q; p.q = ''; }
+        ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); b.querySelector('#acForm').requestSubmit(); } };
+        b.querySelectorAll('[data-q]').forEach(x => x.onclick = () => { ta.value = x.dataset.q; b.querySelector('#acForm').requestSubmit(); });
+        b.querySelector('#acForm').onsubmit = e => {
+          e.preventDefault();
+          const text = ta.value.trim(); if (!text) return;
+          const all = chatStore(), hist = all[cur] || [], who = cur;
+          hist.push({ role: 'user', content: text }); all[cur] = hist.slice(-40); chatSave(all); draw();
+          const wait = document.createElement('div'); wait.className = 'ac-msg muted'; wait.textContent = 'Đang trả lời…'; b.querySelector('#acMsgs').appendChild(wait);
+          Store.act('Agent/Chat', { json: { agent: who, message: text, history: hist.slice(-21, -1).map(m => ({ role: m.role, content: m.content })) }, quiet: true }).then(r => {
+            const a2 = chatStore(), h2 = a2[who] || [];
+            h2.push(r.ok ? { role: 'assistant', content: (r.data || {}).reply || '', corr: (r.data || {}).correlationId } : { role: 'assistant', err: true, content: '⚠ ' + (r.message || 'Trợ lý không phản hồi') });
+            a2[who] = h2.slice(-40); chatSave(a2); if (b.isConnected && cur === who) draw();
+          });
+        };
+        if (!('ontouchstart' in window)) ta.focus();
+      };
+      draw();
+    });
+  }
+
+  // ================= Giao việc (D-138 d) =================
+  const tk = { f: 'all', mine: false };
+  const SEV = { HOT: ['Cần xử lý ngay', 'hot'], WARN: ['Cần chú ý', 'warn'] };
+  function tasks(el, f) {
+    const b = frame(el, f, 'tasks', `<button class="btn" id="acRefresh">${I('refresh')} Làm mới</button>`);
+    el.querySelector('#acRefresh').onclick = () => { cache.board = null; APP.refresh(); };
+    const canEdit = Store.perm('ai-tasks').edit === true;
+    loadBoard(true).then(d => {
+      if (!b.isConnected) return;
+      if (!d) { b.innerHTML = '<div class="notice warn">Không tải được việc.</div>'; return; }
+      const all = d.listTask || [], open = all.filter(t => t.status === 'OPEN');
+      const paint = () => {
+        const pass = t => (tk.f === 'all' ? t.status === 'OPEN' : tk.f === 'done' ? t.status !== 'OPEN' : t.status === 'OPEN' && SEV[t.severity][1] === tk.f) && (!tk.mine || t.mine);
+        const F = [['hot', 'Cần xử lý ngay', open.filter(t => t.severity === 'HOT').length], ['warn', 'Cần chú ý', open.filter(t => t.severity !== 'HOT').length], ['all', 'Đang mở', open.length], ['done', 'Đã xử lý hôm nay', all.length - open.length]];
+        const rows = all.filter(pass);
+        b.innerHTML = `<div class="ac-filters">${F.map(([k, l, n]) => `<button class="ac-fchip ${k} ${tk.f === k ? 'on' : ''}" data-f="${k}" aria-pressed="${tk.f === k}"><i></i>${esc(l)} <b>${n}</b></button>`).join('')}<span class="grow"></span><label class="small row-flex" style="gap:6px"><input type="checkbox" id="tkMine" ${tk.mine ? 'checked' : ''}> Chỉ việc tôi phụ trách</label></div>
+          <div class="ac-tasks"><div class="ac-tlist">${rows.length ? rows.map(t => card(t, canEdit)).join('') : `<div class="card panel empty">${tk.f === 'done' ? 'Chưa có việc nào đóng hôm nay.' : 'Không có việc đang mở trong phạm vi quyền của anh / chị.'}</div>`}</div>
+            <aside class="ac-taside">${d.approvalsPending ? `<a class="card ac-apr" href="#/wf-inbox"><b>${U.num(d.approvalsPending)} yêu cầu chờ anh / chị duyệt</b><span class="small">Duyệt ở màn Phê duyệt ›</span></a>` : ''}
+              <section class="card"><h3>Theo bộ phận</h3>${(d.listDept || []).length ? d.listDept.map(x => `<div class="spread small ac-dept"><span>${esc(x.dept)}</span><b>${x.count}</b></div>`).join('') : '<div class="small muted">Không có việc mở.</div>'}</section>
+              <section class="card"><h3>Cách việc được tạo</h3><div class="small">Agent nhận sự kiện (lô cận hạn, thiếu nguyên liệu, nhiệt độ, phản ánh…) và bước luồng liên phòng bị kẹt, viết việc nên làm, gán phụ trách theo vai trò. <b>Việc tự đóng khi nguồn đã xử lý</b>; bấm "Đã xử lý" để ghi chú lại – ghi chú lưu vào kho tri thức (98 Công việc).</div></section></aside></div>`;
+        b.querySelectorAll('[data-f]').forEach(x => x.onclick = () => { tk.f = x.dataset.f; paint(); });
+        b.querySelector('#tkMine').onchange = e => { tk.mine = e.target.checked; paint(); };
+        b.querySelectorAll('[data-done]').forEach(x => x.onclick = () => UI.confirm('Ghi nhận đã xử lý việc này?', note => Store.act('Agent/CloseTask', { json: { key: x.dataset.done, note } }).then(r => {
+          if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); cache.board = null; APP.refresh(); }
+        }), { input: 'Ghi chú (đã làm gì – tùy chọn)', ok: 'Đã xử lý' }));
+      };
+      paint();
+    });
+  }
+  function card(t, canEdit) {
+    const s = SEV[t.severity] || SEV.WARN, done = t.status !== 'OPEN';
+    return `<article class="card ac-task ${done ? 't-done' : 't-' + s[1]}"><div class="ac-task-h"><i class="ac-sev ${done ? 'ok' : s[1]}"></i><div class="ac-row-t"><div><b>${esc(t.title)}</b> ${done ? `<span class="ac-chip ok">${t.status === 'AUTO' ? 'Tự đóng' : 'Đã xử lý'}</span>` : `<span class="ac-chip ${s[1]}">${esc(s[0])}</span>`}</div>${t.detail ? `<div class="small muted">${esc(t.detail)}</div>` : ''}</div><span class="ac-agent">${esc(t.agent)}</span></div>
+      ${!done && t.listTodo.length ? `<div class="ac-todo"><div class="small muted">Việc nên làm (agent đề xuất)</div>${t.listTodo.map(x => `<div>• ${esc(x)}</div>`).join('')}</div>` : ''}
+      <div class="ac-meta small">${t.sourceName ? `<span>Nguồn: <b>${esc(t.sourceName)}</b></span>` : ''}${t.owner ? `<span>Phụ trách: <b>${esc(t.owner)}</b></span>` : ''}${t.due && !done ? `<span>Hạn: <b class="${t.severity === 'HOT' ? 'txt-red' : ''}">${esc(t.due)}</b></span>` : ''}${t.closeWhen ? `<span>Tự đóng khi: ${esc(t.closeWhen)}</span>` : ''}
+        ${done ? `<span>Đóng lúc ${esc(hm(t.closedAt))}${t.closedBy ? ' · ' + esc(t.closedBy) : ''}${t.note ? ' · ' + esc(t.note) : ''}</span>` : t.openedAt ? `<span>Mở lúc ${esc(hm(t.openedAt))}</span>` : ''}</div>
+      ${done ? '' : `<div class="ac-task-a">${t.route ? `<a class="btn sm" href="${esc(t.route)}">Mở chứng từ ↗</a>` : ''}<a class="btn sm" href="#/ai-agents?tab=chat&agent=${esc(t.agent)}&q=${encodeURIComponent(t.title)}">Hỏi agent</a>${canEdit ? `<button class="btn sm primary" data-done="${esc(t.key)}">Đã xử lý</button>` : ''}</div>`}</article>`;
+  }
+
+  // ================= Luồng liên phòng (D-138 e) =================
+  const FL = { OK: ['Đạt', 'ok'], RUN: ['Đang chạy', 'run'], WARN: ['Cần chú ý', 'warn'], BAD: ['Có vấn đề', 'hot'], WAIT: ['Chờ dữ liệu', 'off'] };
+  const fl = { day: null, cur: 1 };
+  const DOW = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  function flow(el, f, p) {
+    if (p.date) fl.day = p.date; if (!fl.day) fl.day = TODAY();
+    const dd = new Date(fl.day + 'T00:00:00');
+    const b = frame(el, f, 'flow', `<div class="ac-date"><button class="btn" data-dd="-1" aria-label="Ngày trước">‹</button><span>${DOW[dd.getDay()]}, ${esc(U.date(fl.day))}</span><button class="btn" data-dd="1" aria-label="Ngày sau">›</button>${fl.day !== TODAY() ? '<button class="btn sm" data-dd="0">Hôm nay</button>' : ''}</div>`);
+    el.querySelectorAll('[data-dd]').forEach(x => x.onclick = () => { fl.day = x.dataset.dd === '0' ? TODAY() : U.addDays(fl.day, +x.dataset.dd); APP.refresh(); });
+    Store.query('Agent/GetFlowDay', { date: fl.day }).then(x => {
+      if (!b.isConnected) return;
+      if (!x.ok || !x.data) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được luồng')}</div>`; return; }
+      const d = x.data, steps = d.listStep || [];
+      const paint = () => {
+        const s = steps.find(z => z.no === fl.cur) || steps[0], st = FL[s.status] || FL.WAIT;
+        b.innerHTML = `<div class="ac-legend">${['OK', 'RUN', 'WARN', 'BAD', 'WAIT'].map(k => `<span><i class="ac-sev ${FL[k][1]}"></i>${esc(FL[k][0])} <b>${steps.filter(z => z.status === k).length}</b></span>`).join('')}<span class="grow"></span><span class="small muted">Cập nhật ${esc(hm(d.generatedAt))}</span></div>
+          <div class="ac-flow"><div class="ac-steps">${steps.map(z => `<button class="ac-step ${z.no === fl.cur ? 'on' : ''} ${(FL[z.status] || FL.WAIT)[1]}" data-step="${z.no}"><span class="spread"><span class="small muted">Bước ${z.no}</span><span class="ac-chip ${(FL[z.status] || FL.WAIT)[1]}">${esc((FL[z.status] || FL.WAIT)[0])}</span></span><b>${esc(z.name)}</b><span class="small muted ell">${esc(z.dept)} · agent ${esc(z.agentName)}</span><span class="ac-step-n ${(FL[z.status] || FL.WAIT)[1]}">${esc(z.note)}</span></button>`).join('')}</div>
+            <aside class="card ac-fdet"><div class="spread" style="align-items:flex-start"><div><div class="small muted">Bước ${s.no} · ${esc(s.dept)}</div><b style="font-size:17px">${esc(s.name)}</b></div><span class="ac-chip ${st[1]}">${esc(st[0])}</span></div>
+              <div class="ac-step-n ${st[1]}">${esc(s.note)}</div><div class="small muted">Chuỗi xử lý</div>
+              <div class="ac-chain">${s.listChain.map(c => `<div><span class="small muted nowrap">${esc(c.at ? hm(c.at) : '—')}</span><i class="ac-sev ${c.status === 'OK' ? 'ok' : c.status === 'FAIL' ? 'hot' : c.status === 'WAIT' ? 'warn' : 'run'}"></i><span><b>${esc(c.kind)}</b> · <span class="small">${esc(c.text)}</span></span></div>`).join('')}</div>
+              <div class="row-flex" style="gap:8px;flex-wrap:wrap">${s.canOpen ? `<a class="btn" href="#/${esc(s.screen)}">Mở màn ${esc(s.screenName)} ↗</a>` : ''}<a class="btn" href="#/ai-agents?tab=chat&agent=${esc(s.agent)}&q=${encodeURIComponent('Bước ' + s.name + ' ngày ' + U.date(fl.day) + ' đang thế nào?')}">Hỏi agent ${esc(s.agentName)}</a>${(s.status === 'BAD' || s.status === 'WARN') && Store.perm('ai-tasks').access !== false ? '<a class="btn primary" href="#/ai-agents?tab=tasks">Xem việc đã sinh</a>' : ''}</div></aside></div>`;
+        b.querySelectorAll('[data-step]').forEach(z => z.onclick = () => { fl.cur = +z.dataset.step; paint(); if (window.innerWidth < 900) { const det = b.querySelector('.ac-fdet'); if (det) det.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+      };
+      paint();
     });
   }
 
@@ -144,15 +281,14 @@
   function logTable(rows, showAgent = true) {
     if (!rows || !rows.length) return '<div class="muted small">Chưa có lời gọi nào trong khoảng này.</div>';
     return `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Thời gian</th>${showAgent ? '<th>Agent</th>' : ''}<th>Công cụ</th><th>Người hỏi</th><th>Kết quả</th><th class="num">ms</th><th class="num">Dòng</th><th>Ghi chú</th></tr></thead><tbody>
-      ${rows.map(r => { const s = STATUS[r.status] || [r.status || '', '']; return `<tr><td class="nowrap">${esc(when(r.at))}</td>${showAgent ? `<td class="nowrap">${icon(r.agent, 20)} ${esc(r.agent)}</td>` : ''}<td><code>${esc(r.tool || '')}</code></td>
+      ${rows.map(r => { const s = STATUS[r.status] || [r.status || '', '']; return `<tr><td class="nowrap">${esc(when(r.at))}</td>${showAgent ? `<td class="nowrap">${esc(r.agent)}</td>` : ''}<td><code>${esc(r.tool || '')}</code></td>
         <td class="small">${esc(r.askingUserName || (r.onBehalfOf ? 'Telegram ' + r.onBehalfOf : 'theo lịch / không rõ'))}</td><td>${chip(s[0] + (r.httpStatus && r.httpStatus !== 200 ? ' · ' + r.httpStatus : ''), s[1])}</td>
         <td class="num">${r.ms != null ? U.num(r.ms) : ''}</td><td class="num">${r.rows != null ? U.num(r.rows) : ''}</td><td class="small">${esc(r.error || '')}${r.correlationId && /^sched:/.test(r.correlationId) ? ` <span class="muted">(${esc(r.correlationId.split(':')[1])})</span>` : ''}</td></tr>`; }).join('')}</tbody></table></div>`;
   }
-
-  APP.register('ai-agent-log', (el, f, p) => {
-    const st = { agent: (p && p.agent) || '', status: (p && p.status) || '', tool: '', from: U.addDays(TODAY(), -6), to: TODAY(), page: 1, rows: [] };
-    el.innerHTML = APP.header(f || FN['ai-agent-log'], '', { noNote: true }) + nav('ai-agent-log')
-      + `<div class="card"><div class="row-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+  function log(el, f, p) {
+    const st = { agent: p.agent || '', status: p.status || '', tool: '', from: U.addDays(TODAY(), -6), to: TODAY(), page: 1, rows: [] };
+    const b = frame(el, f, 'log');
+    b.innerHTML = `<div class="card"><div class="row-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
           <label class="field" style="min-width:140px"><span>Agent</span><select class="input" id="lgA"><option value="">Mọi agent</option>${['VIVI', 'WH', 'KITCHEN', 'QA', 'KNOW', 'SALES', 'PLAN', 'PROC', 'LOG', 'PKG', 'HR', 'ACC', 'CSKH'].map(c => `<option ${c === st.agent ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
           <label class="field" style="min-width:140px"><span>Kết quả</span><select class="input" id="lgS"><option value="">Mọi kết quả</option>${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === st.status ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label>
           <label class="field"><span>Công cụ</span><input class="input" id="lgT" placeholder="vd get_ton_kho" style="max-width:170px"></label>
@@ -163,94 +299,64 @@
     const load = more => {
       if (!more) { st.page = 1; st.rows = []; }
       Store.query('Agent/GetActivity', { agent: st.agent, status: st.status, tool: st.tool, from: st.from, to: st.to, page: st.page, pageSize: 50 }).then(x => {
-        const b = el.querySelector('#lgB'); if (!b) return;
-        if (!x.ok || !x.data) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được nhật ký')}</div>`; return; }
+        const box = b.querySelector('#lgB'); if (!box) return;
+        if (!x.ok || !x.data) { box.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được nhật ký')}</div>`; return; }
         const d = x.data; st.rows = st.rows.concat(d.listRow || []);
-        el.querySelector('#lgK').innerHTML = UI.kpis([UI.kpi('Lời gọi', U.num(d.total), 'trong khoảng đã lọc', 'chart', 'blue'), UI.kpi('Thành công', U.num(d.ok), '', 'check', 'green'),
+        b.querySelector('#lgK').innerHTML = UI.kpis([UI.kpi('Lời gọi', U.num(d.total), 'trong khoảng đã lọc', 'chart', 'blue'), UI.kpi('Thành công', U.num(d.ok), '', 'check', 'green'),
           UI.kpi('Bị từ chối', U.num(d.denied), 'quyền / khóa / tắt / giới hạn', 'shield', d.denied ? 'orange' : 'green'), UI.kpi('Lỗi', U.num(d.failed), '', 'alert', d.failed ? 'red' : 'green')]);
-        b.innerHTML = logTable(st.rows) + (st.rows.length < d.total ? `<div class="mt"><button class="btn sm" id="lgMore">Xem thêm (${U.num(d.total - st.rows.length)})</button></div>` : '');
-        const m = b.querySelector('#lgMore'); if (m) m.onclick = () => { st.page++; load(true); };
+        box.innerHTML = logTable(st.rows) + (st.rows.length < d.total ? `<div class="mt"><button class="btn sm" id="lgMore">Xem thêm (${U.num(d.total - st.rows.length)})</button></div>` : '');
+        const m = box.querySelector('#lgMore'); if (m) m.onclick = () => { st.page++; load(true); };
       });
     };
-    el.querySelector('#lgGo').onclick = () => {
-      st.agent = el.querySelector('#lgA').value; st.status = el.querySelector('#lgS').value; st.tool = el.querySelector('#lgT').value.trim();
-      st.from = el.querySelector('#lgF').value; st.to = el.querySelector('#lgTo').value; load(false);
+    b.querySelector('#lgGo').onclick = () => {
+      st.agent = b.querySelector('#lgA').value; st.status = b.querySelector('#lgS').value; st.tool = b.querySelector('#lgT').value.trim();
+      st.from = b.querySelector('#lgF').value; st.to = b.querySelector('#lgTo').value; load(false);
     };
     load(false);
-  });
+  }
 
   // ================= Lịch chạy =================
   function schedTable(rows, showAgent = true) {
     if (!rows || !rows.length) return '<div class="muted small">Chưa có lịch.</div>';
     return `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Giờ</th>${showAgent ? '<th>Agent</th>' : ''}<th>Việc</th><th>Công cụ</th><th>Job lõi</th><th>Trạng thái</th><th>Lần chạy gần nhất</th></tr></thead><tbody>
-      ${rows.map(s => `<tr class="${s.enabled && s.agentActive ? '' : 'muted'}"><td class="nowrap"><b>${esc(s.at || s.cron || '')}</b></td>${showAgent ? `<td class="nowrap">${icon(s.agent, 20)} ${esc(s.agentName || s.agent)}</td>` : ''}
+      ${rows.map(s => `<tr class="${s.enabled && s.agentActive ? '' : 'muted'}"><td class="nowrap"><b>${esc(s.at || s.cron || '')}</b></td>${showAgent ? `<td class="nowrap">${esc(s.agentName || s.agent)}</td>` : ''}
         <td>${esc(s.title || '')}</td><td class="small">${(s.listTool || []).map(t => `<code>${esc(t)}</code>`).join(' ')}</td><td class="small">${esc(s.coreJob ? (UI.JOB_VI && UI.JOB_VI[s.coreJob]) || s.coreJob : '–')}</td>
         <td class="nowrap">${!s.enabled ? chip((s.listTool || []).length ? 'Đang tắt' : `Chờ đợt ${s.wave}`) : s.agentActive ? chip('Đang chạy', 'green') : chip('Agent đang tắt', 'orange')}${showAgent && Store.perm('ai-schedule').edit && (s.listTool || []).length ? ` <label class="ai-switch" title="Bật / tắt việc này"><input type="checkbox" data-sched="${esc(s.id)}" ${s.enabled ? 'checked' : ''}></label>` : ''}</td>
         <td class="small">${s.lastRunAt ? esc(when(s.lastRunAt)) + ' ' + chip((STATUS[s.lastRunStatus] || [s.lastRunStatus || ''])[0], (STATUS[s.lastRunStatus] || ['', ''])[1]) : '<span class="muted">chưa chạy</span>'}</td></tr>`).join('')}</tbody></table></div>`;
   }
-
-  APP.register('ai-schedule', (el, f) => {
-    el.innerHTML = APP.header(f || FN['ai-schedule'], '', { noNote: true }) + nav('ai-schedule')
-      + `<div class="notice info mb">${I('help')}<div>Lịch lấy từ <code>app-delicare-agents/schedules.json</code> – cùng một tệp sinh cron cho Hermes. Job lõi (khóa đơn, MRP, bản tin…) vẫn chạy đúng giờ dù agent tắt; agent chỉ đọc kết quả và báo. Người có quyền Sửa Lịch chạy bật / tắt từng việc bằng công tắc ở cột Trạng thái – ghi lại tệp lịch, Hermes đọc lại.</div></div>
-        <div class="card" id="scB">${loading}</div>`;
+  function schedule(el, f) {
+    const b = frame(el, f, 'schedule');
     Store.query('Agent/GetSchedules').then(x => {
-      const b = el.querySelector('#scB'); if (!b) return;
+      if (!b.isConnected) return;
       if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được lịch')}</div>`; return; }
       const list = x.list || [];
-      b.innerHTML = list.length ? schedTable(list) : `<div class="muted">${esc((x.res && x.res.responseMessage) || 'Chưa có lịch')}</div>`;
-      // AI-11 (D-133): bật / tắt từng việc → app-delicare-agents/schedules.json (Hermes đọc lại khi sinh cron).
+      b.innerHTML = `<div class="notice info mb">${I('help')}<div>Job lõi (khóa đơn, MRP, bản tin…) vẫn chạy đúng giờ dù agent tắt; agent chỉ đọc kết quả và báo. Người có quyền Sửa Lịch chạy bật / tắt từng việc bằng công tắc ở cột Trạng thái – ghi lại tệp lịch, Hermes đọc lại.</div></div>`
+        + `<div class="card">${list.length ? schedTable(list) : `<div class="muted">${esc((x.res && x.res.responseMessage) || 'Chưa có lịch')}</div>`}</div>`;
       b.querySelectorAll('[data-sched]').forEach(cb => cb.onchange = () => Store.act('Agent/SaveSchedule', { form: { id: cb.dataset.sched, enabled: cb.checked } }).then(r => { if (r.ok) UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); APP.refresh(); }));
     });
-  });
+  }
 
-  // ================= AI-11 (D-133): Luồng liên phòng – dựng từ CorrelationId (sự kiện → agent → đề xuất → duyệt → kết quả → tin) =================
-  const KIND = { EVENT: ['Sự kiện', 'alert'], CALL: ['Agent đọc', 'eye'], PROPOSAL: ['Đề xuất', 'edit'], DECISION: ['Người duyệt', 'check'], RESULT: ['Kết quả', 'ok'], MESSAGE: ['Tin gửi', 'bell'] };
-  const FST = { DONE: ['Xong', 'green'], WAITING: ['Chờ duyệt', 'orange'], FAILED: ['Lỗi / từ chối', 'red'], INFO: ['Đang theo dõi', 'blue'] };
-  const SST = { OK: 'green', WAIT: 'orange', FAIL: 'red' };
-  const fl = { day: null };
-  const SOPT = ['sop', 'huong-dan', 'quyet-dinh'];
-  APP.register('ai-flow', (el, f) => {
-    if (!fl.day) fl.day = Store.ctx.date || U.iso(new Date());
-    const today = U.iso(new Date()), yest = U.addDays(today, -1);
-    el.innerHTML = APP.header(f || FN['ai-flow'], `<div class="row-flex"><button class="btn sm ${fl.day === today ? 'primary' : ''}" data-day="${today}">Hôm nay</button><button class="btn sm ${fl.day === yest ? 'primary' : ''}" data-day="${yest}">Hôm qua</button><input type="date" class="input" id="flDay" value="${fl.day}" style="width:auto"></div>`, { noNote: true, sub: 'Mỗi luồng nối các bước cùng mã tương quan: sự kiện → agent nhận xét → đề xuất → người duyệt → kết quả ghi nghiệp vụ → tin bot gửi người phụ trách.' })
-      + nav('ai-flow') + `<div id="flB">${loading}</div>`;
-    el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { fl.day = b.dataset.day; APP.refresh(); });
-    el.querySelector('#flDay').onchange = e => { if (e.target.value) { fl.day = e.target.value; APP.refresh(); } };
-    Store.query('Agent/GetFlows', { date: fl.day }).then(x => {
-      const b = el.querySelector('#flB'); if (!b) return;
-      if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được luồng')}</div>`; return; }
-      const d = x.data || {}, list = d.listFlow || [];
-      b.innerHTML = UI.kpis([UI.kpi('Luồng', U.num(d.total || 0), '', 'route', 'blue'), UI.kpi('Xong', U.num(d.done || 0), '', 'ok', 'green'), UI.kpi('Chờ duyệt', U.num(d.waiting || 0), '', 'clock', d.waiting ? 'orange' : 'green'), UI.kpi('Lỗi / từ chối', U.num(d.failed || 0), '', 'alert', d.failed ? 'red' : 'green'), UI.kpi('Tin đã gửi', U.num(d.messages || 0), '', 'bell', 'blue')])
-        + (list.length ? list.map(fw => `<div class="card panel mb"><div class="spread"><div><b>${esc(fw.title || '')}</b><div class="small muted">${(fw.agents || []).map(a => icon(a, 18) + ' ' + esc(a)).join(' · ')} · ${esc(when(fw.startedAt))} → ${esc(when(fw.lastAt))} · <code>${esc(fw.correlationId)}</code></div></div>${chip((FST[fw.status] || [fw.status])[0], (FST[fw.status] || ['', ''])[1])}</div>
-          <div class="ai-flow-steps">${(fw.steps || []).map((st, i) => `<div class="ai-flow-step ${SST[st.status] || ''}"><div class="small muted">BƯỚC ${i + 1} · ${esc((KIND[st.kind] || [st.kind])[0])}</div><b>${esc(st.title || '')}</b>${st.detail ? `<div class="small">${esc(st.detail)}</div>` : ''}<div class="small muted mt">${st.agent ? icon(st.agent, 16) + ' ' + esc(st.agent) + ' · ' : ''}${esc(when(st.at))}${st.link ? ` · <a href="${esc(st.link)}">Mở</a>` : ''}</div></div>`).join('')}</div></div>`).join('')
-          : '<div class="card panel empty">Chưa có luồng nào trong ngày. Luồng xuất hiện khi agent nhận sự kiện, đề xuất ghi hoặc gửi cảnh báo.</div>');
+  // ================= Sử dụng & chi phí (D-138 g – CEO / COO / FIN-IT) =================
+  const us = { month: null };
+  function usage(el, f, p) {
+    if (p.month) us.month = p.month; if (!us.month) us.month = TODAY().slice(0, 7);
+    const b = frame(el, f, 'usage', `<label class="field" style="margin:0"><span class="sr-only">Tháng</span><input type="month" class="input" id="usM" value="${esc(us.month)}"></label>`);
+    el.querySelector('#usM').onchange = e => { if (e.target.value) { us.month = e.target.value; APP.refresh(); } };
+    Promise.all([Store.query('Agent/GetCost', { month: us.month }), chatAgents()]).then(([x, agents]) => {
+      if (!b.isConnected) return;
+      if (!x.ok || !x.data) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được chi phí')}</div>`; return; }
+      const d = x.data, mm = d.month.slice(5) + '/' + d.month.slice(0, 4), name = c => (agents.find(a => a.code === c) || {}).short || c;
+      if (!d.turns) { b.innerHTML = `<div class="card panel empty">${I('chart')}<h2 class="mt">Chưa có dữ liệu chi phí tháng ${esc(mm)}</h2><p class="muted">Số liệu có khi Hermes báo token / chi phí mỗi lượt trả lời (công cụ bao_chi_phi – AI-13). Ngân sách: ${d.budget ? esc(money(d.budget)) : 'chưa đặt (Agent:MonthlyBudget)'}.</p></div>`; return; }
+      const color = d.pct == null ? 'blue' : d.pct >= 100 ? 'red' : d.pct >= d.alertPct ? 'orange' : 'green';
+      b.innerHTML = UI.kpis([UI.kpi('Đã dùng', shortMoney(d.totalVnd), d.budget ? 'ngân sách ' + money(d.budget) : 'chưa đặt ngân sách', 'chart', color), UI.kpi('% ngân sách', d.pct == null ? '–' : U.num(d.pct, 1) + ' %', `cảnh báo từ ${U.num(d.alertPct)} %`, 'shield', color),
+        UI.kpi('Dự báo cuối tháng', shortMoney(d.forecastVnd), 'theo bình quân ngày', 'trend', d.budget && d.forecastVnd > d.budget ? 'red' : 'blue'), UI.kpi('Tháng ' + d.prevMonth.slice(5), shortMoney(d.prevTotalVnd), 'tháng trước', 'history', 'blue'),
+        UI.kpi('Bình quân / lượt', d.perTurnVnd == null ? '–' : money(d.perTurnVnd), U.num(d.turns) + ' lượt', 'clock', 'blue'), UI.kpi('Token', U.num((d.tokensIn + d.tokensOut) / 1000, 1) + 'k', 'vào ' + U.num(d.tokensIn / 1000, 1) + 'k · ra ' + U.num(d.tokensOut / 1000, 1) + 'k', 'layers', 'blue')])
+        + `<div class="ac-usage mt"><div class="card"><h3>Chi phí theo ngày · tháng ${esc(mm)}</h3>${UI.chart({ type: 'bar', title: 'Chi phí AI theo ngày', unit: 'đ', labels: d.listDay.map(z => String(z.date).slice(8, 10)), fullLabels: d.listDay.map(z => U.date(z.date)), series: [{ name: 'Chi phí (đ)', values: d.listDay.map(z => z.costVnd), role: 'deliver' }], h: 260 })}</div>
+          <div class="card"><h3>Theo agent</h3>${UI.chart({ type: 'hbar', title: 'Chi phí theo agent', unit: 'đ', labels: d.listAgent.map(a => name(a.agent)), series: [{ name: 'Chi phí (đ)', values: d.listAgent.map(a => a.costVnd) }], h: Math.max(160, d.listAgent.length * 34) })}</div></div>
+        <div class="card mt"><h3>Chi tiết theo agent</h3><div class="table-wrap"><table class="table dc-table"><thead><tr><th>Agent</th><th class="num">Lượt</th><th class="num">Token vào</th><th class="num">Token ra</th><th class="num">Chi phí (đ)</th><th class="num">%</th></tr></thead><tbody>
+          ${d.listAgent.map(a => `<tr><td>${esc(name(a.agent))}</td><td class="num">${U.num(a.turns)}</td><td class="num">${U.num(a.tokensIn)}</td><td class="num">${U.num(a.tokensOut)}</td><td class="num">${U.num(Math.round(a.costVnd))}</td><td class="num">${d.totalVnd ? U.num(a.costVnd / d.totalVnd * 100, 1) : '–'}</td></tr>`).join('')}</tbody></table></div></div>`;
     });
-  });
-
-  // ================= AI-12 (D-133): Việc agent theo dõi – thư mục 98 kho tri thức =================
-  const tk = { done: false };
-  APP.register('ai-tasks', (el, f) => {
-    el.innerHTML = APP.header(f || FN['ai-tasks'], `<label class="row-flex small"><input type="checkbox" id="tkDone" ${tk.done ? 'checked' : ''}> Hiện cả việc đã xong</label>`, { noNote: true, sub: 'Việc agent ghi lại để theo dõi tới khi xong (hạn, người phụ trách) – thấy theo quyền thư mục kho. Đề xuất ghi chờ xác nhận ở Phê duyệt › Lệnh của agent.' })
-      + nav('ai-tasks') + `<div id="tkB">${loading}</div>`;
-    el.querySelector('#tkDone').onchange = e => { tk.done = e.target.checked; APP.refresh(); };
-    Store.query('Agent/GetTasks', { includeDone: tk.done }).then(x => {
-      const b = el.querySelector('#tkB'); if (!b) return;
-      if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được việc')}</div>`; return; }
-      const list = x.list || [], open = list.filter(t => t.status !== 'xong'), today = U.iso(new Date());
-      const canEdit = Store.perm('ai-tasks').edit;
-      b.innerHTML = UI.kpis([UI.kpi('Việc đang mở', U.num(open.length), '', 'clipboard', 'blue'), UI.kpi('Quá hạn', U.num(open.filter(t => t.overdue).length), '', 'alert', open.some(t => t.overdue) ? 'red' : 'green'),
-        UI.kpi('Hạn hôm nay', U.num(open.filter(t => t.due && String(t.due).slice(0, 10) === today).length), '', 'clock', 'orange'), UI.kpi('Agent đang theo dõi', U.num(new Set(open.map(t => t.agent)).size), 'sẽ nhắc lại khi tới hạn', 'eye', 'green')])
-        + (list.length ? list.map(t => `<div class="card panel mb ${t.status === 'xong' ? 'muted' : ''}"><div class="spread"><div>${icon(t.agent, 22)} <b>${esc(t.title)}</b> ${t.overdue ? chip('Quá hạn', 'red') : t.status === 'xong' ? chip('Xong', 'green') : chip('Đang theo dõi', 'blue')}</div>
-            ${canEdit ? `<div class="row-flex" style="gap:6px">${t.status === 'xong' ? `<button class="btn sm" data-reopen="${esc(t.path)}">Mở lại</button>` : `<button class="btn sm" data-give="${esc(t.path)}">Giao lại</button><button class="btn sm primary" data-done="${esc(t.path)}">Xong</button>`}</div>` : ''}</div>
-            <div class="small mt" style="white-space:pre-line">${esc((t.content || '').slice(0, 600))}</div>
-            <div class="small muted mt">Hạn: ${esc(t.due ? U.date(t.due) : '–')} · người phụ trách: ${esc(t.owner || '–')} · agent ${esc(t.agent)} · <a href="#/knowledge?path=${encodeURIComponent(t.path)}">Mở ghi chú</a></div></div>`).join('')
-          : '<div class="card panel empty">Chưa có việc agent theo dõi.</div>');
-      const set = (path, body) => Store.act('Agent/SetTask', { json: Object.assign({ path }, body) }).then(r => { if (r.ok) { UI.toast('Đã lưu', 'ok'); APP.refresh(); } });
-      b.querySelectorAll('[data-done]').forEach(x => x.onclick = () => set(x.dataset.done, { status: 'xong' }));
-      b.querySelectorAll('[data-reopen]').forEach(x => x.onclick = () => set(x.dataset.reopen, { status: 'dang-theo-doi' }));
-      b.querySelectorAll('[data-give]').forEach(x => x.onclick = () => UI.confirm('Giao việc này cho ai?', who => set(x.dataset.give, { owner: who, note: 'giao lại' }), { input: 'Người phụ trách mới (tên / vai trò)', required: true, ok: 'Giao lại' }));
-    });
-  });
+  }
 
   // ================= Kho tri thức =================
   const DOC = { PO: 'scm-po', PR: 'scm-pr', GR: 'scm-gr', PN: 'scm-gr', PX: 'scm-issue', PA: 'log-complaint', ME: 'prod-batch', LO: 'scm-lot', KK: 'scm-stockcount', KH: 'crm-customer', KHB: 'crm-customer', NCC: 'scm-supplier', HD: 'crm-contract', TD: 'menu-menu' };

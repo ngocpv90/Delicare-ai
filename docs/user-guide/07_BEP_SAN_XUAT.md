@@ -18,6 +18,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Việc của tôi › Việc của tôi | `hr-my` | X | X |
 | Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | Duyệt | — |
 | Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | Duyệt | — |
+| Điều hành › Giao việc | `ai-tasks` | S | — |
 | Bán lẻ › Đơn khách lẻ | `sal-retail-order` | X (IX) | — |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | — |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | — |
@@ -45,7 +46,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 50 Sản xuất | `knowledge?folder=50` | S | — |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X |
-| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S | — |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ca

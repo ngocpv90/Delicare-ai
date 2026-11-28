@@ -115,3 +115,26 @@ Authorization: Bearer {{token}}
 Content-Type: application/x-www-form-urlencoded
 
 jobCode=KnowledgeBriefMorning
+
+### 8. AI-21 (D-138) Trung tâm Agent – Tổng quan (ai-agents), Giao việc (ai-tasks), Luồng 12 bước (ai-flow), chi phí (ai-cost: chỉ CEO / COO / FIN-IT, người khác 403)
+GET {{api}}/Agent/GetOverview
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/Agent/GetTasks?includeDone=true
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/Agent/GetFlowDay?date=2026-11-29
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/Agent/GetChatAgents
+Authorization: Bearer {{token}}
+
+### Đã xử lý 1 việc (quyền Sửa ai-tasks) – key lấy từ GetTasks
+POST {{api}}/Agent/CloseTask
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "key": "ALERT:COMPLAINT_OPEN:20261128", "note": "Đã gọi khách" }

@@ -16,6 +16,9 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Menu › Mục | screen-id | FIN-IT |
 |---|---|---|
 | Phê duyệt › Tài khoản | `wf-inbox?type=adm-user` | Duyệt |
+| Điều hành › Trung tâm Agent | `ai-agents` | S |
+| Điều hành › Giao việc | `ai-tasks` | S |
+| Điều hành › Lịch chạy | `ai-schedule` | S |
 | Danh mục hệ thống › Công ty & đơn vị | `adm-orgunit` | Q (IX) |
 | Danh mục hệ thống › Danh mục dùng chung | `adm-reference` | Q (IX) |
 | Danh mục hệ thống › Địa giới hành chính | `adm-admin-unit` | Q (IX) |
@@ -38,9 +41,6 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Nhật ký & Tích hợp › Tin nhắn đi | `int-outbound` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | S (IX) |
-| Trợ lý AI › Trung tâm agent | `ai-agents` | S |
-| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S |
-| Trợ lý AI › Lịch chạy | `ai-schedule` | S |
 <!-- MENU5:END -->
 
 | `adm-reference` | Danh mục dùng chung | **Chỉ xem** các giá trị chọn sẵn (loại suất, loại kho, kênh phản ánh…) và màn / cột đang dùng. Thêm / sửa giá trị = sửa cấu hình máy chủ (liên hệ quản trị hệ thống) |
