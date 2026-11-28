@@ -20,7 +20,7 @@ namespace AppDelicare.Services.Implement.Approval
         public IReadOnlyCollection<string> ApprovalScreenIds { get; } = [PurchaseRequestStatus.Level1ScreenId, PurchaseRequestStatus.Level2ScreenId];
 
         public Task<IReadOnlyList<string>> StepScreenIdsAsync(Guid businessId)
-            => Task.FromResult<IReadOnlyList<string>>([PurchaseRequestStatus.Level1ScreenId, PurchaseRequestStatus.Level2ScreenId]);
+            => _purchaseRequestService.ApprovalStepScreenIdsAsync(businessId);
 
         public Task<string?> BuildPayloadAsync(Guid businessId) => _purchaseRequestService.BuildApprovalStateAsync(businessId);
 

@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **235 khóa** trong 12 section.
+Tổng: **260 khóa** trong 13 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -38,6 +38,7 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Agent:MaxRows` | int | 50 | Số dòng tối đa một công cụ đọc trả về (AI-3). | – |
 | `Agent:AskingBotCode` | string? | – | Mã bot Telegram nơi người hỏi liên kết (tra X-On-Behalf-Of); trống = mọi kênh Telegram. | – |
 | `Agent:AskingGroups` | string? | – | AI-7: mã nhóm (UserGroup.Code, cách nhau dấu phẩy) được hỏi Trợ lý qua bot; trống = mọi người đã liên kết. Người hỏi chưa liên kết luôn bị từ chối. | – |
+| `Agent:ProposalTtlMinutes` | int | 15 | AI-9: hạn xác nhận đề xuất ghi của agent (phút) – quá hạn đề xuất bị hủy, agent đề xuất lại. | – |
 | `Agent:HermesWebhookUrl` | string? | – | AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt. | – |
 | `Agent:SchedulesFile` | string | "agents/schedules.json" | AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục agents). | – |
 
@@ -97,20 +98,21 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:Dashboard:ChartDays` | int | 7 | Biểu đồ suất ăn: số ngày tính tới ngày chọn (spec 12.1: 7 ngày). | – |
 | `BusinessRules:Dashboard:OrdersTake` | int | 6 | Khối "đơn hàng trong ngày": số đơn đầu tiên trả về (spec 12.1: 6). | – |
 | `BusinessRules:Dashboard:JourneyMaxDocuments` | int | 20 | Hành trình đơn: tối đa N chứng từ mỗi chặng (tổng vẫn trả ở documentCount). | – |
-| `BusinessRules:Retail:OrderCutoffHour` | int | 20 | RETAIL-1 – giờ chốt đơn khách lẻ: đặt trước giờ này nhận sớm nhất ngày mai, sau thì ngày kia (máy chủ kiểm lại). | PROPOSED |
-| `BusinessRules:Retail:MaxDaysAhead` | int | 14 | Đặt trước tối đa N ngày. | PROPOSED |
-| `BusinessRules:Retail:MaxLines` / `MaxQuantityPerLine` | int | 20 / 999 | Chặn đơn bất thường (số dòng / số lượng mỗi dòng). | PROPOSED |
-| `BusinessRules:Retail:SubmitLimitPerPhone` / `SubmitLimitPerIp` | int | 3 / 10 | Chống spam đơn trên trang web trong `LimitWindowMinutes` – vượt trả HTTP 429. IP lấy từ `X-Real-IP` của nginx khi kết nối đến từ mạng nội bộ. | PROPOSED |
-| `BusinessRules:Retail:TrackLimitPerIp` | int | 20 | Tra cứu đơn tối đa N lần / IP / cửa sổ. | PROPOSED |
-| `BusinessRules:Retail:LimitWindowMinutes` | int | 60 | Cửa sổ đếm của các giới hạn trên (phút). | PROPOSED |
-| `BusinessRules:Retail:DuplicateRequestHours` | int | 24 | Gửi lại cùng `clientRequestId` trong N giờ → trả lại đơn cũ, không tạo đơn trùng. | PROPOSED |
-| `BusinessRules:Retail:NotifyNewOrder` | bool | true | Báo đơn WEB mới qua bot (mẫu `RETAIL_ORDER_NEW`) cho người có quyền Thêm ở `#/sal-retail-order`. | PROPOSED |
-| `BusinessRules:Retail:SessionDays` | int | 30 | RETAIL-2 – phiên đăng nhập khách lẻ (header `X-Retail-Token`) hết hạn sau N ngày. | PROPOSED |
-| `BusinessRules:Retail:PasswordMinLength` | int | 6 | Độ dài tối thiểu mật khẩu khách lẻ (tối đa 100). | PROPOSED |
-| `BusinessRules:Retail:LoginFailLimit` / `LoginLockMinutes` | int | 5 / 15 | Sai mật khẩu N lần theo SĐT → khóa tạm M phút (HTTP 429). | PROPOSED |
-| `BusinessRules:Retail:RegisterLimitPerIp` | int | 5 | Tạo tài khoản khách tối đa N lần / IP / `LimitWindowMinutes`. | PROPOSED |
-| `ReferenceLists:Lists:RetailCategory` | danh sách | 5 nhóm | Nhóm sản phẩm bán lẻ (`RetailProduct.CategoryCode`). | PROPOSED |
-| `SystemUsers:JobUserId` | Guid | – | **Bắt buộc cho trang khách lẻ:** đơn đặt trên web ghi dưới tài khoản `system` này; thiếu → trang khách báo gọi điện đặt hàng. | – |
+| `BusinessRules:Retail:OrderCutoffHour` | int | 20 | Giờ chốt: đặt trước giờ này → nhận sớm nhất ngày mai; sau → ngày kia. | – |
+| `BusinessRules:Retail:MaxDaysAhead` | int | 14 | Đặt trước tối đa bao nhiêu ngày. | – |
+| `BusinessRules:Retail:MaxLines` | int | 20 | – | – |
+| `BusinessRules:Retail:MaxQuantityPerLine` | int | 999 | – | – |
+| `BusinessRules:Retail:SubmitLimitPerPhone` | int | 3 | Chống spam đơn WEB: số đơn tối đa / SĐT / cửa sổ. | – |
+| `BusinessRules:Retail:SubmitLimitPerIp` | int | 10 | Chống spam đơn WEB: số đơn tối đa / IP / cửa sổ. | – |
+| `BusinessRules:Retail:TrackLimitPerIp` | int | 20 | Tra cứu đơn: số lần tối đa / IP / cửa sổ. | – |
+| `BusinessRules:Retail:LimitWindowMinutes` | int | 60 | – | – |
+| `BusinessRules:Retail:DuplicateRequestHours` | int | 24 | Gửi lại cùng ClientRequestId trong khoảng này → trả lại đơn cũ. | – |
+| `BusinessRules:Retail:NotifyNewOrder` | bool | true | Báo đơn WEB mới qua bot cho người có quyền màn "Đơn khách lẻ". | – |
+| `BusinessRules:Retail:SessionDays` | int | 30 | RETAIL-2: thời hạn phiên đăng nhập của khách lẻ (ngày). | – |
+| `BusinessRules:Retail:PasswordMinLength` | int | 6 | – | – |
+| `BusinessRules:Retail:LoginFailLimit` | int | 5 | RETAIL-2: đăng nhập sai bao nhiêu lần (theo SĐT) thì khóa tạm. | – |
+| `BusinessRules:Retail:LoginLockMinutes` | int | 15 | – | – |
+| `BusinessRules:Retail:RegisterLimitPerIp` | int | 5 | RETAIL-2: số tài khoản tạo tối đa / IP / cửa sổ LimitWindowMinutes. | – |
 | `BusinessRules:OrderCutoffHourPreviousDay` | int | 20 | – | – |
 | `BusinessRules:OrderLockJobTime` | string | "20:00" | – | – |
 | `BusinessRules:MrpJobTime` | string | "20:30" | – | – |
@@ -324,6 +326,20 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
 |---|---|---|---|---|
 | `Permissions:CacheMinutes` | int | 5 | Thời gian cache quyền của mỗi user (phút). | – |
+
+## PurchasePlan
+
+| Khóa | Kiểu | Mặc định | Ý nghĩa | Task |
+|---|---|---|---|---|
+| `PurchasePlan:Enabled` | bool | true | Tắt cả job lập đề nghị tự động (màn vẫn xem được, bấm tay vẫn chạy). | – |
+| `PurchasePlan:RunTimes` | string[] | [] | Giờ job lập / cập nhật đề nghị mua cho phần đến hạn đặt (lần 1 = job PurchasePlan, lần 2 = job PurchasePlanEvening – trước MrpJob 20:30). | – |
+| `PurchasePlan:SendTime` | string | "15:00" | Giờ tự gửi đơn mua đã duyệt cho NCC (đơn duyệt sau giờ này gửi ngay khi duyệt). | – |
+| `PurchasePlan:AutoSend` | bool | true | Tự gửi đơn mua cho NCC qua kênh tích hợp (false = chỉ đánh dấu chờ gửi tay). | – |
+| `PurchasePlan:SubstituteMinSavingPct` | decimal | 5m | Thay thế rẻ hơn (giá trên 1 kg dùng được) ít nhất % này mới dùng; chênh ít hơn giữ nguyên liệu chuẩn. | – |
+| `PurchasePlan:TolerancePct` | decimal | 10m | Đề nghị do hệ thống lập: số lượng ≤ nhu cầu tính × (1 + % này) mới coi là đúng định mức. | – |
+| `PurchasePlan:SplitMaxCorrectionPct` | decimal | 15m | Chia NCC: tỷ lệ lần này = mục tiêu + (mục tiêu − lũy kế tháng), chặn trong ± số điểm này. | – |
+| `PurchasePlan:SupplierConfirmHours` | int | 12 | Đơn đã gửi mà NCC chưa xác nhận trước giờ giao ít hơn số giờ này → bot báo Mua hàng. | – |
+| `PurchasePlan:AutoSubmit` | bool | true | Tự gửi duyệt đề nghị do job lập (false = để Nháp cho người mua gửi). | – |
 
 ## ReferenceLists
 

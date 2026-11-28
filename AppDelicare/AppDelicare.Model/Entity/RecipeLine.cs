@@ -26,5 +26,11 @@ namespace AppDelicare.Model.Entity
         public decimal? ExpectedWasteRate { get; set; }
         public string? PreparationNote { get; set; }
         public int SortOrder { get; set; }
+        /// <summary>UI-6.51 (D-137, GAP-PUR-SUB): nhóm thay thế – dòng chuẩn (định lượng &gt; 0) và dòng thay thế (định lượng 0) cùng nhóm. Migration 20261128_01.</summary>
+        [MaxLength(30)]
+        public string? SubstituteGroup { get; set; }
+        /// <summary>UI-6.51: dòng thay thế – % tối đa phần dùng được của dòng chuẩn được thay (50 = trộn, 100 = thay hẳn).</summary>
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? MaxSharePct { get; set; }
     }
 }

@@ -435,6 +435,8 @@ namespace AppDelicare.Model.Model
         public decimal? PricePerBase { get; set; }
         public bool IsPreferred { get; set; }
         public bool IsCheapest { get; set; }
+        /// <summary>UI-6.51 (D-137 g): tỷ lệ chia đơn % của NCC cho nguyên liệu (trống = không chia).</summary>
+        public decimal? AllocationPct { get; set; }
         public decimal? MinimumOrderQty { get; set; }
         public int? LeadTimeDays { get; set; }
         public string? DeliveryDays { get; set; }

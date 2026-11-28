@@ -26,6 +26,7 @@ const SCRIPTS = [
   'modules/customer360.js',
   'modules/menu.js',
   'modules/scm.js',
+  'modules/purchase-plan.js', // UI-6.51 (D-137): màn Kế hoạch mua
   'modules/ingredient-form.js', // UI-6.20 (D-101): form Nguyên liệu – sau scm.js
   'modules/uom.js', // UI-6.22 (D-103): Đơn vị tính gộp quy đổi + đơn vị đóng gói
   'modules/supplier-price.js', // UI-6.19 (D-100): form giá NCC + bảng so sánh NCC × nguyên liệu – sau uom.js

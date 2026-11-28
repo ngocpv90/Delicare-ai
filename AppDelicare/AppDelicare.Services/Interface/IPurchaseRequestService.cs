@@ -36,5 +36,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.PurchaseRequestDetailModel>> UpdateLines(AppDelicare.Model.Request.Custom.PurchaseRequestUpdateLinesRequest request);
         public Task<IResults<AppDelicare.Model.Model.SupplierPickLineModel>> GetSupplierSuggestion(AppDelicare.Model.Request.Custom.SupplierSuggestRequest request);
         public Task<string?> AutoCreatePoAsync(Guid purchaseRequestId);
+
+        /// <summary>UI-6.51 (D-137 c): số cấp duyệt – đề nghị lập tay 2 cấp (L1 → L2); đề nghị do kế hoạch mua lập vượt định mức 1 cấp Trưởng mua hàng, tổng ≥ ngưỡng Giám đốc thêm COO.</summary>
+        public Task<IReadOnlyList<string>> ApprovalStepScreenIdsAsync(Guid id);
     }
 }

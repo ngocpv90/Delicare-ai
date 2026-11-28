@@ -557,11 +557,17 @@
       const draft = cur.Status === 'Draft' && canEdit;
       const lines = (lineOf[cur.Id] || []).slice().sort((a, b) => (a.SequenceNo || 0) - (b.SequenceNo || 0));
       const lineById = {}; lines.forEach(l => { lineById[l.Id] = l; });
+      // UI-6.51 (D-137 e): dòng thay thế (định lượng 0, cùng nhóm) nằm ngay dưới dòng chuẩn.
+      const isSub = l => !!l.SubstituteGroup && !(+l.Quantity > 0);
+      const ordered = []; lines.filter(l => !isSub(l)).forEach(l => { ordered.push(l); if (l.SubstituteGroup) lines.filter(s => isSub(s) && s.SubstituteGroup === l.SubstituteGroup).forEach(s => ordered.push(s)); }); lines.filter(l => isSub(l) && !ordered.includes(l)).forEach(l => ordered.push(l));
       const vname = x => (x.VersionCode || 'V' + x.VersionNo) + ' · ' + UI.statusVi('Recipe', 'Status', x.Status) + (x.IsActive ? ' (đang dùng)' : '');
       box.innerHTML = `<div class="spread mb"><div class="row-flex"><select class="select" id="rvSel" style="max-width:280px">${recs.map(x => `<option value="${esc(x.Id)}" ${x.Id === cur.Id ? 'selected' : ''}>${esc(vname(x))}</option>`).join('')}</select>${UI.badge(cur.Status, 'Recipe', 'Status')}</div>
         <div class="row-flex">${draft ? `<button class="btn sm" id="rvSave">${I('ok')} Lưu nháp</button><button class="btn sm orange" id="rvSub">Gửi duyệt</button>` : ''}${cur.Status === 'PendingApproval' && canApr && cur.CreatedBy !== Store.user.id ? `<button class="btn sm primary" id="rvApr">${I('approve')} Duyệt</button><button class="btn sm danger" id="rvRej">Từ chối</button>` : ''}${cur.Status === 'Approved' && canApr ? `<button class="btn sm primary" id="rvLock">${I('key')} Khóa</button>` : ''}${['Locked', 'Approved', 'Obsolete'].includes(cur.Status) && canAdd && !recs.some(x => ['Draft', 'PendingApproval'].includes(x.Status)) ? `<button class="btn sm" id="rvNew">${I('plus')} Tạo phiên bản mới</button>` : ''}${Store.perm('menu-recipe').access !== false ? '<a href="javascript:void 0" class="small" data-go="menu-recipe">Màn Công thức chế biến</a>' : ''}</div></div>
         <div class="table-wrap"><table class="table dc-table rv-table"><thead><tr><th>Nguyên liệu</th><th class="num">Định lượng tinh / 100 suất</th><th>ĐVT</th><th class="num">Hao hụt sơ chế %</th><th class="num">Lượng cần mua</th><th class="num">Giá NCC ưu tiên</th><th class="num">Thành tiền / 100 suất</th>${draft ? '<th></th>' : ''}</tr></thead>
-        <tbody>${lines.map(l => { const w = +(l.ExpectedWasteRate ?? l.WastePercent ?? 0) || 0, gross = w < 100 ? (+l.Quantity || 0) * 100 / (100 - w) : 0; return `<tr data-rl="${esc(l.Id)}"><td><b>${esc(Store.label('Ingredient', l.IngredientId))}</b></td>
+        <tbody>${ordered.map(l => { const w = +(l.ExpectedWasteRate ?? l.WastePercent ?? 0) || 0, gross = w < 100 ? (+l.Quantity || 0) * 100 / (100 - w) : 0;
+          if (isSub(l)) return `<tr data-rl="${esc(l.Id)}" data-subl="1" style="background:#F2F8FD"><td style="padding-left:22px">⇄ <b>${esc(Store.label('Ingredient', l.IngredientId))}</b><span class="sub">thay thế ${esc(Store.label('Ingredient', (lines.find(s => s.SubstituteGroup === l.SubstituteGroup && +s.Quantity > 0) || {}).IngredientId) || '')} khi rẻ hơn theo giá dùng được</span></td>
+          <td class="num" colspan="2">dùng tối đa ${draft ? `<input type="number" min="1" max="100" step="5" class="input rv-q" data-mx value="${l.MaxSharePct ?? 50}" style="width:70px;display:inline-block">` : U.num(l.MaxSharePct, 0)}%</td><td class="num">${draft ? `<input type="number" min="0" max="99" step="any" class="input rv-q" data-w value="${w}">` : U.num(w, 1)}</td><td class="num muted" colspan="3">theo kế hoạch mua từng ngày</td>${draft ? `<td><button class="btn xs danger" data-del title="Xóa dòng">✕</button></td>` : ''}</tr>`;
+          return `<tr data-rl="${esc(l.Id)}"><td><b>${esc(Store.label('Ingredient', l.IngredientId))}</b>${draft && +l.Quantity > 0 ? ` <a href="javascript:void 0" class="small" data-addsub="${esc(l.Id)}">+ Thêm nguyên liệu thay thế</a>` : ''}</td>
           <td class="num">${draft ? `<input type="number" min="0" step="any" class="input rv-q" data-q value="${l.Quantity ?? ''}">` : U.num(l.Quantity, 3)}</td><td>${esc(Store.label('UnitMeasure', l.UnitId || l.UomId) || '')}</td>
           <td class="num">${draft ? `<input type="number" min="0" max="99" step="any" class="input rv-q" data-w value="${w}">` : U.num(w, 1)}</td><td class="num" data-gross>${U.num(gross, 3)}</td><td class="num" data-price>…</td><td class="num" data-amt>…</td>${draft ? `<td><button class="btn xs danger" data-del title="Xóa dòng">✕</button></td>` : ''}</tr>`; }).join('')}
         ${draft ? `<tr><td colspan="8"><input class="input" id="rvAdd" list="rvIngList" placeholder="+ Gõ tên nguyên liệu để thêm" style="max-width:360px"><datalist id="rvIngList">${Store.rows('Ingredient').filter(i => i.Status !== 'Inactive').slice(0, 1500).map(i => `<option value="${esc((i.Name || '') + ' · ' + (i.Code || ''))}">`).join('')}</datalist>${Store.perm('scm-ingredient').add !== false && Store.perm('scm-ingredient').access !== false ? ' <a href="javascript:void 0" class="small" id="rvIngNew">+ Tạo nguyên liệu mới</a>' : ''}</td></tr>` : ''}</tbody></table></div>
@@ -593,7 +599,8 @@
         // Enter xuống dòng cùng cột.
         box.querySelectorAll('.rv-q').forEach(inp => inp.onkeydown = e => { if (e.key !== 'Enter') return; e.preventDefault(); const col = inp.hasAttribute('data-q') ? '[data-q]' : '[data-w]'; const all = [...box.querySelectorAll(col)]; const nx = all[all.indexOf(inp) + 1]; if (nx) nx.focus(); else box.querySelector('#rvAdd').focus(); });
         const save = () => {
-          const ops = [...box.querySelectorAll('[data-rl]')].map(tr => { const l = lineById[tr.dataset.rl], q = +tr.querySelector('[data-q]').value, w = +tr.querySelector('[data-w]').value; if (!l || (q === +l.Quantity && w === +(l.ExpectedWasteRate ?? l.WastePercent ?? 0))) return null; return () => Store.act('RecipeLine/Update', { method: 'PUT', form: Object.assign({}, l, { Quantity: q, ExpectedWasteRate: w, WastePercent: w }), quiet: false }); }).filter(Boolean);
+          const subOps = [...box.querySelectorAll('[data-subl]')].map(tr => { const l = lineById[tr.dataset.rl], mx = +tr.querySelector('[data-mx]').value, w = +tr.querySelector('[data-w]').value; if (!l || (mx === +(l.MaxSharePct ?? 0) && w === +(l.ExpectedWasteRate ?? l.WastePercent ?? 0))) return null; return () => Store.act('RecipeLine/Update', { method: 'PUT', form: Object.assign({}, l, { Quantity: 0, MaxSharePct: mx, WastePercent: w, ExpectedWasteRate: 0 }), quiet: false }); }).filter(Boolean);
+          const ops = subOps.concat([...box.querySelectorAll('[data-rl]:not([data-subl])')].map(tr => { const l = lineById[tr.dataset.rl], q = +tr.querySelector('[data-q]').value, w = +tr.querySelector('[data-w]').value; if (!l || (q === +l.Quantity && w === +(l.ExpectedWasteRate ?? l.WastePercent ?? 0))) return null; return () => Store.act('RecipeLine/Update', { method: 'PUT', form: Object.assign({}, l, { Quantity: q, ExpectedWasteRate: w, WastePercent: w }), quiet: false }); }).filter(Boolean));
           return ops.reduce((p, f) => p.then(f), Promise.resolve());
         };
         box.querySelector('#rvSave').onclick = () => save().then(() => { UI.toast('Đã lưu nháp công thức', 'ok'); draw(); });
@@ -612,6 +619,27 @@
             .then(x => { if (!x.ok) return; draw().then(() => { const q = [...box.querySelectorAll('[data-q]')].pop(); if (q) q.focus(); }); });
         };
         const ni = box.querySelector('#rvIngNew'); if (ni) ni.onclick = () => UI.form('Ingredient', null, { title: 'Nguyên liệu', onSave: () => Store.reload(['Ingredient']).then(draw) });
+        // UI-6.51 (D-137 e): "+ Thêm nguyên liệu thay thế" – chỉ nguyên liệu cùng đơn vị cơ sở (hoặc quy đổi được – máy chủ kiểm), định lượng 0, dùng tối đa %.
+        box.querySelectorAll('[data-addsub]').forEach(a => a.onclick = () => {
+          const std = lineById[a.dataset.addsub]; if (!std) return;
+          const stdIng = Store.get('Ingredient', std.IngredientId) || {}, base = stdIng.BaseUnitId || stdIng.UnitId;
+          const cand = Store.rows('Ingredient').filter(i => i.Status !== 'Inactive' && i.Id !== std.IngredientId && !lines.some(l => l.IngredientId === i.Id));
+          const same = cand.filter(i => !base || (i.BaseUnitId || i.UnitId) === base);
+          UI.modal({
+            title: 'Thêm nguyên liệu thay thế', size: 'sm', sub: `Thay cho ${esc(Store.label('Ingredient', std.IngredientId))} khi rẻ hơn theo giá trên 1 kg dùng được (đã trừ hao sơ chế). Công thức có thay thế phải qua duyệt công thức.`,
+            body: `<div class="field"><label>Nguyên liệu thay thế <span class="req">*</span></label><select class="select" id="sbIng">${(same.length ? same : cand).map(i => `<option value="${esc(i.Id)}">${esc((i.Name || '') + ' · ' + (i.Code || ''))}</option>`).join('')}</select></div>
+              <div class="field"><label>Dùng tối đa (% phần dùng được) <span class="req">*</span></label><input class="input" type="number" min="1" max="100" step="5" id="sbMax" value="50"><span class="small muted">50 = trộn tối đa một nửa · 100 = được thay hẳn</span></div>`,
+            foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="sbOk">Thêm</button>',
+            onMount: (m, cl) => m.querySelector('#sbOk').onclick = () => {
+              const ingId = m.querySelector('#sbIng').value, mx = +m.querySelector('#sbMax').value, ing = Store.get('Ingredient', ingId) || {};
+              if (!ingId || !(mx > 0 && mx <= 100)) return UI.toast('Chọn nguyên liệu và % từ 1 đến 100', 'warn');
+              const group = std.SubstituteGroup || ('NL' + (std.SequenceNo || std.SortOrder || 1));
+              const ensure = std.SubstituteGroup ? Promise.resolve({ ok: true }) : Store.act('RecipeLine/Update', { method: 'PUT', form: Object.assign({}, std, { SubstituteGroup: group }) });
+              ensure.then(x => x.ok && Store.act('RecipeLine/Insert', { form: { RecipeId: cur.Id, IngredientId: ingId, Quantity: 0, UnitId: std.UnitId || std.UomId, UomId: std.UnitId || std.UomId, WastePercent: ing.StandardWastePercent || 0, ExpectedWasteRate: 0, SequenceNo: std.SequenceNo, SortOrder: (std.SortOrder || 0) + 1, SubstituteGroup: group, MaxSharePct: mx }, tables: ['RecipeLine'] }))
+                .then(x => { if (x && x.ok) { cl(); UI.toast('Đã thêm nguyên liệu thay thế', 'ok'); draw(); } });
+            },
+          });
+        });
       }
       const act = (sel, path, msg, extra) => { const b = box.querySelector(sel); if (b) b.onclick = () => extra ? extra() : Store.act(path, { form: { Id: cur.Id }, tables: ['Recipe', 'ApprovalRequest'] }).then(x => { if (x.ok) { UI.toast(msg, 'ok'); draw(); if (reload) reload(); } }); };
       act('#rvApr', 'Recipe/Approve', 'Đã duyệt phiên bản');

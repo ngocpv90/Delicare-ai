@@ -627,6 +627,20 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## UI-6.51 – Kế hoạch mua tự động, thay thế theo giá, chia NCC (D-137)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Mua hàng (uat.ops-scm) | Mua hàng › Tính nhu cầu nguyên liệu → tab Kế hoạch mua 7 ngày | 5 chỉ số; ma trận nguyên liệu × 7 ngày; ô có trạng thái + dòng NCC; ⇄ ở nguyên liệu có thay thế |
+| 2 | Bếp trưởng | Công thức món "Thịt rang cháy cạnh" → phiên bản mới → + Thêm nguyên liệu thay thế (nạc vai tươi, tối đa 50 %) → gửi duyệt → khóa | Dòng ⇄ dưới nạc vai đông lạnh; thêm thay thế không cùng nhóm chuẩn → báo lỗi |
+| 3 | Mua hàng | Bấm ô nạc vai ngày có món đó | Bước 2: giá dùng được 97.333 vs 76.842 → rẻ hơn 21,1 % → dùng 50 %; bước 1 ghi phần chuẩn / phần thay |
+| 4 | Mua hàng | Đặt ngay | Đề nghị tự duyệt + đơn mua tự duyệt "Hệ thống tự duyệt – đúng định mức"; bấm lại → "Không có phần nào cần đặt thêm" |
+| 5 | Mua hàng | Giữ 100% chuẩn (bỏ trống lý do / có lý do) | Không lý do → báo lỗi; có lý do → ngày đó không còn nguyên liệu thay thế |
+| 6 | Mua hàng | Bảng giá NCC → Tỷ lệ chia NCC… nhập 60 / 30 | Báo "tổng phải bằng 100 %"; 60 / 40 → lưu, ô giá hiện nhãn % |
+| 7 | Kinh doanh | Hợp đồng → Chỉ dùng nguyên liệu chuẩn | Khối Nguyên liệu thay thế đổi trạng thái; suất của khách không bị thay |
+| 8 | Bếp (uat.ops-kit) / Kế hoạch (uat.ops-plan) | Mở Kế hoạch mua / bấm Tính lại ngay | OPS-KIT không vào được màn; OPS-PLAN chỉ xem, không có nút Tính lại / Đặt |
+| 9 | Hệ thống | Job PurchasePlan 14:00 / PurchasePlanEvening 20:15 / PurchasePlanSend 15:00 (Quản trị › Lịch chạy) | Lập / cập nhật đề nghị phần đến hạn; chưa cấu hình kênh gửi NCC → đơn giữ Chờ gửi NCC + bot báo Mua hàng |
+
 ## AI-ĐỢT-1 – Trợ lý AI chỉ đọc + Kho tri thức (D-133, AI-1 … AI-8)
 
 Chuẩn bị (IT): API + ToolGateway (`toolgateway`, chỉ mạng nội bộ) + Hermes (profile `hermes`) trên server; khóa `AGENT_KEY_VIVI / WH / KITCHEN / QA / KNOW`, `ANTHROPIC_API_KEY`, token bot Trợ lý ở `.env`; `Agent:AskingGroups` = nhóm đợt 1; DB: `DB/seed/Agent_seed.sql`, `D79_menu_regroup.sql`, `AI6_agent_knowledge_rights.sql` (DryRun trước).

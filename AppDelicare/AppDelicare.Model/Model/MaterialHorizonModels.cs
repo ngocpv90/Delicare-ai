@@ -16,6 +16,10 @@ namespace AppDelicare.Model.Model
         /// <summary>Số nguyên liệu phải đặt hôm nay / đã trễ ngày đặt.</summary>
         public int DueTodayCount { get; set; }
         public int LateCount { get; set; }
+        /// <summary>UI-6.51 (D-137 e): quyết định thay thế theo ngày cần (cặp chuẩn – thay thế).</summary>
+        public List<MaterialHorizonSubstitutionModel> ListSubstitution { get; set; } = [];
+        /// <summary>UI-6.51: lượng mua theo món của ngày chi tiết (chỉ khi gọi kèm ngày chi tiết – trang chi tiết ô kế hoạch mua).</summary>
+        public List<MaterialHorizonDishUseModel> ListDishUse { get; set; } = [];
     }
 
     public class MaterialHorizonDayModel
@@ -62,7 +66,15 @@ namespace AppDelicare.Model.Model
         /// <summary>Phần phải mua thêm cho ngày này (sau khi trừ lũy kế).</summary>
         public decimal Shortage { get; set; }
         public DateTime? OrderByDate { get; set; }
+        /// <summary>UI-6.51 (D-137): bước "trừ hàng đã có" – nhu cầu lũy kế tới ngày, tồn khả dụng, hàng PO sắp về ≤ ngày, dòng đề nghị mua đang mở ≤ ngày (đơn vị cơ sở).</summary>
+        public decimal CumRequired { get; set; }
+        public decimal Available { get; set; }
+        public decimal Incoming { get; set; }
+        public decimal Requested { get; set; }
+        public decimal SafetyStock { get; set; }
+        public int? LeadTimeDays { get; set; }
     }
+
 }
 
 namespace AppDelicare.Model.Request.Custom
@@ -82,5 +94,63 @@ namespace AppDelicare.Model.Request.Custom
         public List<Guid>? ListIngredientId { get; set; }
         public bool OnlyDue { get; set; } = true;
         public string? Note { get; set; }
+    }
+}
+
+namespace AppDelicare.Model.Model
+{
+    /// <summary>UI-6.51 (D-137 e): quyết định thay thế của một ngày cần hàng.</summary>
+    public class MaterialHorizonSubstitutionModel
+    {
+        public DateTime Date { get; set; }
+        public string? Group { get; set; }
+        public Guid StdIngredientId { get; set; }
+        public string? StdIngredientName { get; set; }
+        public Guid SubIngredientId { get; set; }
+        public string? SubIngredientName { get; set; }
+        public decimal SharePct { get; set; }
+        public decimal? MaxSharePct { get; set; }
+        public decimal? StdUnitPrice { get; set; }
+        public decimal? SubUnitPrice { get; set; }
+        public decimal? StdUsablePrice { get; set; }
+        public decimal? SubUsablePrice { get; set; }
+        public decimal? StdWastePct { get; set; }
+        public decimal? SubWastePct { get; set; }
+        public decimal? SavingPct { get; set; }
+        public string? StdSupplierName { get; set; }
+        public string? SubSupplierName { get; set; }
+        /// <summary>AUTO / OVERRIDE.</summary>
+        public string? Source { get; set; }
+        public bool Stored { get; set; }
+        public string? Reason { get; set; }
+        /// <summary>Tiết kiệm ước tính = phần thay thế (kg dùng được) × chênh giá dùng được.</summary>
+        public decimal? SavingAmount { get; set; }
+        public List<MaterialHorizonSubstitutionDishModel> ListDish { get; set; } = [];
+    }
+
+    public class MaterialHorizonSubstitutionDishModel
+    {
+        public Guid DishId { get; set; }
+        public string? DishName { get; set; }
+        public decimal Portions { get; set; }
+        public decimal StdOnlyPortions { get; set; }
+        public decimal EffectivePct { get; set; }
+        /// <summary>Lượng mua (đơn vị dòng công thức) phần chuẩn / phần thay thế của món.</summary>
+        public decimal StdGross { get; set; }
+        public decimal SubGross { get; set; }
+    }
+}
+
+namespace AppDelicare.Model.Model
+{
+    public class MaterialHorizonDishUseModel
+    {
+        public DateTime Date { get; set; }
+        public Guid IngredientId { get; set; }
+        public Guid DishId { get; set; }
+        public string? DishName { get; set; }
+        public decimal Portions { get; set; }
+        /// <summary>Lượng mua (đơn vị cơ sở của nguyên liệu, sau hao hụt).</summary>
+        public decimal Gross { get; set; }
     }
 }

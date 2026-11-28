@@ -21,7 +21,8 @@ namespace AppDelicare.Services.Implement
         private static readonly string[] HeavySeverity = ["High", "HIGH", "Critical", "CRITICAL", "Nặng"];
         private static readonly string[] OpenIssue = ["Open", "OPEN", "InProgress", "IN_PROGRESS"];
 
-        public static async Task<Dictionary<Guid, SupplierPickLineModel>> SuggestAsync(DatabaseContext db, IUomConversionService uom, BusinessRulesOptions rules, DateTime today, IReadOnlyCollection<Need> needs)
+        public static async Task<Dictionary<Guid, SupplierPickLineModel>> SuggestAsync(DatabaseContext db, IUomConversionService uom, BusinessRulesOptions rules, DateTime today, IReadOnlyCollection<Need> needs,
+            decimal splitMaxCorrectionPct = 15m)
         {
             var result = new Dictionary<Guid, SupplierPickLineModel>();
             if (needs.Count == 0)
@@ -37,12 +38,16 @@ namespace AppDelicare.Services.Implement
             var onTime = await SupplierMaterialService.OnTimeAsync(db, supIds, today, rules.SupplierOnTimeLookbackDays);
             var ings = await db.Ingredient.AsNoTracking().Where(i => ingIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
             var unitNames = await db.UnitMeasure.AsNoTracking().ToDictionaryAsync(u => u.Id, u => u.Symbol ?? u.Code ?? u.Name ?? string.Empty);
+            // UI-6.51 (D-137 g): chia NCC – chỉ khi nguyên liệu có NCC khai tỷ lệ; lũy kế tháng theo số lượng PO không hủy.
+            var splitIngs = prices.Where(p => p.AllocationPct > 0).Select(p => p.IngredientId).Distinct().ToList();
+            var monthQty = splitIngs.Count == 0 ? [] : await PurchasePlan.SupplierSplit.MonthQuantitiesAsync(db, splitIngs, today);
             foreach (var n in needs)
             {
                 var line = new SupplierPickLineModel { Key = n.Key, IngredientId = n.IngredientId, IngredientName = ings.GetValueOrDefault(n.IngredientId)?.Name, Quantity = n.Quantity, UnitId = n.UnitId,
                     UnitName = unitNames.GetValueOrDefault(n.UnitId), NeedDate = n.NeedDate.Date };
                 int daysLeft = (n.NeedDate.Date - today).Days;
                 var cards = new List<SupplierPickCardModel>();
+                var allocation = new Dictionary<Guid, (decimal Pct, decimal? MinQty)>();
                 foreach (var g in prices.Where(p => p.IngredientId == n.IngredientId).GroupBy(p => p.SupplierId))
                 {
                     var sup = sups.GetValueOrDefault(g.Key);
@@ -60,6 +65,11 @@ namespace AppDelicare.Services.Implement
                         card.PriceUnitName = cur.PurchaseUomId is { } pu ? unitNames.GetValueOrDefault(pu) : line.UnitName;
                         // Giá quy về đơn vị của dòng: 1 đơn vị dòng = f đơn vị giá.
                         decimal? f = cur.PurchaseUomId is { } pu2 && pu2 != n.UnitId ? await uom.ConvertAsync(1m, n.UnitId, pu2, n.NeedDate) : 1m;
+                        if (f is > 0 && cur.AllocationPct is { } ap && ap > 0)
+                        {
+                            decimal? moqAlloc = cur.MinimumOrderQuantity ?? cur.MinimumOrderQty;
+                            allocation[g.Key] = (ap, moqAlloc is > 0 ? Math.Round(moqAlloc.Value / f.Value, 4) : null);
+                        }
                         if (f == null) reason ??= "Không quy đổi được đơn vị";
                         else if (cur.UnitPrice is { } up)
                         {
@@ -114,6 +124,35 @@ namespace AppDelicare.Services.Implement
                 {
                     line.Reason = cards.Count == 0 ? "Chưa có NCC" : string.Join(" · ", cards.Where(c => c.Reason != null).Select(c => c.Reason).Distinct());
                     if (string.IsNullOrEmpty(line.Reason)) line.Reason = "NCC chưa đạt chuẩn đúng hẹn";
+                }
+                if (allocation.Count > 0)
+                {
+                    // Lũy kế tháng quy về đơn vị của dòng (thiếu quy đổi → bỏ dòng PO đó khỏi lũy kế).
+                    var cum = new Dictionary<Guid, decimal>();
+                    foreach (var mq in monthQty.Where(x => x.IngredientId == n.IngredientId && allocation.ContainsKey(x.SupplierId)))
+                    {
+                        decimal? q = mq.UnitId == n.UnitId ? mq.Quantity : await uom.ConvertAsync(mq.Quantity, mq.UnitId, n.UnitId, n.NeedDate);
+                        cum[mq.SupplierId] = cum.GetValueOrDefault(mq.SupplierId) + (q ?? 0m);
+                    }
+                    var manual = await PurchasePlan.SupplierSplit.ManualAsync(db, n.NeedDate, n.IngredientId);
+                    var inputs = cards.Where(c => allocation.ContainsKey(c.SupplierId)).Select(c => new PurchasePlan.SupplierSplit.Input(c.SupplierId, c.SupplierName, c.PriceId, c.PricePerLineUnit,
+                        c.LeadTimeDays, c.IsPreferred, allocation[c.SupplierId].Pct, cum.GetValueOrDefault(c.SupplierId), allocation[c.SupplierId].MinQty, c.Eligible && c.PricePerLineUnit != null, c.Reason)).ToList();
+                    line.ListSplit = PurchasePlan.SupplierSplit.Split(n.Quantity, inputs, splitMaxCorrectionPct, manual);
+                    line.SplitManual = manual != null && line.ListSplit.Count > 0;
+                    if (line.ListSplit.Count > 0)
+                    {
+                        var main = line.ListSplit.OrderByDescending(s => s.Pct).First();
+                        foreach (var c in cards)
+                        {
+                            c.Suggested = line.ListSplit.Any(s => s.SupplierId == c.SupplierId);
+                        }
+                        line.SupplierId = main.SupplierId;
+                        line.SupplierName = string.Join(" · ", line.ListSplit.Select(s => $"{s.SupplierName} {s.Quantity:0.##}"));
+                        line.PriceId = main.PriceId;
+                        line.UnitPrice = main.UnitPrice;
+                        line.OrderQuantity = n.Quantity;
+                        line.Reason = line.SplitManual ? "Người mua sửa phần chia NCC" : line.Reason;
+                    }
                 }
                 line.ListCard = [.. cards.OrderByDescending(c => c.Suggested).ThenByDescending(c => c.Eligible).ThenBy(c => c.PricePerLineUnit ?? decimal.MaxValue).Take(3)];
                 result[n.Key] = line;

@@ -290,6 +290,24 @@ namespace AppDelicare.WebApi.Controllers
                 return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
             }
         }
+        /// <summary>UI-6.51 (D-137 f): bật / tắt "Khách chỉ dùng nguyên liệu chuẩn" – quyền Sửa trên crm-contract.</summary>
+        [HttpPut("UpdateStandardIngredientOnly")]
+        public async Task<IActionResult> UpdateStandardIngredientOnly([FromForm] ContractStandardOnlyRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid || null == request)
+                {
+                    return BadRequest(ConstantHelper.Message.ModelStateMessage);
+                }
+                return Ok(await _service.UpdateStandardIngredientOnly(request));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " UpdateStandardIngredientOnly: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
         /// <summary>D-78 (2): đổi cách tính tiền đối soát của hợp đồng – quyền Sửa trên crm-contract.</summary>
         [HttpPut("UpdateBillingBasis")]
         public async Task<IActionResult> UpdateBillingBasis([FromForm] ContractBillingBasisRequest request)

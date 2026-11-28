@@ -15,12 +15,13 @@ using System.Net;
 namespace AppDelicare.Services.Implement
 {
     public class RecipeLineService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
-        , IAuditChangeService auditChangeService) : IRecipeLineService
+        , IAuditChangeService auditChangeService, IUomConversionService uomConversion) : IRecipeLineService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IAuditChangeService _auditChangeService = auditChangeService;
+        private readonly IUomConversionService _uomConversion = uomConversion;
 
         public async Task<IResults<RecipeLineViewModel>> GetAll(RecipeLineSearchRequest request)
         {
@@ -239,9 +240,45 @@ namespace AppDelicare.Services.Implement
             {
                 return draft;
             }
-            if (request.Quantity <= 0)
+            // UI-6.51 (D-137 e): dòng thay thế = định lượng 0 + nhóm + % tối đa (0 < % ≤ 100); nhóm phải có dòng chuẩn (định lượng > 0) cùng nhóm.
+            request.SubstituteGroup = string.IsNullOrWhiteSpace(request.SubstituteGroup) ? null : request.SubstituteGroup.Trim();
+            if (request.SubstituteGroup is { Length: > 30 })
             {
-                return ConstantHelper.Message.QuantityMustBePositive;
+                return "Mã nhóm thay thế tối đa 30 ký tự";
+            }
+            bool substitute = request.Quantity == 0 && request.SubstituteGroup != null;
+            if (substitute)
+            {
+                if (request.MaxSharePct is not (> 0 and <= 100))
+                {
+                    return "Dòng nguyên liệu thay thế cần % dùng tối đa từ 1 đến 100";
+                }
+                var standard = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking()
+                    .FirstOrDefaultAsync(l => l.RecipeId == request.RecipeId && !l.IsDeleted && l.SubstituteGroup == request.SubstituteGroup && l.Quantity > 0 && l.Id != request.Id);
+                if (standard == null)
+                {
+                    return "Chưa có dòng nguyên liệu chuẩn (định lượng > 0) cùng nhóm thay thế";
+                }
+                if (standard.IngredientId == request.IngredientId)
+                {
+                    return "Nguyên liệu thay thế phải khác nguyên liệu chuẩn";
+                }
+                var units = await _unitOfWork.IngredientRepository.GetAll().AsNoTracking().Where(i => i.Id == standard.IngredientId || i.Id == request.IngredientId)
+                    .Select(i => new { i.Id, Base = i.BaseUnitId ?? i.BaseUomId }).ToListAsync();
+                var a = units.FirstOrDefault(u => u.Id == standard.IngredientId)?.Base;
+                var b = units.FirstOrDefault(u => u.Id == request.IngredientId)?.Base;
+                if (a != null && b != null && a != b && await _uomConversion.ConvertAsync(1m, a.Value, b.Value, DateTime.Today) == null)
+                {
+                    return "Nguyên liệu thay thế phải cùng đơn vị cơ sở với nguyên liệu chuẩn hoặc quy đổi được";
+                }
+            }
+            else
+            {
+                request.MaxSharePct = null;
+                if (request.Quantity <= 0)
+                {
+                    return ConstantHelper.Message.QuantityMustBePositive;
+                }
             }
             if ((request.WastePercent is { } w && (w < 0 || w >= 100)) || (request.ExpectedWasteRate is { } cw && (cw < 0 || cw >= 100)))
             {

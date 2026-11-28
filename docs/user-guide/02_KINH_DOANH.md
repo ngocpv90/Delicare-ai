@@ -99,6 +99,7 @@ Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơ
 **Trang chi tiết điểm giao (UI-6):** bấm tên điểm giao ở trang Khách hàng (hoặc ở trang đơn hàng, ô Tìm điểm giao của Chuyến giao hàng) → mở **trang riêng** `#/crm-location-detail?id=…` (Ctrl / chuột giữa = tab mới; **← Điểm giao hàng** quay lại đúng bộ lọc, trang, vị trí cuộn). Phần đầu: tên, mã, khách, địa chỉ, giờ nhận, người nhận; nút **Sửa** (cần quyền Sửa), **Bản đồ** (khi có tọa độ), ⋯ **Hồ sơ khách hàng**. 4 thẻ: **Suất TB / ngày** (30 ngày), **Đơn 30 ngày**, **Giao đúng giờ** (% đơn giao Đã giao trước giờ dự kiến + 15 phút / Đã giao + Thất bại, 30 ngày), **Phản ánh đang mở** (của các đơn tại điểm). Tab **Tổng quan** (thông tin điểm giao · đơn và giao hàng gần đây) · **Đơn hàng** · **Giao hàng** · **Phản ánh** (tab chỉ hiện khi có quyền xem màn tương ứng). Điểm giao chưa có tab Lịch sử / Tài liệu.
 
 ### 4.3 Hợp đồng – `crm-contract`
+- **Khách chỉ dùng nguyên liệu chuẩn (UI-6.51, D-137 f):** ô chọn trong form tạo hợp đồng và khối **Nguyên liệu thay thế** ở trang hợp đồng (nút **Chỉ dùng nguyên liệu chuẩn / Cho phép thay thế**, quyền Sửa). Bật thì phần suất của khách này không bao giờ dùng nguyên liệu thay thế.
 **Tạo hợp đồng**
 1. **Tạo mới** → hộp **Tạo hợp đồng**.
 2. Nhập: **Khách hàng***, **Tên hợp đồng***, Số hợp đồng (máy chủ tự sinh `HD-…`; số hợp đồng giấy của khách ghi ở Ghi chú), Ngày ký, **Hiệu lực từ***, Hiệu lực đến, Điều khoản thanh toán, Giá trị hợp đồng, Ghi chú.

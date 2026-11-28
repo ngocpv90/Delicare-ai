@@ -27,6 +27,11 @@ namespace AppDelicare.Services.Implement
             /// <summary>BIZ-1.1: % hao hụt chế biến (RecipeLine.ExpectedWasteRate). Ảnh chụp cũ không có → 0.</summary>
             public decimal? ExpectedWasteRate { get; set; }
             public int? SequenceNo { get; set; }
+            /// <summary>UI-6.51 (D-137): nhóm thay thế / % tối đa của dòng (ảnh chụp cũ không có → không thay thế).</summary>
+            public string? SubstituteGroup { get; set; }
+            public decimal? MaxSharePct { get; set; }
+            /// <summary>UI-6.51: dòng thay thế do kế hoạch mua quyết định cho ngày (phần định lượng chuyển từ dòng chuẩn).</summary>
+            public bool Substituted { get; set; }
         }
 
         /// <summary>1 mẻ trong lịch: số phần, giờ bắt đầu / kết thúc kế hoạch.</summary>
@@ -359,9 +364,11 @@ namespace AppDelicare.Services.Implement
             if (lines.Count == 0)
             {
                 lines = await db.RecipeLine.AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted)
-                    .Select(l => new SnapshotLine { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate, SequenceNo = l.SequenceNo })
+                    .Select(l => new SnapshotLine { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate, SequenceNo = l.SequenceNo, SubstituteGroup = l.SubstituteGroup, MaxSharePct = l.MaxSharePct })
                     .ToListAsync();
             }
+            // UI-6.51 (D-137): áp quyết định thay thế ĐÃ LƯU của ngày (đúng tỷ lệ đã mua) – chưa có quyết định → giữ nguyên.
+            lines = await PurchasePlan.SubstitutionRules.ApplyStoredAsync(db, date, dishId, lines);
             return (recipe, locked, lines);
         }
 

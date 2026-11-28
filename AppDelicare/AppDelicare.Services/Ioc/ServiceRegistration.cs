@@ -32,6 +32,7 @@ namespace AppDelicare.Services.Ioc
             services.Configure<ReferenceListsOptions>(configuration.GetSection(ReferenceListsOptions.Section)); // T45B.5
             services.Configure<MisaOptions>(configuration.GetSection(MisaOptions.Section)); // ACC-1 (D-131 c): Integration:Misa
             services.Configure<AgentOptions>(configuration.GetSection(AgentOptions.Section)); // AI-2 (D-133): Trợ lý AI – công tắc, giới hạn
+            services.Configure<PurchasePlanOptions>(configuration.GetSection(PurchasePlanOptions.Section)); // UI-6.51 (D-137): kế hoạch mua tự động
             // BE2.7: tệp đính kèm lưu NGOÀI wwwroot; đường dẫn tương đối tính từ ContentRoot (Docker / IIS: gắn volume / thư mục có quyền ghi – deploy/README.md).
             services.AddOptions<DocumentStorageOptions>()
                 .Bind(configuration.GetSection(DocumentStorageOptions.Section))

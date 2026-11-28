@@ -24,6 +24,8 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.ContractPageModel>> GetOverview(Guid id);
         /// <summary>D-78 (2): đổi cách tính tiền đối soát của hợp đồng.</summary>
         public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> UpdateBillingBasis(AppDelicare.Model.Request.Custom.ContractBillingBasisRequest request);
+        /// <summary>UI-6.51 (D-137 f): bật / tắt khách chỉ dùng nguyên liệu chuẩn.</summary>
+        public Task<IResult<AppDelicare.Model.Model.ContractDetailModel>> UpdateStandardIngredientOnly(AppDelicare.Model.Request.Custom.ContractStandardOnlyRequest request);
         /// <summary>T23: hợp đồng Hiệu lực quá ngày hết hiệu lực → Hết hạn (job ContractExpiry 00:30 và nút bấm tay).</summary>
         public Task<IResult<AppDelicare.Model.Model.ContractExpireResultModel>> ExpireOverdue(AppDelicare.Model.Request.Custom.ContractExpireRequest request);
         /// <summary>Nội bộ (handler CONTRACT): nội dung được duyệt, tiêu đề, thực thi duyệt / từ chối – chạy trong transaction của engine.</summary>

@@ -329,6 +329,7 @@ namespace AppDelicare.Services.Implement
                             Id = Guid.NewGuid(), RecipeId = recipe.Id, IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId, UomId = l.UnitId,
                             WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate, YieldPercent = l.YieldPercent,
                             SequenceNo = l.SequenceNo, SortOrder = l.SortOrder, PreparationNote = l.PreparationNote, Note = l.Note,
+                            SubstituteGroup = l.SubstituteGroup, MaxSharePct = l.MaxSharePct,
                         });
                     }
                     await _unitOfWork.RecipeLineRepository.CommitAsync(ConstantHelper.TypeSave.Insert);
@@ -472,7 +473,7 @@ namespace AppDelicare.Services.Implement
                 recipe.LockedAt = _clock.Now;
                 recipe.LockedBy = actorUserId;
                 var lines = await _unitOfWork.RecipeLineRepository.GetAll().AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted).OrderBy(l => l.SortOrder).ToListAsync();
-                recipe.SnapshotJson = JsonConvert.SerializeObject(lines.Select(l => new { l.IngredientId, l.Quantity, l.UnitId, l.WastePercent, l.ExpectedWasteRate, l.SequenceNo }));
+                recipe.SnapshotJson = JsonConvert.SerializeObject(lines.Select(l => new { l.IngredientId, l.Quantity, l.UnitId, l.WastePercent, l.ExpectedWasteRate, l.SequenceNo, l.SubstituteGroup, l.MaxSharePct }));
                 _unitOfWork.RecipeRepository.Update(recipe);
                 await _unitOfWork.RecipeRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 await UpsertStandardCostAsync(recipe.DishId, recipe.Id, from);
