@@ -10,6 +10,7 @@ nhiet_do_ngay
 phan_anh_khach
 ping
 propose_hold_lot
+propose_note_update
 propose_qc_result
 su_co_ngay
 tien_do_bep

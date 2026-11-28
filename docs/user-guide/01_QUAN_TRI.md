@@ -39,6 +39,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Nhật ký & Tích hợp › Nhật ký tích hợp | `int-log` | S (IX) |
 | Nhật ký & Tích hợp › Nhật ký tính chỉ số | `kpi-refresh` | S (IX) |
 | Trợ lý AI › Trung tâm agent | `ai-agents` | S |
+| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S |
 | Trợ lý AI › Lịch chạy | `ai-schedule` | S |
 <!-- MENU5:END -->
 

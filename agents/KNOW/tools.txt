@@ -3,4 +3,5 @@ doc_ghi_chu
 ghi_nhat_ky
 lay_su_kien
 ping
+propose_note_update
 tim_tri_thuc

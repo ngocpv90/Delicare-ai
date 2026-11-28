@@ -19,6 +19,7 @@ lay_su_kien
 nhiet_do_ngay
 phan_anh_khach
 ping
+propose_note_update
 su_co_ngay
 tien_do_bep
 tim_tri_thuc

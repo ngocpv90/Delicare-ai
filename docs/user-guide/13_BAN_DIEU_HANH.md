@@ -31,6 +31,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Phê duyệt › Mở lại đối soát | `wf-inbox?type=crm-recon-reopen` | — | — | Duyệt | — |
 | Phê duyệt › Mở khóa kỳ | `wf-inbox?type=acc-period-unlock` | — | — | Duyệt | — |
 | Phê duyệt › Lệnh của agent | `wf-inbox?type=ai-agent-cmd` | — | — | Duyệt | — |
+| Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | Duyệt | — | Duyệt | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) |
@@ -61,6 +62,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | S | X |
 | Tri thức › BOD Bảo mật | `knowledge?folder=bod` | S | X | X | — |
 | Trợ lý AI › Trung tâm agent | `ai-agents` | S | — | S | — |
+| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S | — | S | — |
 | Trợ lý AI › Lịch chạy | `ai-schedule` | S | — | S | — |
 <!-- MENU5:END -->
 

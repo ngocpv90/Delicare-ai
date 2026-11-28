@@ -12,6 +12,7 @@ lay_su_kien
 nhiet_do_ngay
 ping
 propose_batch_event
+propose_note_update
 thuc_don_tuan
 tien_do_bep
 tien_do_bep_chi_tiet

@@ -8,9 +8,9 @@
   const U = UTIL, I = U.icon, esc = U.esc;
   const FN = APP.FN || {};
   const def = (id, name, grp) => { if (!FN[id]) FN[id] = { extra: true, ph: 'AI', grp, fn: name, id, name, types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' }; };
-  def('ai-agents', 'Trung tâm agent', 'Trợ lý AI'); def('ai-agent-log', 'Nhật ký agent', 'Trợ lý AI'); def('ai-flow', 'Luồng liên phòng', 'Trợ lý AI'); def('ai-schedule', 'Lịch chạy', 'Trợ lý AI'); def('knowledge', 'Kho tri thức', 'Tri thức');
+  def('ai-agents', 'Trung tâm agent', 'Trợ lý AI'); def('ai-agent-log', 'Nhật ký agent', 'Trợ lý AI'); def('ai-flow', 'Luồng liên phòng', 'Trợ lý AI'); def('ai-tasks', 'Việc agent theo dõi', 'Trợ lý AI'); def('ai-schedule', 'Lịch chạy', 'Trợ lý AI'); def('knowledge', 'Kho tri thức', 'Tri thức');
 
-  const NAV = [['ai-agents', 'Trung tâm agent'], ['ai-agent-log', 'Nhật ký agent'], ['ai-flow', 'Luồng liên phòng'], ['ai-schedule', 'Lịch chạy']];
+  const NAV = [['ai-agents', 'Trung tâm agent'], ['ai-agent-log', 'Nhật ký agent'], ['ai-flow', 'Luồng liên phòng'], ['ai-tasks', 'Việc agent theo dõi'], ['ai-schedule', 'Lịch chạy']];
   const nav = cur => `<div class="acc-nav mb">${NAV.filter(([id]) => Store.perm(id).access !== false).map(([id, n]) => `<a href="#/${id}" class="acc-nav-i ${id === cur ? 'active' : ''}">${esc(n)}</a>`).join('')}</div>`;
   const icon = (code, size = 40) => `<img class="ai-ico" src="assets/delicare/img/agents/${esc(code)}.svg" width="${size}" height="${size}" alt="" onerror="this.style.visibility='hidden'">`;
   const STATUS = { Succeeded: ['Thành công', 'green'], Denied: ['Bị từ chối', 'orange'], Failed: ['Lỗi', 'red'] };
@@ -149,6 +149,7 @@
   const FST = { DONE: ['Xong', 'green'], WAITING: ['Chờ duyệt', 'orange'], FAILED: ['Lỗi / từ chối', 'red'], INFO: ['Đang theo dõi', 'blue'] };
   const SST = { OK: 'green', WAIT: 'orange', FAIL: 'red' };
   const fl = { day: null };
+  const SOPT = ['sop', 'huong-dan', 'quyet-dinh'];
   APP.register('ai-flow', (el, f) => {
     if (!fl.day) fl.day = Store.ctx.date || U.iso(new Date());
     const today = U.iso(new Date()), yest = U.addDays(today, -1);
@@ -164,6 +165,31 @@
         + (list.length ? list.map(fw => `<div class="card panel mb"><div class="spread"><div><b>${esc(fw.title || '')}</b><div class="small muted">${(fw.agents || []).map(a => icon(a, 18) + ' ' + esc(a)).join(' · ')} · ${esc(when(fw.startedAt))} → ${esc(when(fw.lastAt))} · <code>${esc(fw.correlationId)}</code></div></div>${chip((FST[fw.status] || [fw.status])[0], (FST[fw.status] || ['', ''])[1])}</div>
           <div class="ai-flow-steps">${(fw.steps || []).map((st, i) => `<div class="ai-flow-step ${SST[st.status] || ''}"><div class="small muted">BƯỚC ${i + 1} · ${esc((KIND[st.kind] || [st.kind])[0])}</div><b>${esc(st.title || '')}</b>${st.detail ? `<div class="small">${esc(st.detail)}</div>` : ''}<div class="small muted mt">${st.agent ? icon(st.agent, 16) + ' ' + esc(st.agent) + ' · ' : ''}${esc(when(st.at))}${st.link ? ` · <a href="${esc(st.link)}">Mở</a>` : ''}</div></div>`).join('')}</div></div>`).join('')
           : '<div class="card panel empty">Chưa có luồng nào trong ngày. Luồng xuất hiện khi agent nhận sự kiện, đề xuất ghi hoặc gửi cảnh báo.</div>');
+    });
+  });
+
+  // ================= AI-12 (D-133): Việc agent theo dõi – thư mục 98 kho tri thức =================
+  const tk = { done: false };
+  APP.register('ai-tasks', (el, f) => {
+    el.innerHTML = APP.header(f || FN['ai-tasks'], `<label class="row-flex small"><input type="checkbox" id="tkDone" ${tk.done ? 'checked' : ''}> Hiện cả việc đã xong</label>`, { noNote: true, sub: 'Việc agent ghi lại để theo dõi tới khi xong (hạn, người phụ trách) – thấy theo quyền thư mục kho. Đề xuất ghi chờ xác nhận ở Phê duyệt › Lệnh của agent.' })
+      + nav('ai-tasks') + `<div id="tkB">${loading}</div>`;
+    el.querySelector('#tkDone').onchange = e => { tk.done = e.target.checked; APP.refresh(); };
+    Store.query('Agent/GetTasks', { includeDone: tk.done }).then(x => {
+      const b = el.querySelector('#tkB'); if (!b) return;
+      if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được việc')}</div>`; return; }
+      const list = x.list || [], open = list.filter(t => t.status !== 'xong'), today = U.iso(new Date());
+      const canEdit = Store.perm('ai-tasks').edit;
+      b.innerHTML = UI.kpis([UI.kpi('Việc đang mở', U.num(open.length), '', 'clipboard', 'blue'), UI.kpi('Quá hạn', U.num(open.filter(t => t.overdue).length), '', 'alert', open.some(t => t.overdue) ? 'red' : 'green'),
+        UI.kpi('Hạn hôm nay', U.num(open.filter(t => t.due && String(t.due).slice(0, 10) === today).length), '', 'clock', 'orange'), UI.kpi('Agent đang theo dõi', U.num(new Set(open.map(t => t.agent)).size), 'sẽ nhắc lại khi tới hạn', 'eye', 'green')])
+        + (list.length ? list.map(t => `<div class="card panel mb ${t.status === 'xong' ? 'muted' : ''}"><div class="spread"><div>${icon(t.agent, 22)} <b>${esc(t.title)}</b> ${t.overdue ? chip('Quá hạn', 'red') : t.status === 'xong' ? chip('Xong', 'green') : chip('Đang theo dõi', 'blue')}</div>
+            ${canEdit ? `<div class="row-flex" style="gap:6px">${t.status === 'xong' ? `<button class="btn sm" data-reopen="${esc(t.path)}">Mở lại</button>` : `<button class="btn sm" data-give="${esc(t.path)}">Giao lại</button><button class="btn sm primary" data-done="${esc(t.path)}">Xong</button>`}</div>` : ''}</div>
+            <div class="small mt" style="white-space:pre-line">${esc((t.content || '').slice(0, 600))}</div>
+            <div class="small muted mt">Hạn: ${esc(t.due ? U.date(t.due) : '–')} · người phụ trách: ${esc(t.owner || '–')} · agent ${esc(t.agent)} · <a href="#/knowledge?path=${encodeURIComponent(t.path)}">Mở ghi chú</a></div></div>`).join('')
+          : '<div class="card panel empty">Chưa có việc agent theo dõi.</div>');
+      const set = (path, body) => Store.act('Agent/SetTask', { json: Object.assign({ path }, body) }).then(r => { if (r.ok) { UI.toast('Đã lưu', 'ok'); APP.refresh(); } });
+      b.querySelectorAll('[data-done]').forEach(x => x.onclick = () => set(x.dataset.done, { status: 'xong' }));
+      b.querySelectorAll('[data-reopen]').forEach(x => x.onclick = () => set(x.dataset.reopen, { status: 'dang-theo-doi' }));
+      b.querySelectorAll('[data-give]').forEach(x => x.onclick = () => UI.confirm('Giao việc này cho ai?', who => set(x.dataset.give, { owner: who, note: 'giao lại' }), { input: 'Người phụ trách mới (tên / vai trò)', required: true, ok: 'Giao lại' }));
     });
   });
 
@@ -229,22 +255,36 @@
     const folderView = () => {
       const fd = st.tree.find(x => x.code === st.folder);
       if (!fd) { main.innerHTML = `<h2>Kho tri thức</h2><p class="muted">Chọn thư mục bên trái hoặc tìm theo từ khóa.</p>${UI.kpis(st.tree.slice(0, 4).map(x => UI.kpi(x.name, U.num(x.noteCount), x.owner, 'file', 'blue')))}`; return; }
-      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(fd.name)}</h2>${fd.canEdit ? `<button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
+      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(fd.name)}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px"><button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
         <div class="table-wrap mt"><table class="table dc-table"><thead><tr><th>Ghi chú</th><th>Loại</th><th>Trạng thái</th><th>Hiệu lực từ</th><th>Nguồn</th></tr></thead><tbody>
         ${(fd.listNote || []).slice(0, 200).map(n => `<tr><td><a href="#/knowledge?folder=${esc(fd.code)}&path=${encodeURIComponent(n.path)}">${esc(n.title)}</a>${n.needsReview ? ' ' + chip('cần rà soát', 'orange') : ''}</td><td>${esc(typeName(n.type))}</td><td>${esc(n.status || '')}</td><td>${esc(U.date(n.validFrom))}</td><td class="small">${esc(n.source || '')}</td></tr>`).join('')}</tbody></table></div>`;
       const nb = main.querySelector('#knNew'); if (nb) nb.onclick = () => editor(fd, null);
+      // AI-12 (D-133): nhập Word .docx → ghi chú Nháp (PDF chưa hỗ trợ – GAP-KB-PDF).
+      const ib = main.querySelector('#knImp'); if (ib) ib.onclick = () => UI.modal({
+        title: 'Nhập tài liệu Word – ' + esc(fd.name), size: 'sm', sub: 'Tiêu đề, danh sách, bảng, chữ đậm được giữ. Ghi chú vào ở trạng thái Nháp; SOP sửa xong bấm Gửi duyệt.',
+        body: '<label class="field"><span>Tệp (.docx, .md, .txt)</span><input type="file" class="input" id="knFile" accept=".docx,.md,.txt"></label><label class="field"><span>Loại</span><select class="select" id="knType"><option value="sop">SOP</option><option value="huong-dan">Hướng dẫn</option><option value="quyet-dinh">Quyết định</option><option value="ho-so">Hồ sơ</option><option value="bai-hoc">Bài học</option></select></label>',
+        foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="knImpGo">Nhập</button>',
+        onMount: (m, close) => m.querySelector('#knImpGo').onclick = () => {
+          const file = m.querySelector('#knFile').files[0]; if (!file) return UI.toast('Chọn tệp', 'warn');
+          const form = new FormData(); form.append('file', file); form.append('folder', fd.code); form.append('type', m.querySelector('#knType').value);
+          Store.act('Knowledge/Import', { json: form }).then(r => { if (!r.ok) return; close(); UI.toast(esc((r.res && r.res.responseMessage) || 'Đã nhập'), 'ok'); APP.go('knowledge?folder=' + fd.code + '&path=' + encodeURIComponent((r.data || {}).path || '')); });
+        },
+      });
     };
     const noteView = () => Store.query('Knowledge/GetNote', { path: st.path }).then(x => {
       if (!main.isConnected) return;
       if (!x.ok || !x.data) { main.innerHTML = `<div class="notice warn">${esc(x.message || 'Không mở được ghi chú')}</div>`; return; }
       const n = x.data;
       main.innerHTML = `<div class="spread"><div><div class="muted small">${esc(n.path)}</div><h2 style="margin:4px 0">${esc(n.title)}</h2></div>
-          <div class="row-flex" style="gap:6px">${n.canEdit ? `<button class="btn sm" id="knEdit">${I('edit')} Sửa</button>` : ''}<button class="btn sm" id="knHist">${I('history')} Lịch sử</button></div></div>
+          <div class="row-flex" style="gap:6px">${n.canEdit && SOPT.includes(n.type) && /^nh[aá]p$/i.test(n.status || '') ? `<button class="btn sm orange" id="knSubmit">Gửi duyệt</button>` : ''}${n.canEdit && SOPT.includes(n.type) && /hi[eệ]u l[uự]c/i.test(n.status || '') ? `<button class="btn sm" id="knVer">${I('plus')} Phiên bản mới</button>` : ''}${n.canEdit && !/ch[oờ] duy[eệ]t/i.test(n.status || '') && !(SOPT.includes(n.type) && /hi[eệ]u l[uự]c/i.test(n.status || '')) ? `<button class="btn sm" id="knEdit">${I('edit')} Sửa</button>` : ''}<button class="btn sm" id="knHist">${I('history')} Lịch sử</button></div></div>
         <div class="row-flex mb" style="gap:6px;flex-wrap:wrap">${chip(typeName(n.type))}${chip(n.status || '', /hi[eệ]u l[uự]c/i.test(n.status || '') ? 'green' : '')}${chip('Hiệu lực từ ' + U.date(n.validFrom))}${n.needsReview ? chip('Quá hạn rà soát ' + U.date(n.reviewBy), 'orange') : chip('Rà soát trước ' + U.date(n.reviewBy))}${chip(n.confidentiality || '')}${n.readOnly ? chip('Tự sinh – chỉ đọc', 'blue') : ''}</div>
         ${n.refs && n.refs.length ? `<div class="small mb">Liên quan: ${md(n.refs.join(', '), allNotes()).replace(/^<p>|<\/p>$/g, '')}</div>` : ''}
         <article class="kn-body">${md(n.body, allNotes())}</article>
         <div class="kn-back mt"><h4>Liên kết ngược</h4>${(n.listBacklink || []).length ? n.listBacklink.map(b => `<a href="#/knowledge?path=${encodeURIComponent(b.path)}" class="kn-link">${esc(b.title)}</a>`).join(' · ') : '<span class="muted small">Chưa có ghi chú nào liên kết tới đây.</span>'}</div>`;
       const e = main.querySelector('#knEdit'); if (e) e.onclick = () => editor(st.tree.find(t => t.code === n.folder) || { code: n.folder, name: n.folder }, n);
+      // AI-12 (D-133): SOP / hướng dẫn / quyết định – Nháp → Gửi duyệt (Phê duyệt › Duyệt SOP); Hiệu lực → Phiên bản mới (bản cũ giữ tới khi bản mới được duyệt, rồi Lưu trữ).
+      const sb = main.querySelector('#knSubmit'); if (sb) sb.onclick = () => UI.confirm('Gửi duyệt <b>' + esc(n.title) + '</b>? Sau khi gửi không sửa được cho tới khi duyệt / từ chối.', note => Store.act('Knowledge/SubmitSop', { json: { path: n.path, prevHash: n.hash, note } }).then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã gửi duyệt'), 'ok'); APP.refresh(); } }), { input: 'Ghi chú cho người duyệt', ok: 'Gửi duyệt' });
+      const vb = main.querySelector('#knVer'); if (vb) vb.onclick = () => UI.confirm('Tạo phiên bản mới (Nháp) từ bản đang hiệu lực? Bản hiện tại vẫn dùng cho tới khi bản mới được duyệt.', () => Store.act('Knowledge/NewVersion', { json: { path: n.path } }).then(r => { if (r.ok) { UI.toast('Đã tạo phiên bản mới', 'ok'); APP.go('knowledge?path=' + encodeURIComponent((r.data || {}).path || '')); } }), { ok: 'Tạo phiên bản' });
       main.querySelector('#knHist').onclick = () => Store.query('Knowledge/GetHistory', { path: n.path }).then(h => UI.modal({
         title: 'Lịch sử ghi chú', sub: esc(n.path),
         body: (h.list || []).length ? `<table class="table dc-table"><thead><tr><th>Lúc</th><th>Thao tác</th><th>Chi tiết</th></tr></thead><tbody>${h.list.map(r => { let c = {}; try { c = JSON.parse(r.changes || '{}'); } catch (err) { /* bỏ qua */ } return `<tr><td class="nowrap">${esc(when(r.at))}</td><td>${esc(r.action || '')}</td><td class="small">${esc(c.actor || '')}${c.note ? ' · ' + esc(c.note) : ''}</td></tr>`; }).join('')}</tbody></table>` : '<p class="muted">Chưa có lần lưu nào qua ứng dụng.</p>',

@@ -10,7 +10,8 @@ namespace AppDelicare.Services.Implement.Agent
     {
         private static IEnumerable<AgentToolDef> CommandTools() => AgentCommandRegistry.All.Select(c => new AgentToolDef
         {
-            Name = c.Code, ScreenId = c.ToolScreen ?? c.Screen, Agents = c.Agents, InputSchemaJson = c.InputSchemaJson,
+            // AI-12: ToolScreen = "" → không kiểm màn ở cổng (quyền theo thư mục kho kiểm trong KnowledgeService, như tim_tri_thuc).
+            Name = c.Code, ScreenId = c.ToolScreen == string.Empty ? null : c.ToolScreen ?? c.Screen, Agents = c.Agents, InputSchemaJson = c.InputSchemaJson,
             Description = c.Description + " Trả số đề xuất + hạn xác nhận; nói rõ với người hỏi là CHƯA ghi, chờ xác nhận.",
             RunAsync = async (ctx, a) =>
             {

@@ -9,5 +9,6 @@ lay_su_kien
 ping
 propose_attendance_fix
 propose_leave
+propose_note_update
 propose_shift_swap
 tim_tri_thuc

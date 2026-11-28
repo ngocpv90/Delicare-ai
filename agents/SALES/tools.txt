@@ -8,5 +8,6 @@ gui_canh_bao
 lay_su_kien
 phan_anh_khach
 ping
+propose_note_update
 propose_order_change
 tim_tri_thuc

@@ -50,5 +50,28 @@ namespace AppDelicare.WebApi.Controllers
         /// <summary>Lưu ghi chú (Path, Content gồm frontmatter, PrevHash = băm bản đang sửa; mới thì trống). 409 = người khác vừa sửa.</summary>
         [HttpPost("Save")]
         public Task<IActionResult> Save([FromBody] KnowledgeSaveRequest request) => Run(nameof(Save), () => _service.Save(request ?? new KnowledgeSaveRequest()));
+
+        /// <summary>AI-12: gửi duyệt SOP / hướng dẫn / quyết định (Nháp → Chờ duyệt, mục Phê duyệt › Duyệt SOP). Quyền Sửa thư mục kiểm trong service.</summary>
+        [HttpPost("SubmitSop")]
+        public Task<IActionResult> SubmitSop([FromBody] KnowledgePathRequest request) => Run(nameof(SubmitSop), () => _service.SubmitSop(request ?? new KnowledgePathRequest()));
+
+        /// <summary>AI-12: phiên bản mới (Nháp, cùng id) của ghi chú đang Hiệu lực.</summary>
+        [HttpPost("NewVersion")]
+        public Task<IActionResult> NewVersion([FromBody] KnowledgePathRequest request) => Run(nameof(NewVersion), () => _service.NewVersion(request ?? new KnowledgePathRequest()));
+
+        /// <summary>AI-12: nhập Word .docx (/ .md / .txt) thành ghi chú Nháp trong thư mục (PDF: GAP-KB-PDF). Tối đa 10 MB.</summary>
+        [HttpPost("Import")]
+        [RequestSizeLimit(10_000_000)]
+        public Task<IActionResult> Import([FromForm] string? folder, [FromForm] string? type, IFormFile? file) => Run(nameof(Import), async () =>
+        {
+            if (file == null || file.Length == 0)
+            {
+                return (AppDelicare.Data.Interface.IResult<KnowledgeSaveResultModel>)AppDelicare.Data.Repositories.Result<KnowledgeSaveResultModel>.Fail("Chọn tệp Word (.docx) để nhập");
+            }
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            ms.Position = 0;
+            return await _service.Import(folder, type, file.FileName, ms);
+        });
     }
 }

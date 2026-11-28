@@ -127,11 +127,21 @@ namespace AppDelicare.Services.Implement.Knowledge
 
         /// <summary>Exporter (ghi chú tự sinh): ghi / cập nhật 1 ghi chú <c>source: delicare-core</c>; nội dung không đổi → 0 (chạy lại không nhân bản).</summary>
         Task<int> ExportNote(string path, string id, string type, string owner, DateTime validFrom, int reviewMonths, string confidentiality, IEnumerable<string> refs, string body);
+        // AI-12 (D-133): duyệt SOP, phiên bản, nhập tệp, việc agent theo dõi, bảo trì kho.
+        Task<IResult<KnowledgeSaveResultModel>> SubmitSop(KnowledgePathRequest request);
+        Task<IResult<KnowledgeSaveResultModel>> NewVersion(KnowledgePathRequest request);
+        Task<IResult<KnowledgeSaveResultModel>> Import(string? folderCode, string? type, string fileName, Stream file);
+        Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
+        Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
+        Task<string?> SopStateAsync(Guid key);
+        (string? Path, string? Title, string? Folder, string? Status) SopInfo(Guid key);
+        Task<string?> ApplySopDecisionAsync(Guid key, bool approved, Guid actorUserId, string? note);
+        Task<KnowledgeMaintenanceResult> MaintainAsync();
         void EnsureSkeleton();
     }
 
     public partial class KnowledgeService(IUnitOfWork unitOfWork, IClock clock, ICurrentActor currentActor, IPermissionService permissions,
-        IOptions<KnowledgeOptions> options, IConfiguration configuration) : IKnowledgeService
+        IOptions<KnowledgeOptions> options, IConfiguration configuration, IServiceProvider serviceProvider) : IKnowledgeService
     {
         public const string Entity = "KnowledgeNote";
         private readonly KnowledgeOptions _o = options.Value;
@@ -257,7 +267,7 @@ namespace AppDelicare.Services.Implement.Knowledge
             var notes = All();
             string key = (idOrPath ?? string.Empty).Replace('\\', '/').Trim();
             var n = notes.FirstOrDefault(x => string.Equals(x.Path, key, StringComparison.OrdinalIgnoreCase) || string.Equals(x.Path, key + ".md", StringComparison.OrdinalIgnoreCase))
-                ?? notes.FirstOrDefault(x => string.Equals(x.Id, key, StringComparison.OrdinalIgnoreCase));
+                ?? notes.Where(x => string.Equals(x.Id, key, StringComparison.OrdinalIgnoreCase)).OrderBy(x => x.Status == "hieu-luc" ? 0 : x.Status == "luu-tru" ? 2 : 1).FirstOrDefault(); // AI-12: nhiều phiên bản cùng id → bản Hiệu lực
             if (n == null || !rights.NoteVisible(n))
             {
                 return Status<KnowledgeNoteModel>(404, "Không có ghi chú này hoặc không có quyền xem");

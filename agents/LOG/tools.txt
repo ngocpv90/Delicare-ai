@@ -8,5 +8,6 @@ gui_canh_bao
 lay_su_kien
 ping
 propose_delivery_event
+propose_note_update
 propose_route
 tim_tri_thuc

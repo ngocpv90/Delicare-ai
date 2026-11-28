@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **260 khóa** trong 13 section.
+Tổng: **262 khóa** trong 13 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -279,6 +279,8 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Knowledge:VaultPath` | string | "App_Data/Knowledge" | Thư mục gốc của kho; tương đối thì tính từ ContentRoot (như DocumentStorage). | – |
 | `Knowledge:MaxNotesPerQuery` | int | 5 | Số ghi chú tối đa một lần tìm của agent (§7.8-4). | – |
 | `Knowledge:SnippetLength` | int | 400 | Độ dài đoạn trích trả cho agent (ký tự). | – |
+| `Knowledge:LogRetentionDays` | int | 90 | AI-12: nhật ký agent (96) quá số ngày này được gộp thành tóm tắt tháng. | – |
+| `Knowledge:BriefKeepMonths` | int | 13 | AI-12: bản tin ngày (10 Ban GĐ/Bản tin) giữ số tháng này, cũ hơn chuyển Lưu trữ bản tin. | – |
 
 ## Messaging
 
