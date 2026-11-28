@@ -15,6 +15,12 @@ namespace AppDelicare.Model.Helper
             ["#/ai-agent-log"] = ("#/ai-agents", "Trung tâm Agent"),
             ["#/ai-schedule"] = ("#/ai-agents", "Trung tâm Agent"),
             ["#/ai-cost"] = ("#/ai-agents", "Trung tâm Agent"),
+            // AI-25.4 (D-143): mục quyền nhận bản tin – nằm dưới Trung tâm Agent ở màn phân quyền (không mở quyền vào Trung tâm Agent).
+            ["#/ai-ban-tin-sang"] = ("#/ai-agents", "Trung tâm Agent"),
+            ["#/ai-ban-tin-chieu"] = ("#/ai-agents", "Trung tâm Agent"),
+            ["#/ai-ban-tin-kho"] = ("#/ai-agents", "Trung tâm Agent"),
+            ["#/ai-ban-tin-bep"] = ("#/ai-agents", "Trung tâm Agent"),
+            ["#/ai-ban-tin-kd"] = ("#/ai-agents", "Trung tâm Agent"),
             // UI-6.52 (D-139 a) / RPT-1: tab của Bảng điều hành.
             ["#/kpi-daily"] = ("#/dash-exec", "Bảng điều hành"),
             ["#/kpi-monthly"] = ("#/dash-exec", "Bảng điều hành"),

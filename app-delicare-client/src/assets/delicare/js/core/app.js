@@ -5,7 +5,7 @@
   // Màn hình điều hướng (không phải bảng) – bổ sung vào menu
   FN['flow-e2e'] = { ph: '—', grp: 'Điều hành', fn: 'Luồng nghiệp vụ End-to-End', id: 'flow-e2e', name: 'Luồng nghiệp vụ E2E (9 luồng)', types: ['DB'], table: null, rel: [], st: 'NAV', note: '' };
   const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact', 'crm-location', 'scm-ingredient-cat', 'menu-dish-cat', 'scm-uom-conversion',
-    'ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost',
+    'ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost', 'ai-ban-tin-sang', 'ai-ban-tin-chieu', 'ai-ban-tin-kho', 'ai-ban-tin-bep', 'ai-ban-tin-kd', // AI-25.4: mục quyền nhận bản tin
     'kpi-daily', 'kpi-monthly', 'cost-meal', 'dash-pl']); // UI-6.52 (D-139 a) / RPT-1: tab của Bảng điều hành – không lên sidebar, giữ dòng quyền // AI-21 (D-138 b): 5 mục là tab của Trung tâm Agent – không lên sidebar, giữ dòng quyền // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).

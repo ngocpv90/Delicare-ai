@@ -37,7 +37,7 @@ public static partial class Seeds
 
     /// <summary>Màn agent được Xem: màn vai trò soi có Truy cập, trừ mục duyệt / quản trị / "Việc của tôi".</summary>
     /// <summary>AI-21 (D-138 g): mục agent KHÔNG bao giờ có (chi phí AI chỉ CEO / COO / FIN-IT) – seed thu quyền nếu DB đã cấp (đặt AllowAccess = 0, không xóa dòng).</summary>
-    public static readonly string[] AgentNeverScreens = ["ai-cost", "dash-pl"]; // RPT-1.1: số KQKD không cho agent
+    public static readonly string[] AgentNeverScreens = ["ai-cost", "dash-pl", "ai-ban-tin-sang", "ai-ban-tin-chieu", "ai-ban-tin-kho", "ai-ban-tin-bep", "ai-ban-tin-kd"]; // AI-25.4: mục nhận bản tin không cho agent // RPT-1.1: số KQKD không cho agent
 
     public static IEnumerable<string> AgentScreens(string? mirror)
         => mirror == null || !ScreenMatrix.TryGetValue(mirror, out var m) ? []

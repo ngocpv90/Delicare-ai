@@ -116,7 +116,7 @@ namespace AppDelicare.Services.Jobs
     /// kết quả hôm qua (giao, sản xuất, QC, phản ánh) + kế hoạch hôm nay (suất, đơn, điểm giao, người có ca). Số liệu = Dashboard/GetExecutive (như web).
     /// Khác Thẻ ngày (ghim, việc của riêng người đó): bản tin là số liệu chung công ty. Chống trùng theo ngày.
     /// </summary>
-    public sealed class MorningBriefJob(IUnitOfWork unitOfWork, IDashboardService dashboard, INotificationService notifications) : IScheduledJob
+    public sealed class MorningBriefJob(IUnitOfWork unitOfWork, IDashboardService dashboard, INotificationService notifications, AppDelicare.Services.Implement.Agent.IAgentBriefingService briefing) : IScheduledJob
     {
         public string Code => "MorningBrief";
         public string Name => "Bản tin sáng (bot Điều hành)";
@@ -125,6 +125,11 @@ namespace AppDelicare.Services.Jobs
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
         {
+            // AI-25.4 (D-143): ban-tin.yaml có bản tin "sang-bgd" → job BriefingMorningBod gửi thay (dựng bằng mẫu, theo quyền từng người); job này giữ làm dự phòng khi tệp thiếu.
+            if (briefing.Active("sang-bgd"))
+            {
+                return new JobOutcome(JobRunStatus.Skipped, 0, now.Date, "Thay bằng bản tin mẫu BriefingMorningBod (AI-25.4)");
+            }
             DateTime today = now.Date, yesterday = today.AddDays(-1);
             var y = (await dashboard.GetExecutive(yesterday, null, null)).Data?.Kpi;
             var t = (await dashboard.GetExecutive(today, null, null)).Data?.Kpi;
@@ -148,7 +153,7 @@ namespace AppDelicare.Services.Jobs
     }
 
     /// <summary>BOT-2.3 (§5.1 DAILY_REPORT): 17:00 – báo cáo cuối ngày ⚪ (kết quả hôm nay tới giờ chạy + đơn ngày mai), cùng người nhận với bản tin sáng.</summary>
-    public sealed class DailyReportJob(IUnitOfWork unitOfWork, IDashboardService dashboard, INotificationService notifications) : IScheduledJob
+    public sealed class DailyReportJob(IUnitOfWork unitOfWork, IDashboardService dashboard, INotificationService notifications, AppDelicare.Services.Implement.Agent.IAgentBriefingService briefing) : IScheduledJob
     {
         public string Code => "DailyReport";
         public string Name => "Báo cáo cuối ngày (bot Điều hành)";
@@ -157,6 +162,11 @@ namespace AppDelicare.Services.Jobs
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
         {
+            // AI-25.4 (D-143): ban-tin.yaml có bản tin "chieu-bgd" → job BriefingEveningBod gửi thay (dựng bằng mẫu, theo quyền từng người); job này giữ làm dự phòng khi tệp thiếu.
+            if (briefing.Active("chieu-bgd"))
+            {
+                return new JobOutcome(JobRunStatus.Skipped, 0, now.Date, "Thay bằng bản tin mẫu BriefingEveningBod (AI-25.4)");
+            }
             DateTime today = now.Date, tomorrow = today.AddDays(1);
             var t = (await dashboard.GetExecutive(today, null, null)).Data?.Kpi;
             var n = (await dashboard.GetExecutive(tomorrow, null, null)).Data?.Kpi;

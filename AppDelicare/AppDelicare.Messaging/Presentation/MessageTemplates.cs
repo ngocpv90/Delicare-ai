@@ -62,6 +62,7 @@ namespace AppDelicare.Messaging.Presentation
             ["KNOWLEDGE_REVIEW_DUE"] = "📚 Ghi chú cần rà soát",
             ["KNOWLEDGE_TASK_DUE"] = "📌 Việc được giao sắp / quá hạn", // AI-22.4
             ["AGENT_COST_ALERT"] = "💰 Chi phí Trợ lý AI",
+            ["AGENT_BRIEFING"] = "📰 Bản tin", // AI-25.4
             ["AGENT_ALERT"] = "🤖 Trợ lý AI cảnh báo",
             ["PURCHASE_DUE_NO_ORDER"] = "🛒 Kế hoạch mua – tới hạn đặt chưa có đơn mua",
             ["PURCHASE_SEND_FAILED"] = "📤 Đơn mua chưa gửi được cho NCC",

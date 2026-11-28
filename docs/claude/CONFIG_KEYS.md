@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **284 khóa** trong 14 section.
+Tổng: **292 khóa** trong 14 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -49,6 +49,8 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Agent:HermesApiUrlByAgent` | Dictionary<string, string> | new(StringComparer.OrdinalIgnoreCase) | AI-15: agent ở container Hermes khác → URL riêng theo mã (vd KITCHEN → http://hermes-van-hanh:8642/v1). Không có mục → HermesApiUrl. | – |
 | `Agent:HermesApiKeyEnv` | string | "HERMES_API_KEY" | AI-14: TÊN biến môi trường giữ khóa gọi API Hermes (không ghi khóa ở đây). | – |
 | `Agent:ChatTimeoutSeconds` | int | 60 | AI-14: thời gian chờ Hermes trả lời 1 câu chat (giây). | – |
+| `Agent:BriefingAiComment` | bool | – | AI-25.4 (D-143): thêm 2–3 dòng nhận xét AI (Vivi) cuối bản tin dựng bằng mẫu – mặc định false (bản tin 0 token). | D-143 |
+| `Agent:TemplateBriefings` | bool | true | AI-25.4: bật bản tin dựng bằng mẫu (ban-tin.yaml – 5 job Briefing*) thay bản tin bot cũ MorningBrief / DailyReport / KnowledgeBrief*; false = quay về bản tin cũ. | – |
 
 ## BusinessRules
 
@@ -127,7 +129,7 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:Pl:ItemMinAmount` | decimal | 10_000_000m | … và tăng ít nhất bao nhiêu đồng (bỏ khoản nhỏ). | – |
 | `BusinessRules:Pl:MarginWarnPct` | decimal | 5m | Biên lợi nhuận trước thuế dưới bao nhiêu % doanh thu thì cảnh báo. | – |
 | `BusinessRules:Pl:FoodCostWarnPct` | decimal | 55m | % NVL / doanh thu (lớp tạm tính) trên bao nhiêu thì cảnh báo. | – |
-| `BusinessRules:Pl:UnclassifiedWarnPct` | decimal | 15m | RPT-1.5 đối chiếu: phần "khác / chưa phân loại" của 1 tài khoản (621, 627, 641, 642) từ bao nhiêu % thì cảnh báo. | – |
+| `BusinessRules:Pl:UnclassifiedWarnPct` | decimal | 15m | RPT-1.5 đối chiếu: phần "khác / chưa phân loại" của 1 tài khoản (621, 627, 641, 642) từ bao nhiêu % số của tài khoản thì cảnh báo. | – |
 | `BusinessRules:Pl:EstRevenueGapPct` | decimal | 5m | RPT-1.5 đối chiếu: doanh thu sổ AMIS lệch doanh thu Delicare (tạm tính) từ bao nhiêu % thì cảnh báo. | – |
 | `BusinessRules:OrderCutoffHourPreviousDay` | int | 20 | – | – |
 | `BusinessRules:OrderLockJobTime` | string | "20:00" | – | – |
@@ -298,6 +300,10 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Knowledge:LogRetentionDays` | int | 90 | AI-12: nhật ký agent (96) quá số ngày này được gộp thành tóm tắt tháng. | – |
 | `Knowledge:BriefKeepMonths` | int | 13 | AI-12: bản tin ngày (10 Ban GĐ/Bản tin) giữ số tháng này, cũ hơn chuyển Lưu trữ bản tin. | – |
 | `Knowledge:SyncTwoWayTraining` | bool | – | AI-18: cho phép đồng bộ HAI CHIỀU thư mục 80 Đào tạo với Obsidian máy cá nhân (tools/kb-sync). Mặc định tắt – mọi thư mục chỉ một chiều (máy chủ → máy). | – |
+| `Knowledge:AgentCanReadBod` | bool | – | AI-22.1 (D-141 g, §7.9 luật 3): agent được đọc BOD Bảo mật (khi người hỏi được cấp đích danh). Mặc định false – nội dung agent đọc được gửi tới nhà cung cấp mô hình AI. | D-141 |
+| `Knowledge:MaxFileMb` | int | 20 | AI-22.2 (§7.9 luật 7): dung lượng tối đa 1 tệp gốc tải lên kho (MB). | – |
+| `Knowledge:UserGuidePath` | string? | – | AI-22.3 (§7.11): thư mục nguồn Hướng dẫn sử dụng (docs/user-guide). Trống = tìm "docs/user-guide" đi ngược lên từ thư mục chạy (máy dev); Docker: /app/user-guide (mount chỉ đọc). | – |
+| `Knowledge:ContractExpiryNoticeDays` | int | 30 | AI-22.5 (D-141 i): nhắc hợp đồng (khách / NCC / lao động) sắp hết hạn trước bao nhiêu ngày (thêm mốc 7 và 1 ngày). | D-141 |
 
 ## Messaging
 

@@ -181,7 +181,7 @@ namespace AppDelicare.Services.Implement.Knowledge
     /// AI-8 (D-133): bản tin 07:00 / 17:00 ghi kho thư mục 10 (ghi chú tự sinh, số liệu chụp lúc xuất) – chạy cùng giờ bản tin bot (MorningBrief / DailyReport)
     /// và lịch VIVI (app-delicare-agents/schedules.json); Hermes tắt thì bản tin vẫn vào kho đúng giờ.
     /// </summary>
-    public sealed class KnowledgeBriefMorningJob(IKnowledgeExportService exporter) : IScheduledJob
+    public sealed class KnowledgeBriefMorningJob(IKnowledgeExportService exporter, AppDelicare.Services.Implement.Agent.IAgentBriefingService briefing) : IScheduledJob
     {
         public string Code => "KnowledgeBriefMorning";
         public string Name => "Bản tin sáng vào kho tri thức";
@@ -189,10 +189,11 @@ namespace AppDelicare.Services.Implement.Knowledge
         public string DefaultAt => "07:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
-            => new(JobRunStatus.Succeeded, await exporter.ExportDailyBrief(now.Date, "sang"), now.Date, "Bản tin sáng");
+            => briefing.Active("sang-bgd") ? new(JobRunStatus.Skipped, 0, now.Date, "Bản tin mẫu BriefingMorningBod ghi thư mục 10 (AI-25.4)")
+                : new(JobRunStatus.Succeeded, await exporter.ExportDailyBrief(now.Date, "sang"), now.Date, "Bản tin sáng");
     }
 
-    public sealed class KnowledgeBriefEveningJob(IKnowledgeExportService exporter) : IScheduledJob
+    public sealed class KnowledgeBriefEveningJob(IKnowledgeExportService exporter, AppDelicare.Services.Implement.Agent.IAgentBriefingService briefing) : IScheduledJob
     {
         public string Code => "KnowledgeBriefEvening";
         public string Name => "Báo cáo cuối ngày vào kho tri thức";
@@ -200,7 +201,8 @@ namespace AppDelicare.Services.Implement.Knowledge
         public string DefaultAt => "17:00";
 
         public async Task<JobOutcome> RunAsync(DateTime now, CancellationToken cancellationToken)
-            => new(JobRunStatus.Succeeded, await exporter.ExportDailyBrief(now.Date, "chieu"), now.Date, "Báo cáo cuối ngày");
+            => briefing.Active("chieu-bgd") ? new(JobRunStatus.Skipped, 0, now.Date, "Bản tin mẫu BriefingEveningBod ghi thư mục 10 (AI-25.4)")
+                : new(JobRunStatus.Succeeded, await exporter.ExportDailyBrief(now.Date, "chieu"), now.Date, "Báo cáo cuối ngày");
     }
 
     /// <summary>AI-5: job đêm xuất ghi chú tự sinh vào kho tri thức (ghi <c>AnalyticsRefreshLog</c> như mọi job).</summary>

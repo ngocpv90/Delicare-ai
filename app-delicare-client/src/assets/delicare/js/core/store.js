@@ -248,12 +248,15 @@
 
   // UI-6: trang chi tiết <screen>-detail dùng quyền màn gốc – thêm qua Store.permAlias (modules/detail-page.js).
   const DASH_TABS = ['kpi-daily', 'cost-meal', 'dash-pl']; // UI-6.52 / RPT-1: mục quyền các tab của Bảng điều hành
+  const BRIEF_TABS = ['ai-ban-tin-sang', 'ai-ban-tin-chieu', 'ai-ban-tin-kho', 'ai-ban-tin-bep', 'ai-ban-tin-kd'];
   const AGENT_TABS = ['ai-tasks', 'ai-flow', 'ai-agent-log', 'ai-schedule', 'ai-cost']; // AI-21: mục quyền các tab của Trung tâm Agent
   // MENU-TAB (anh 2026-11-28): mục quyền là TAB của 1 màn (không phải menu) – màn quản trị (phân quyền, xem trước menu, cây menu) hiện lồng dưới màn cha.
   // Khớp máy chủ MenuTabs.ParentOf (đếm số màn, tìm kiếm toàn cục).
   const TAB_OF = {};
   DASH_TABS.concat(['kpi-monthly']).forEach(t => TAB_OF[t] = 'dash-exec');
   AGENT_TABS.forEach(t => TAB_OF[t] = 'ai-agents');
+  // AI-25.4 (D-143): mục quyền nhận bản tin – hiện dưới Trung tâm Agent ở màn phân quyền; KHÔNG nằm trong AGENT_TABS (không mở quyền vào Trung tâm Agent).
+  BRIEF_TABS.forEach(t => TAB_OF[t] = 'ai-agents');
   const idOfLink = l => String(l || '').replace(/^#\//, '').split('?')[0];
   const PERM_ALIAS = { 'crm-customer-360': 'crm-customer', 'scm-supplier-360': 'scm-supplier', 'adm-employee-360': 'adm-employee',
     // MENU-4.3 (D-75 e): bảng con không còn mục menu → quyền của màn cha (khớp máy chủ ScreenMap.ParentByClass).
