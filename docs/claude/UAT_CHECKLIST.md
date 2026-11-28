@@ -627,6 +627,15 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## RPT-1.4 – Nhận xét tự động + xuất Excel / PDF (D-140 h, 28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | CEO | Bảng điều hành ngày 31/08/2026 → Kết quả kinh doanh | Nhận xét: "Doanh thu 13.873,1 trđ, tăng 23,9% so tháng 07/2026", "Lợi nhuận trước thuế 1.042,7 trđ … tăng 12,1%", 3 khoản chi phí tăng mạnh nhất (Thịt lợn, Đồ ăn sáng mua sẵn, Gạo) |
+| 2 | CEO | Xuất Excel / In PDF | Tệp Ket-qua-kinh-doanh-2026-08.xlsx / .pdf: KQKD tháng + lũy kế, nhận xét, trang theo quý |
+| 3 | QA | Gọi Dashboard/ExportPl | 403 |
+| 4 | CEO | Tháng chưa nhập sổ AMIS (vd 11/2026) | Nhận xét "theo số tạm tính" |
+
 ## RPT-1.3 – Báo cáo KQKD đầy đủ + lịch sử (D-140, 28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

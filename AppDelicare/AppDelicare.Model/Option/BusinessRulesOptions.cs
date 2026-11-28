@@ -20,6 +20,8 @@ namespace AppDelicare.Model.Option
         public DashboardRulesOptions Dashboard { get; set; } = new();
         /// <summary>RETAIL-1: quy tắc đơn khách lẻ (BusinessRules:Retail) – PROPOSED – BA/PO CONFIRM.</summary>
         public RetailRulesOptions Retail { get; set; } = new();
+        /// <summary>RPT-1.4 (D-140 h): ngưỡng nhận xét tự động tab Kết quả kinh doanh – section <c>BusinessRules:Pl</c> (PROPOSED).</summary>
+        public PlRulesOptions Pl { get; set; } = new();
         public int OrderCutoffHourPreviousDay { get; set; } = 20;
         public string OrderLockJobTime { get; set; } = "20:00";
         public string MrpJobTime { get; set; } = "20:30";

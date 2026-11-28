@@ -18,6 +18,23 @@ namespace AppDelicare.WebApi.Controllers
         [HttpGet("GetPlReport")]
         [Security.Permission("dash-pl", PermissionAction.View)]
         public Task<IActionResult> GetPlReport([FromQuery] string? month) => Run(nameof(GetPlReport), () => _plReport.GetReport(month));
+
+        /// <summary>RPT-1.4: xuất tab Kết quả kinh doanh – format xlsx (mặc định) / pdf; quyền Xuất mục dash-pl.</summary>
+        [HttpGet("ExportPl")]
+        [Security.Permission("dash-pl", PermissionAction.Export)]
+        public async Task<IActionResult> ExportPl([FromQuery] string? month, [FromQuery] string? format)
+        {
+            try
+            {
+                var r = await _plReport.Export(month, format);
+                return r.ResponseCode == 200 && r.Data != null ? File(r.Data.Content, r.Data.ContentType, r.Data.FileName) : Ok(r);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "] ExportPl: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
         private readonly AppDelicare.Services.Implement.IAmisPlService _amisPl = amisPl;
 
         private async Task<IActionResult> Run<T>(string name, Func<Task<T>> call)

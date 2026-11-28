@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **278 khóa** trong 14 section.
+Tổng: **284 khóa** trong 14 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -121,6 +121,12 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:Retail:LoginFailLimit` | int | 5 | RETAIL-2: đăng nhập sai bao nhiêu lần (theo SĐT) thì khóa tạm. | – |
 | `BusinessRules:Retail:LoginLockMinutes` | int | 15 | – | – |
 | `BusinessRules:Retail:RegisterLimitPerIp` | int | 5 | RETAIL-2: số tài khoản tạo tối đa / IP / cửa sổ LimitWindowMinutes. | – |
+| `BusinessRules:Pl:RevenueChangePct` | decimal | 5m | Doanh thu đổi so tháng trước từ bao nhiêu % thì nêu (tăng / giảm). | – |
+| `BusinessRules:Pl:CostGapPct` | decimal | 2m | Giá vốn tăng nhanh hơn doanh thu từ bao nhiêu điểm % thì cảnh báo. | – |
+| `BusinessRules:Pl:ItemIncreasePct` | decimal | 20m | Khoản chi phí tăng từ bao nhiêu % so tháng trước thì vào danh sách "tăng mạnh nhất". | – |
+| `BusinessRules:Pl:ItemMinAmount` | decimal | 10_000_000m | … và tăng ít nhất bao nhiêu đồng (bỏ khoản nhỏ). | – |
+| `BusinessRules:Pl:MarginWarnPct` | decimal | 5m | Biên lợi nhuận trước thuế dưới bao nhiêu % doanh thu thì cảnh báo. | – |
+| `BusinessRules:Pl:FoodCostWarnPct` | decimal | 55m | % NVL / doanh thu (lớp tạm tính) trên bao nhiêu thì cảnh báo. | – |
 | `BusinessRules:OrderCutoffHourPreviousDay` | int | 20 | – | – |
 | `BusinessRules:OrderLockJobTime` | string | "20:00" | – | – |
 | `BusinessRules:MrpJobTime` | string | "20:30" | – | – |

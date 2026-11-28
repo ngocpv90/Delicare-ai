@@ -39,7 +39,7 @@
       const totRev = U.sum(rows, 'total'), unconf = rows.filter(r => r.unconfirmed);
       el.innerHTML = `<div class="spread mb" style="flex-wrap:wrap;gap:8px"><div><b>Kết quả kinh doanh tháng ${esc(monthName(d.month))}</b> <span class="small muted">· so tháng ${esc(monthName(d.prevMonth))} và cùng kỳ ${esc(monthName(d.yearAgoMonth))} · đơn vị triệu đồng (rê chuột xem số đủ)</span></div>
           <div class="row-flex" style="gap:6px;flex-wrap:wrap">${d.periodLocked ? UI.tag('Kỳ đã khóa', 'green') : UI.tag('Kỳ đang mở – số tạm tính cập nhật hằng ngày', 'orange')}${d.hasAmis ? UI.tag('Đã có số AMIS', 'green') : UI.tag('Chưa nhập sổ AMIS', '')}
-            <button class="btn sm" id="rpAmis">${I('database')} Số AMIS tháng</button>${Store.perm('dash-pl').imp ? `<button class="btn sm primary" id="rpImp">${I('upload')} Nhập sổ AMIS</button>` : ''}<button class="btn sm" id="rpRules">${I('settings')} Quy tắc phân loại</button></div></div>
+            <button class="btn sm" id="rpAmis">${I('database')} Số AMIS tháng</button>${Store.perm('dash-pl').imp ? `<button class="btn sm primary" id="rpImp">${I('upload')} Nhập sổ AMIS</button>` : ''}<button class="btn sm" id="rpRules">${I('settings')} Quy tắc phân loại</button>${Store.perm('dash-pl').exp ? `<button class="btn sm" id="rpXls">${I('export')} Xuất Excel</button><button class="btn sm" id="rpPdf">${I('print')} In PDF</button>` : ''}</div></div>
         <div class="rp-cards">${(d.listCard || []).map(card).join('')}</div>
         <div id="rpRep" class="mt"></div>
         <div class="rp-grid mt">
@@ -66,6 +66,10 @@
       report(el.querySelector('#rpRep'), d.month);
       el.querySelector('#rpAmis').onclick = () => amisView(d.month);
       el.querySelector('#rpRules').onclick = () => rulesEdit();
+      // RPT-1.4: xuất tab (thẻ chỉ số, nhận xét, KQKD tháng + lũy kế, theo quý).
+      const xb = el.querySelector('#rpXls'), pb = el.querySelector('#rpPdf');
+      if (xb) xb.onclick = () => Store.download('Dashboard/ExportPl', { month: d.month, format: 'xlsx' });
+      if (pb) pb.onclick = () => Store.download('Dashboard/ExportPl', { month: d.month, format: 'pdf' });
       const ib = el.querySelector('#rpImp'); if (ib) ib.onclick = () => importAmis(d.month, () => render(el, p));
     });
   }
@@ -99,6 +103,7 @@
       host.innerHTML = `<div class="card panel"><div class="panel-head" style="flex-wrap:wrap;gap:8px"><div><div class="panel-title">Báo cáo kết quả kinh doanh</div><div class="panel-desc">Tháng ${esc(monthName(d.month))} · lũy kế năm ${d.year} · triệu đồng</div></div>
           <div class="row-flex" style="gap:8px;flex-wrap:wrap"><div class="seg"><button class="seg-b ${rs.ytd ? '' : 'on'}" data-ytd="0">Tháng</button><button class="seg-b ${rs.ytd ? 'on' : ''}" data-ytd="1">Lũy kế năm</button></div>
             <div class="seg"><button class="seg-b ${amis ? 'on' : ''}" data-ly="AMIS">Chính thức · AMIS</button><button class="seg-b ${amis ? '' : 'on'}" data-ly="EST">Tạm tính</button></div></div></div>
+        ${(d.comments || []).length ? `<div class="rp-cm mb"><div class="small muted">Nhận xét tự động ${d.hasAmis ? '(số chính thức)' : '(số tạm tính)'}</div>${d.comments.map(c => `<div class="rp-c ${esc(c.level)}">${c.level === 'warn' ? '⚠' : c.level === 'good' ? '✓' : '•'} ${esc(c.text)}</div>`).join('')}</div>` : ''}
         ${amis ? (d.hasAmis || st.some(l => !nil(l.ytd)) ? `<div class="table-wrap"><table class="table dc-table rp-t rp-st"><thead><tr><th>Chỉ tiêu</th><th class="num">${rs.ytd ? 'Lũy kế ' + d.year : 'Tháng ' + esc(monthName(d.month))}</th><th class="num">% doanh thu</th>${rs.ytd ? '' : '<th class="num">Tháng trước</th>'}</tr></thead><tbody>
           ${st.filter(l => l.level < 2 || !nil(l[col])).map(l => { const v = l[col], ratio = l.code === 'ROA' || l.code === 'ROE'; return `<tr class="lv${l.level}"><td>${esc(l.name)}</td><td class="num" title="${esc(ratio ? '' : full(v))}">${ratio ? (rs.ytd ? '–' : fmtPct(v)) : trd(v)}</td><td class="num">${ratio || nil(v) ? '' : fmtPct(pctOf(v, revRow && revRow[col]))}</td>${rs.ytd ? '' : `<td class="num">${ratio ? fmtPct(l.prevMonth) : trd(l.prevMonth)}</td>`}</tr>`; }).join('')}</tbody></table></div>`
           : '<div class="notice info">Tháng này chưa nhập sổ AMIS – bấm <b>Nhập sổ AMIS</b> (Kế toán).</div>') : '<div class="notice info small">Lớp Tạm tính: số Delicare tự tính (doanh thu theo bảng kê / đơn, nguyên vật liệu, bao bì), chụp hằng đêm – xem biểu đồ bên dưới; báo cáo KQKD đầy đủ chỉ có ở lớp Chính thức.</div>'}

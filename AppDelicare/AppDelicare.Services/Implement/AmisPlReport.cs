@@ -4,6 +4,7 @@ using AppDelicare.Data.Repositories;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Share;
 using AppDelicare.Model.Helper;
+using AppDelicare.Model.Model;
 using Microsoft.EntityFrameworkCore;
 
 namespace AppDelicare.Services.Implement
@@ -44,19 +45,31 @@ namespace AppDelicare.Services.Implement
         /// <summary>Cơ cấu giá vốn hàng bán tháng đang xem (khoản mục → số).</summary>
         public List<AmisPlItemModel> CogsMix { get; set; } = [];
         public bool HasAmis { get; set; }
+        /// <summary>RPT-1.4 (D-140 h): nhận xét tự động theo quy tắc (ngưỡng BusinessRules:Pl).</summary>
+        public List<PlCommentModel> Comments { get; set; } = [];
+    }
+
+    public sealed class PlCommentModel
+    {
+        /// <summary>good · warn · info.</summary>
+        public string Level { get; set; } = "info";
+        public string Text { get; set; } = string.Empty;
     }
 
     public interface IAmisPlReportService
     {
         Task<IResult<PlReportModel>> GetReport(string? month);
+        /// <summary>RPT-1.4: xuất tab Kết quả kinh doanh (xlsx / pdf) – thẻ chỉ số, nhận xét, báo cáo KQKD tháng + lũy kế, theo quý.</summary>
+        Task<IResult<FileContentModel>> Export(string? month, string? format);
     }
 
     /// <summary>
     /// RPT-1.3 (D-140 f, i): báo cáo KQKD chi tiết Tháng | Lũy kế năm (bố cục sheet Monthly / YTD, tên chỉ tiêu D-140 f: "Lợi nhuận trước thuế", "Chi phí bán hàng &amp; quản lý"),
     /// bảng theo quý, chuỗi 12 tháng (lớp Chính thức PL_AMIS_* và Tạm tính PL_EST_*), cơ cấu giá vốn. Chỉ đọc KpiMonthlySnapshot (BranchId null) – số do RPT-1.2 nạp.
     /// </summary>
-    public sealed class AmisPlReportService(IUnitOfWork unitOfWork, IClock clock, IAmisPlService amis) : IAmisPlReportService
+    public sealed class AmisPlReportService(IUnitOfWork unitOfWork, IClock clock, IAmisPlService amis, IDashboardPlService pl, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules) : IAmisPlReportService
     {
+        private readonly AppDelicare.Model.Option.PlRulesOptions _o = rules.Value.Pl ?? new();
         private static readonly (string Code, string Name)[] Main =
         [
             ("REVENUE", "Doanh thu"), ("COGS", "Giá vốn hàng bán"), ("GROSS_PROFIT", "Lợi nhuận gộp"), ("SELLING_ADMIN", "Chi phí bán hàng & quản lý"), ("NET_OPERATING", "Lợi nhuận thuần"),
@@ -135,7 +148,154 @@ namespace AppDelicare.Services.Implement
             if (Get(m0, A("ACC_622")) is { } labor) mix.Add(new AmisPlItemModel { Account = "622", Item = "Nhân công trực tiếp", Value = labor });
             foreach (var l in Items("627")) mix.Add(new AmisPlItemModel { Account = "627", Item = l.Name, Value = l.Month ?? 0 });
             model.CogsMix = [.. mix.Where(x => x.Value != 0).OrderByDescending(x => x.Value)];
+            model.Comments = await CommentsAsync(model, m0);
             return Result<PlReportModel>.Success(model, ConstantHelper.Message.GetAllSuccessfully);
+        }
+
+        // ---------------------------------------------------------------- RPT-1.4 nhận xét tự động (D-140 h)
+        private static string Tr(decimal v) => (v / 1_000_000m).ToString("#,0.0", CultureInfo.GetCultureInfo("vi-VN")) + " trđ";
+
+        private static string Pc(decimal v) => v.ToString("0.0", CultureInfo.GetCultureInfo("vi-VN")) + "%";
+
+        private static decimal? Growth(decimal? cur, decimal? prev) => cur is { } c && prev is { } p && p != 0 ? (c - p) / Math.Abs(p) * 100m : null;
+
+        /// <summary>
+        /// Lớp Chính thức (có số AMIS tháng): doanh thu ± so tháng trước / cùng kỳ; giá vốn tăng nhanh hơn doanh thu; % giá vốn / doanh thu; lợi nhuận trước thuế + biên thấp;
+        /// 3 khoản chi phí tăng mạnh nhất (621 nhóm NVL, 627, 641, 642). Chưa có số AMIS → nhận xét lớp Tạm tính (doanh thu, % NVL / doanh thu, bao bì).
+        /// </summary>
+        private async Task<List<PlCommentModel>> CommentsAsync(PlReportModel r, DateTime m0)
+        {
+            var list = new List<PlCommentModel>();
+            void Add(string level, string text) => list.Add(new PlCommentModel { Level = level, Text = text });
+            string prevName = $"tháng {m0.AddMonths(-1):MM/yyyy}";
+            if (r.HasAmis)
+            {
+                var st = r.Statement.ToDictionary(l => l.Code, l => l);
+                decimal? Cur(string c) => st.TryGetValue(c, out var l) ? l.Month : null;
+                decimal? Prev(string c) => st.TryGetValue(c, out var l) ? l.PrevMonth : null;
+                decimal rev = Cur("REVENUE") ?? 0;
+                var g = Growth(Cur("REVENUE"), Prev("REVENUE"));
+                if (g is { } gr && Math.Abs(gr) >= _o.RevenueChangePct)
+                {
+                    Add(gr > 0 ? "good" : "warn", $"Doanh thu {Tr(rev)}, {(gr > 0 ? "tăng" : "giảm")} {Pc(Math.Abs(gr))} so {prevName}.");
+                }
+                else if (g != null)
+                {
+                    Add("info", $"Doanh thu {Tr(rev)}, gần như không đổi so {prevName} ({(g >= 0 ? "+" : "")}{Pc(g.Value)}).");
+                }
+                int yIdx = r.Months.IndexOf(m0.AddMonths(-12).ToString("yyyy-MM"));
+                var ser = r.Series.GetValueOrDefault("AMIS_REVENUE");
+                if (yIdx >= 0 && ser != null && Growth(rev, ser[yIdx]) is { } gy)
+                {
+                    Add(gy >= 0 ? "good" : "warn", $"So cùng kỳ {m0.AddMonths(-12):MM/yyyy}: doanh thu {(gy >= 0 ? "tăng" : "giảm")} {Pc(Math.Abs(gy))}.");
+                }
+                var gc = Growth(Cur("COGS"), Prev("COGS"));
+                if (gc is { } c && g is { } gv && c - gv >= _o.CostGapPct)
+                {
+                    Add("warn", $"Giá vốn tăng nhanh hơn doanh thu: giá vốn +{Pc(c)}, doanh thu {(gv >= 0 ? "+" : "")}{Pc(gv)} so {prevName}.");
+                }
+                if (rev != 0 && Cur("COGS") is { } cogs)
+                {
+                    decimal ratio = cogs / rev * 100m;
+                    decimal? prevRatio = Prev("REVENUE") is { } pr && pr != 0 && Prev("COGS") is { } pc ? pc / pr * 100m : null;
+                    Add(prevRatio != null && ratio > prevRatio + 0.5m ? "warn" : "info", $"Giá vốn hàng bán = {Pc(ratio)} doanh thu" + (prevRatio is { } p2 ? $" ({prevName}: {Pc(p2)})." : "."));
+                }
+                if (Cur("PROFIT_BEFORE_TAX") is { } pbt)
+                {
+                    decimal margin = rev == 0 ? 0 : pbt / rev * 100m;
+                    var gp = Growth(pbt, Prev("PROFIT_BEFORE_TAX"));
+                    Add(pbt < 0 || margin < _o.MarginWarnPct ? "warn" : "good",
+                        $"Lợi nhuận trước thuế {Tr(pbt)} (biên {Pc(margin)} doanh thu){(gp is { } x ? $", {(x >= 0 ? "tăng" : "giảm")} {Pc(Math.Abs(x))} so {prevName}" : string.Empty)}{(margin < _o.MarginWarnPct ? $" – dưới ngưỡng {Pc(_o.MarginWarnPct)}" : string.Empty)}.");
+                }
+                var up = r.Statement.Where(l => l.Level == 2 && l.Code.Length > 12 && new[] { "I621_", "I627_", "I641_", "I642_" }.Any(a => l.Code.Contains(a)) && l.Month is { } mv && l.PrevMonth is { } pv && pv > 0
+                        && mv - pv >= _o.ItemMinAmount && (mv - pv) / pv * 100m >= _o.ItemIncreasePct)
+                    .OrderByDescending(l => l.Month!.Value - l.PrevMonth!.Value).Take(3).ToList();
+                if (up.Count > 0)
+                {
+                    Add("warn", "Chi phí tăng mạnh nhất so " + prevName + ": " + string.Join("; ", up.Select(l => $"{l.Name} +{Tr(l.Month!.Value - l.PrevMonth!.Value)} (+{Pc((l.Month!.Value - l.PrevMonth!.Value) / l.PrevMonth!.Value * 100m)})")) + ".");
+                }
+                return list;
+            }
+            var est = (await pl.GetPl(m0.ToString("yyyy-MM"), null)).Data;
+            if (est == null)
+            {
+                return list;
+            }
+            Add("info", "Chưa có số AMIS của tháng – nhận xét theo số tạm tính (Delicare).");
+            var card = est.ListCard.ToDictionary(c => c.Code, c => c);
+            if (card.GetValueOrDefault("PL_EST_REVENUE") is { Value: { } rv } rc)
+            {
+                var g = Growth(rv, rc.Prev);
+                Add(g is { } x && x <= -_o.RevenueChangePct ? "warn" : g is { } y && y >= _o.RevenueChangePct ? "good" : "info",
+                    $"Doanh thu tạm tính {Tr(rv)}{(g is { } z ? $", {(z >= 0 ? "tăng" : "giảm")} {Pc(Math.Abs(z))} so {prevName}" : string.Empty)}.");
+            }
+            if (card.GetValueOrDefault("PL_EST_FOOD_PCT") is { Value: { } fp } fc)
+            {
+                Add(fp > _o.FoodCostWarnPct ? "warn" : "info", $"Nguyên vật liệu = {Pc(fp)} doanh thu{(fc.Prev is { } p ? $" ({prevName}: {Pc(p)})" : string.Empty)}{(fp > _o.FoodCostWarnPct ? $" – vượt ngưỡng {Pc(_o.FoodCostWarnPct)}" : string.Empty)}.");
+            }
+            if (est.ListGroup.Count > 0)
+            {
+                var top = est.ListGroup.Where(x => x.Prev > 0 && x.Value - x.Prev >= _o.ItemMinAmount && (x.Value - x.Prev) / x.Prev * 100m >= _o.ItemIncreasePct)
+                    .OrderByDescending(x => x.Value - x.Prev).Take(3).ToList();
+                if (top.Count > 0)
+                {
+                    Add("warn", "Nhóm NVL tăng mạnh nhất: " + string.Join("; ", top.Select(x => $"{x.Group} +{Tr(x.Value - x.Prev)}")) + ".");
+                }
+            }
+            return list;
+        }
+
+        // ---------------------------------------------------------------- RPT-1.4 xuất Excel / PDF
+        public async Task<IResult<FileContentModel>> Export(string? month, string? format)
+        {
+            string fmt = (format ?? PrintRenderer.Xlsx).Trim().ToLowerInvariant() == PrintRenderer.Pdf ? PrintRenderer.Pdf : PrintRenderer.Xlsx;
+            var rep = (await GetReport(month)).Data!;
+            var cards = (await pl.GetPl(rep.Month, null)).Data;
+            DateTime m0 = DateTime.ParseExact(rep.Month, "yyyy-MM", CultureInfo.InvariantCulture);
+            string Mn(decimal? v) => v is { } x ? (x / 1_000_000m).ToString("#,0.0", CultureInfo.GetCultureInfo("vi-VN")) : "–";
+            string Pp(decimal? a, decimal? b) => a is { } x && b is { } y && y != 0 ? (x / y * 100m).ToString("0.0", CultureInfo.GetCultureInfo("vi-VN")) + "%" : "";
+            var revRow = rep.Statement.FirstOrDefault(l => l.Code == "REVENUE");
+            var docs = new List<PrintDocumentModel>();
+            var doc = new PrintDocumentModel
+            {
+                Type = "PL", Title = $"KẾT QUẢ KINH DOANH THÁNG {m0:MM/yyyy}", DocumentDate = clock.Today, CompanyName = "CÔNG TY CỔ PHẦN THƯƠNG MẠI DỊCH VỤ DELICARE VN",
+                ListInfo =
+                [
+                    new PrintInfoRowModel { Label = "Kỳ", Value = $"Tháng {m0:MM/yyyy} · lũy kế năm {m0.Year}" },
+                    new PrintInfoRowModel { Label = "Lớp số", Value = rep.HasAmis ? "Chính thức (sổ AMIS)" : "Tạm tính (Delicare) – chưa nhập sổ AMIS" },
+                    new PrintInfoRowModel { Label = "Đơn vị", Value = "triệu đồng" },
+                ],
+                ListHeader = ["Chỉ tiêu", $"Tháng {m0:MM/yyyy}", "% doanh thu", $"Lũy kế {m0.Year}", "% doanh thu"],
+            };
+            foreach (var l in rep.Statement.Where(l => l.Level < 2 || l.Month != null || l.Ytd != null))
+            {
+                bool ratio = l.Code is "ROA" or "ROE";
+                string ind = new(' ', l.Level * 3);
+                doc.ListRow.Add(ratio
+                    ? [ind + l.Name, l.Month is { } rv ? rv.ToString("0.00", CultureInfo.GetCultureInfo("vi-VN")) + "%" : "–", "", "", ""]
+                    : [ind + (l.Level == 0 ? l.Name.ToUpperInvariant() : l.Name), Mn(l.Month), Pp(l.Month, revRow?.Month), Mn(l.Ytd), Pp(l.Ytd, revRow?.Ytd)]);
+            }
+            doc.ListNote.AddRange(rep.Comments.Select(c => (c.Level == "warn" ? "⚠ " : c.Level == "good" ? "✓ " : "• ") + c.Text));
+            if (cards != null)
+            {
+                doc.ListNote.Add("Thẻ chỉ số: " + string.Join(" · ", cards.ListCard.Where(c => c.Value != null).Select(c => $"{c.Name} {(c.Unit == "PCT" ? c.Value!.Value.ToString("0.0", CultureInfo.GetCultureInfo("vi-VN")) + "%" : c.Unit == "MEAL" ? c.Value!.Value.ToString("#,0", CultureInfo.GetCultureInfo("vi-VN")) + " suất" : Mn(c.Value) + " trđ")}")));
+            }
+            docs.Add(doc);
+            var q = new PrintDocumentModel
+            {
+                Type = "PL", Title = $"KẾT QUẢ KINH DOANH THEO QUÝ – NĂM {m0.Year}", DocumentDate = clock.Today, CompanyName = doc.CompanyName,
+                ListInfo = [new PrintInfoRowModel { Label = "Đơn vị", Value = "triệu đồng" }],
+                ListHeader = ["Chỉ tiêu", .. rep.Quarters.Select(x => x.Quarter + (x.MonthsWithData is > 0 and < 3 ? $" ({x.MonthsWithData} tháng)" : string.Empty))],
+            };
+            foreach (var (name, f) in new (string, Func<PlQuarterModel, decimal?>)[] { ("Doanh thu", x => x.Revenue), ("Giá vốn hàng bán", x => x.Cogs), ("Lợi nhuận gộp", x => x.GrossProfit), ("Chi phí bán hàng & quản lý", x => x.SellingAdmin), ("Lợi nhuận thuần", x => x.NetOperating), ("Lợi nhuận trước thuế", x => x.ProfitBeforeTax) })
+            {
+                q.ListRow.Add([name, .. rep.Quarters.Select(x => Mn(f(x)))]);
+            }
+            docs.Add(q);
+            return Result<FileContentModel>.Success(new FileContentModel
+            {
+                Content = PrintRenderer.Render(docs, fmt), ContentType = PrintRenderer.ContentTypeOf(fmt), FileName = $"Ket-qua-kinh-doanh-{m0:yyyy-MM}.{fmt}",
+            }, ConstantHelper.Message.GetAllSuccessfully);
         }
     }
 }
