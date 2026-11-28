@@ -32,8 +32,8 @@ namespace AppDelicare.Model.Option
         /// <summary>AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt.</summary>
         public string? HermesWebhookUrl { get; set; }
 
-        /// <summary>AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục agents).</summary>
-        public string SchedulesFile { get; set; } = "agents/schedules.json";
+        /// <summary>AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục app-delicare-agents).</summary>
+        public string SchedulesFile { get; set; } = "app-delicare-agents/schedules.json";
 
         /// <summary>AI-13 (D-133 PROPOSED – anh điền): ngân sách chi phí AI / tháng (VND); trống / 0 = không cảnh báo ngân sách.</summary>
         public decimal? MonthlyBudget { get; set; }

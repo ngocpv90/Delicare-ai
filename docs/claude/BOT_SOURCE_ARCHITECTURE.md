@@ -22,7 +22,7 @@
 | `api` (sửa) | `AppDelicare.WebApi` | REST cũ + **API nội bộ cho messaging** (`BotChannel`) + liên kết tài khoản + cấp JWT thay mặt user | Có | JWT key, **hash** khóa client, khóa ký mã liên kết |
 | `job` (sửa) | `AppDelicare.Job` | Lịch nghiệp vụ đã có + **lịch thông báo** (ghi outbox) + leo thang | Có | chuỗi DB |
 | **`messaging` (MỚI)** | **`AppDelicare.Messaging`** | **Tất cả bot**: Telegram Vận hành, Điều hành (R1); Zalo OA, Facebook (sau) | **Không** | token bot, secret webhook, khóa client `MESSAGING` |
-| `hermes` (đợt agent) | `agents/hermes` | Hermes + agent; tự nhận tin của **bot Trợ lý** | **Không** | `ANTHROPIC_API_KEY`, token bot Trợ lý, khóa client agent |
+| `hermes` (đợt agent) | `app-delicare-agents/hermes` | Hermes + agent; tự nhận tin của **bot Trợ lý** | **Không** | `ANTHROPIC_API_KEY`, token bot Trợ lý, khóa client agent |
 
 - `messaging`: **1 bản**, `restart: unless-stopped`, healthcheck `/health`.
 - Hermes: **dev chạy trên máy anh** (cài bằng script); **server test / production chạy container `hermes`** trong cùng compose.
@@ -42,7 +42,7 @@ AppDelicare.Model ◄── AppDelicare.Data ◄── AppDelicare.Services ◄�
                                                                ◄── AppDelicare.Job      (job)
 AppDelicare.Messaging (messaging) – KHÔNG ProjectReference nào; gọi WebApi qua HTTP
 AppDelicare.Tests ──► mọi project (kể cả Messaging – test hợp đồng DTO)
-agents/hermes (Python + cấu hình, ngoài solution)
+app-delicare-agents/hermes (Python + cấu hình, ngoài solution)
 ```
 
 - **Bỏ project `AppDelicare.Integration`** (ARCHITECTURE §1 cũ): Telegram / Zalo / Facebook → `AppDelicare.Messaging/Channels/`; **Obsidian exporter → `AppDelicare.Services` + `AppDelicare.Job`** (vì cần DB) khi làm T50.
@@ -209,7 +209,7 @@ AppDelicare.Job/      không giữ token; chỉ đăng ký thêm BotJobs qua ISc
 AppDelicare.Tests/Messaging/      (container messaging) Experience, Processing, Callback, Contracts (DTO ↔ Model)
 AppDelicare.Tests/Notifications/  (lõi) outbox, BotChannelService, Identity (mã, số điện thoại, token), RecipientResolver,
                                   Escalation, giờ yên lặng theo ca
-agents/hermes/        (đợt T43) SOUL.md, skills/, mcp/, config.example.yaml, env.example, Dockerfile – không chứa khóa
+app-delicare-agents/hermes/        (đợt T43) SOUL.md, skills/, mcp/, config.example.yaml, env.example, Dockerfile – không chứa khóa
 deploy/docker/        compose prod / staging: service messaging (+ hermes đợt agent); nginx /tg/ → messaging, chặn
                       /api/BotChannel/; production.env.example / staging.env.example thêm biến mục 6 (placeholder)
 DB/seed/              Integration_Telegram_seed.sql (IntegrationChannel + BotConfiguration theo môi trường, ObjectMenu
@@ -240,7 +240,7 @@ AppDelicare.sln       (SỬA) thêm AppDelicare.Messaging
 
 ## 8. Mở rộng Zalo / Facebook – Zalo ĐÃ LÀM ở AI-19 (D-06: cột CustomerContact.UserId); Facebook chưa làm
 
-> AI-19: `Channels/Zalo/ZaloChannel.cs` (webhook kiểm chữ ký, client gửi CS, pump tin chờ), API `CustomerChannelController` (khóa client) + `CustomerChannelService` (lệnh khách = đề xuất CSKH), token OA lưu mã hóa ở ConfigJson. Hội thoại khách dùng cú pháp số (không lưu trạng thái hội thoại). Chi tiết: `agents/README.md` mục Zalo OA.
+> AI-19: `Channels/Zalo/ZaloChannel.cs` (webhook kiểm chữ ký, client gửi CS, pump tin chờ), API `CustomerChannelController` (khóa client) + `CustomerChannelService` (lệnh khách = đề xuất CSKH), token OA lưu mã hóa ở ConfigJson. Hội thoại khách dùng cú pháp số (không lưu trạng thái hội thoại). Chi tiết: `app-delicare-agents/README.md` mục Zalo OA.
 
 - Thêm `Channels/Zalo/` (client, webhook kiểm chữ ký, làm mới token – refresh token lưu mã hóa ở `api`, chính sách khung gửi 48 giờ / 7 ngày / mẫu ZBS) và `Audiences/Customer/`.
 - Lõi thêm `CustomerChannelController` (nội bộ, client key): `api` tự tra định danh Zalo → `CustomerContact` → `CustomerId`, **chỉ trả dữ liệu của khách đó**; mọi thao tác ghi của khách là **đề xuất** cho nhân viên xác nhận. Liên kết khách: GAP-INT-01 / D-06 (chốt khi làm Zalo).

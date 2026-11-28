@@ -1,4 +1,4 @@
-// AI-7 (D-133): chạy bộ câu nghiệm thu agents/<MÃ>/eval.yaml qua REST ToolGateway (/tools/<công cụ>) – đúng công cụ + đúng số (so màn web cùng quyền).
+// AI-7 (D-133): chạy bộ câu nghiệm thu app-delicare-agents/<MÃ>/eval.yaml qua REST ToolGateway (/tools/<công cụ>) – đúng công cụ + đúng số (so màn web cùng quyền).
 //   node tools/agent-eval/run.mjs [VIVI WH KITCHEN QA KNOW]
 // Biến môi trường (KHÔNG ghi vào repo):
 //   TOOLGATEWAY_URL (mặc định http://localhost:5130), API_URL (mặc định http://localhost:5125/api)
@@ -29,12 +29,12 @@ async function webToken(user) {
 let fail = 0, pass = 0, skip = 0;
 const rows = [];
 for (const code of agents) {
-  const file = path.join(ROOT, 'agents', code, 'eval.yaml');
+  const file = path.join(ROOT, 'app-delicare-agents', code, 'eval.yaml');
   if (!fs.existsSync(file)) { rows.push([code, '–', '–', 'BỎ QUA', 'không có eval.yaml']); skip++; continue; }
   const spec = yaml.load(fs.readFileSync(file, 'utf8'));
   const key = process.env['AGENT_KEY_' + code];
   if (!key) { rows.push([code, '–', '–', 'BỎ QUA', `thiếu biến môi trường AGENT_KEY_${code}`]); skip += spec.cases.length; continue; }
-  const tools = fs.readFileSync(path.join(ROOT, 'agents', code, 'tools.txt'), 'utf8').split(/\r?\n/).map(s => s.trim()).filter(s => s && !s.startsWith('#'));
+  const tools = fs.readFileSync(path.join(ROOT, 'app-delicare-agents', code, 'tools.txt'), 'utf8').split(/\r?\n/).map(s => s.trim()).filter(s => s && !s.startsWith('#'));
   for (const c of spec.cases) {
     const errs = [];
     if (!tools.includes(c.tool)) errs.push(`công cụ ${c.tool} không thuộc ${code}`);

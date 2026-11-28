@@ -52,4 +52,4 @@ Tên công cụ đọc giữ theo hàm cũ để Hermes không phải học lạ
 4. **Sự cố ATTP:** nhiệt độ lõi < 70°C hoặc giao < 60°C → `FoodSafetyAlert` → QA giữ lô / mẻ → VIVI báo Ban GĐ.
 
 ## 4. Cấu hình agent trong repo
-Thư mục `agents/` (tạo ở T43): mỗi agent một file `agents/<CODE>.md` gồm vai trò, phạm vi, giọng văn, danh sách tool được dùng, những việc **không** được làm, và mẫu câu trả lời. Có thêm `agents/hermes.config.example.yaml` để anh nạp vào Hermes (`~/.hermes`). Không chứa token.
+Thư mục `app-delicare-agents/` (tạo ở T43): mỗi agent một file `app-delicare-agents/<CODE>.md` gồm vai trò, phạm vi, giọng văn, danh sách tool được dùng, những việc **không** được làm, và mẫu câu trả lời. Có thêm `app-delicare-agents/hermes.config.example.yaml` để anh nạp vào Hermes (`~/.hermes`). Không chứa token.

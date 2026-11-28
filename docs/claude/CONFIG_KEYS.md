@@ -40,7 +40,7 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Agent:AskingGroups` | string? | – | AI-7: mã nhóm (UserGroup.Code, cách nhau dấu phẩy) được hỏi Trợ lý qua bot; trống = mọi người đã liên kết. Người hỏi chưa liên kết luôn bị từ chối. | – |
 | `Agent:ProposalTtlMinutes` | int | 15 | AI-9: hạn xác nhận đề xuất ghi của agent (phút) – quá hạn đề xuất bị hủy, agent đề xuất lại. | – |
 | `Agent:HermesWebhookUrl` | string? | – | AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt. | – |
-| `Agent:SchedulesFile` | string | "agents/schedules.json" | AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục agents). | – |
+| `Agent:SchedulesFile` | string | "app-delicare-agents/schedules.json" | AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục app-delicare-agents). | – |
 | `Agent:MonthlyBudget` | decimal? | – | AI-13 (D-133 PROPOSED – anh điền): ngân sách chi phí AI / tháng (VND); trống / 0 = không cảnh báo ngân sách. | D-133 |
 | `Agent:UsdToVnd` | decimal | 25500m | AI-13: tỷ giá quy đổi chi phí Hermes báo bằng USD sang VND. | – |
 | `Agent:CostAlertPct` | decimal | 80m | AI-13: ngưỡng % ngân sách tháng gửi cảnh báo CEO / FIN-IT (một lần / tháng; tới 100% gửi thêm một lần). | – |

@@ -223,7 +223,7 @@ namespace AppDelicare.Services.Implement.Agent
         }
 
         /// <summary>
-        /// AI-11: bật / tắt 1 việc theo lịch – ghi lại <c>Agent:SchedulesFile</c> (agents/schedules.json, Docker: volume dùng chung với Hermes; Hermes đọc lại khi sinh cron).
+        /// AI-11: bật / tắt 1 việc theo lịch – ghi lại <c>Agent:SchedulesFile</c> (app-delicare-agents/schedules.json, Docker: volume dùng chung với Hermes; Hermes đọc lại khi sinh cron).
         /// Chỉ đổi cờ <c>enabled</c>, giữ nguyên phần còn lại của tệp.
         /// </summary>
         public async Task<IResult<bool>> SaveSchedule(string? id, bool enabled)
@@ -231,7 +231,7 @@ namespace AppDelicare.Services.Implement.Agent
             string? path = AgentAdminService.SchedulesPath(configuration, env.ContentRootPath);
             if (path == null || !File.Exists(path))
             {
-                return Result<bool>.Fail("Chưa có agents/schedules.json (Agent:SchedulesFile)", false);
+                return Result<bool>.Fail("Chưa có app-delicare-agents/schedules.json (Agent:SchedulesFile)", false);
             }
             var root = JsonNode.Parse(await File.ReadAllTextAsync(path))!.AsObject();
             var item = (root["items"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(x => string.Equals(x["id"]?.ToString(), id, StringComparison.OrdinalIgnoreCase));

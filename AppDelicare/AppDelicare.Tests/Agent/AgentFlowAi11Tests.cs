@@ -15,7 +15,7 @@ namespace AppDelicare.Tests.Agent
     /// <summary>
     /// AI-11 (D-133) – cảnh báo chủ động + luồng liên phòng:
     /// <c>gui_canh_bao</c> gửi bot Vận hành tới người có quyền Thêm màn liên quan, mỗi khóa sự kiện 1 lần, agent không xem được màn → từ chối;
-    /// màn Luồng liên phòng nối đề xuất → duyệt → kết quả → tin theo CorrelationId; bật / tắt việc theo lịch ghi agents/schedules.json.
+    /// màn Luồng liên phòng nối đề xuất → duyệt → kết quả → tin theo CorrelationId; bật / tắt việc theo lịch ghi app-delicare-agents/schedules.json.
     /// </summary>
     public class AgentFlowAi11Tests
     {

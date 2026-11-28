@@ -691,7 +691,7 @@ Chuẩn bị (IT): `.env` server thêm `AGENT_KEY_PLAN / PKG / ACC` (PLAN, ACC �
 
 ## AI-ĐỢT-2 – Lệnh ghi, cảnh báo, chi phí, chat web, 3 container Hermes (D-133, AI-9 … AI-15)
 
-Chuẩn bị (IT): `.env` server có `AGENT_KEY_<MÃ>` của 9 agent đang bật (VIVI, WH, KITCHEN, QA, KNOW, SALES, PROC, LOG, HR), `HERMES_API_KEY`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN_TRO_LY`; `Agent:MonthlyBudget`; `docker compose --profile hermes up -d` → 3 container `hermes-vivi / hermes-van-hanh / hermes-van-phong` (config từ `agents/hermes/<nhóm>.config.example.yaml`, lịch `gen-cron.mjs --group <nhóm>`).
+Chuẩn bị (IT): `.env` server có `AGENT_KEY_<MÃ>` của 9 agent đang bật (VIVI, WH, KITCHEN, QA, KNOW, SALES, PROC, LOG, HR), `HERMES_API_KEY`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN_TRO_LY`; `Agent:MonthlyBudget`; `docker compose --profile hermes up -d` → 3 container `hermes-vivi / hermes-van-hanh / hermes-van-phong` (config từ `app-delicare-agents/hermes/<nhóm>.config.example.yaml`, lịch `gen-cron.mjs --group <nhóm>`).
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |
 |---|---|---|---|
@@ -724,7 +724,7 @@ Chuẩn bị (IT): `.env` server có `AGENT_KEY_<MÃ>` của 9 agent đang bật
 | 1 | IT | Liên kết bot Vận hành cho 1 người Mua hàng; cho PROC gọi `gui_canh_bao` màn scm-requirement với 1 khóa sự kiện | Người đó nhận 1 tin "🤖 Trợ lý AI cảnh báo" có nhận xét + phương án; gọi lại cùng khóa → không gửi lại |
 | 2 | IT | PROC gọi `gui_canh_bao` với màn agent không được xem (vd adm-user) | Từ chối "không có quyền xem màn …" |
 | 3 | COO (uat.coo) | QA đề xuất giữ lô với mã tương quan của sự cố nhiệt độ → QA lead duyệt → mở Trợ lý AI › Luồng liên phòng | Thẻ luồng: Agent đọc → Đề xuất → Người duyệt → Kết quả, trạng thái Xong |
-| 4 | COO | Lịch chạy → tắt "Rà kế hoạch mua 14:30" → bật lại | agents/schedules.json đổi enabled; việc chưa có công cụ không bật được |
+| 4 | COO | Lịch chạy → tắt "Rà kế hoạch mua 14:30" → bật lại | app-delicare-agents/schedules.json đổi enabled; việc chưa có công cụ không bật được |
 
 ## AI-10 – Lệnh ghi của agent đợt 2 (D-133)
 

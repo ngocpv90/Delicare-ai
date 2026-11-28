@@ -59,11 +59,12 @@ Delicare-ai/
 │   ├─ AppDelicare.Tests     (AppDelicare.Tests)              xUnit
 │   └─ AppDelicare.Generator (T4 + OrmLite)                        bộ sinh mã T4 cũ – CHỈ THAM KHẢO, chỉ chạy được trong Visual Studio (đổi tên ở T45R.6)
 ├─ app-delicare-client/          ← Angular 18 – khung Angular cũ (mục 4.4); làm sau đợt BE-2 (D-44)
+├─ app-delicare-agents/          ← Trợ lý AI (D-133): SOUL / tools.txt / eval.yaml 13 agent, schedules.json (màn Lịch chạy + cron Hermes), hermes/ (mẫu config 3 container) – đổi tên ở AI-20
 ├─ backup-db/                    ← bản backup DB thật (AppDelicare_20261110.bak/.mdf/.ldf) – ĐÃ gitignore, KHÔNG commit, KHÔNG sửa
 └─ DB/                           ← (tạo mới) script SQL: DB/sp (stored procedure), DB/seed – được commit
 ```
 
-Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Model / Data / Services / WebApi` đã đổi thành `AppDelicare.*` cho khớp tên project và namespace. Bộ sinh T4 cũ cũng **đã đổi thành `AppDelicare.Generator`** (T45R.6, anh đồng ý 2026-11-15). **Không đổi tên thư mục khác** nếu không có task riêng.
+Ngày 2026-11-14 (theo yêu cầu của anh) 4 thư mục `ClinicManagement.Model / Data / Services / WebApi` đã đổi thành `AppDelicare.*` cho khớp tên project và namespace. Bộ sinh T4 cũ cũng **đã đổi thành `AppDelicare.Generator`** (T45R.6, anh đồng ý 2026-11-15). **Không đổi tên thư mục khác** nếu không có task riêng. AI-20 (D-133 k, anh chốt 2026-11-28): thư mục agent cũ đổi thành `app-delicare-agents/` – gốc repo 3 khối `AppDelicare` (BE) · `app-delicare-client` (FE) · `app-delicare-agents` (agent / Hermes).
 
 **Bộ sinh mã chuẩn = `tools/AppDelicare.CodeGen`** (D-32): đọc DDL, sinh đúng mẫu code cũ, chạy bằng dòng lệnh nên test được. Bộ T4 giữ để tham khảo / đối chiếu mẫu, không dùng để sinh bảng mới.
 

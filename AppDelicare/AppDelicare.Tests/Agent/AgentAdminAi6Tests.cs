@@ -9,7 +9,7 @@ namespace AppDelicare.Tests.Agent
 {
     /// <summary>
     /// AI-6 (D-133) – Trung tâm agent: bật / tắt agent có hiệu lực NGAY ở ToolGateway; người không có quyền màn Trợ lý AI bị 403; nhật ký đọc từ IntegrationLog
-    /// (agent, công cụ, kết quả); lịch chạy đọc agents/schedules.json (một nguồn với cron Hermes).
+    /// (agent, công cụ, kết quả); lịch chạy đọc app-delicare-agents/schedules.json (một nguồn với cron Hermes).
     /// </summary>
     public class AgentAdminAi6Tests
     {

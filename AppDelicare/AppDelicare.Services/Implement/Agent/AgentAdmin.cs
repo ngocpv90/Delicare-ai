@@ -131,7 +131,7 @@ namespace AppDelicare.Services.Implement.Agent
 
     /// <summary>
     /// AI-6 (D-133) – Trung tâm agent: danh sách 13 agent (trạng thái, công cụ, lời gọi hôm nay), chi tiết, bật / tắt (= BotStatus – có hiệu lực ngay ở ToolGateway),
-    /// nhật ký lời gọi (IntegrationLog kênh HERMES, DirectionCode IN), lịch chạy (đọc <c>agents/schedules.json</c> – một nguồn cho cả cron Hermes).
+    /// nhật ký lời gọi (IntegrationLog kênh HERMES, DirectionCode IN), lịch chạy (đọc <c>app-delicare-agents/schedules.json</c> – một nguồn cho cả cron Hermes).
     /// </summary>
     public interface IAgentAdminService
     {
@@ -291,7 +291,7 @@ namespace AppDelicare.Services.Implement.Agent
             var items = ReadSchedules();
             if (items.Count == 0)
             {
-                return Results<AgentScheduleModel>.Success([], "Chưa có agents/schedules.json (Agent:SchedulesFile)");
+                return Results<AgentScheduleModel>.Success([], "Chưa có app-delicare-agents/schedules.json (Agent:SchedulesFile)");
             }
             var summaries = await SummariesAsync();
             var db = unitOfWork.DbContext;
@@ -315,7 +315,7 @@ namespace AppDelicare.Services.Implement.Agent
         /// <summary>AI-11: đường dẫn tệp lịch – <c>Agent:SchedulesFile</c> tuyệt đối, hoặc tương đối tìm từ ContentRoot lên tới 5 cấp. Không thấy → null.</summary>
         public static string? SchedulesPath(IConfiguration configuration, string contentRoot)
         {
-            string rel = configuration["Agent:SchedulesFile"] is { Length: > 0 } v ? v : "agents/schedules.json";
+            string rel = configuration["Agent:SchedulesFile"] is { Length: > 0 } v ? v : "app-delicare-agents/schedules.json";
             if (Path.IsPathRooted(rel))
             {
                 return rel;
@@ -332,7 +332,7 @@ namespace AppDelicare.Services.Implement.Agent
             return null;
         }
 
-        /// <summary>Đọc <c>Agent:SchedulesFile</c> (mặc định agents/schedules.json – tìm từ ContentRoot lên tới 5 cấp; Docker: gắn thư mục agents).</summary>
+        /// <summary>Đọc <c>Agent:SchedulesFile</c> (mặc định app-delicare-agents/schedules.json – tìm từ ContentRoot lên tới 5 cấp; Docker: gắn thư mục app-delicare-agents).</summary>
         private List<AgentScheduleModel> ReadSchedules()
         {
             string? file = SchedulesPath(configuration, env.ContentRootPath);
@@ -356,7 +356,7 @@ namespace AppDelicare.Services.Implement.Agent
             }
             catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
             {
-                Serilog.Log.Warning(ex, "[AgentAdmin] agents/schedules.json sai định dạng");
+                Serilog.Log.Warning(ex, "[AgentAdmin] app-delicare-agents/schedules.json sai định dạng");
                 return [];
             }
         }
