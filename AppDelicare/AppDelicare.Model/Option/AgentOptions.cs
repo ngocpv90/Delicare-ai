@@ -58,5 +58,11 @@ namespace AppDelicare.Model.Option
 
         /// <summary>AI-14: thời gian chờ Hermes trả lời 1 câu chat (giây).</summary>
         public int ChatTimeoutSeconds { get; set; } = 60;
+
+        /// <summary>AI-25.4 (D-143): thêm 2–3 dòng nhận xét AI (Vivi) cuối bản tin dựng bằng mẫu – mặc định false (bản tin 0 token).</summary>
+        public bool BriefingAiComment { get; set; }
+
+        /// <summary>AI-25.4: bật bản tin dựng bằng mẫu (ban-tin.yaml – 5 job Briefing*) thay bản tin bot cũ MorningBrief / DailyReport / KnowledgeBrief*; false = quay về bản tin cũ.</summary>
+        public bool TemplateBriefings { get; set; } = true;
     }
 }

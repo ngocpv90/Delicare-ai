@@ -79,7 +79,7 @@ namespace AppDelicare.Tests.Menu
             order.Should().ContainInOrder("Mua hàng", "Kho");
             var exec = cat.GetProperty("menuGroups").EnumerateArray().Single(g => g.GetProperty("name").GetString() == "Điều hành")
                 .GetProperty("items").EnumerateArray().Select(i => i.GetString()).ToList();
-            exec.Should().Equal(["dash-exec", "kpi-daily", "cost-meal", "dash-pl", "ai-agents", "ai-agent-log", "ai-flow", "ai-tasks", "ai-schedule", "ai-cost", "wf-inbox"],
+            exec.Should().Equal(["dash-exec", "kpi-daily", "cost-meal", "dash-pl", "ai-agents", "ai-agent-log", "ai-flow", "ai-tasks", "ai-schedule", "ai-cost", "ai-ban-tin-sang", "ai-ban-tin-chieu", "ai-ban-tin-kho", "ai-ban-tin-bep", "ai-ban-tin-kd", "wf-inbox"], // AI-25.4: 5 mục quyền nhận bản tin
                 "D-109 (UI-6.28): Bảng điều hành · Chỉ số kinh doanh · Giá vốn & lãi gộp · Phê duyệt; AI-21 (D-138 a): Trung tâm Agent + 5 mục tab ẩn (sidebar FE đặt Trung tâm Agent dưới Phê duyệt)");
 
             // grp của từng màn trong catalog.funcs đúng nhóm mới (breadcrumb / tìm kiếm chức năng dùng grp).

@@ -43,6 +43,11 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Điều hành › Giao việc | `ai-tasks` | S | — | S | — | S | S | S | S | S | — | — | — | — | S | — | — | S | S | S |
 | Điều hành › Lịch chạy | `ai-schedule` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 | Điều hành › Sử dụng & chi phí | `ai-cost` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
+| Điều hành › Bản tin sáng – Ban GĐ | `ai-ban-tin-sang` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Điều hành › Báo cáo cuối ngày – Ban GĐ | `ai-ban-tin-chieu` | X | X | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Điều hành › Bản tin kho buổi sáng | `ai-ban-tin-kho` | — | — | — | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — |
+| Điều hành › Bản tin bếp đầu ca | `ai-ban-tin-bep` | — | — | — | — | — | — | — | X | — | — | — | — | — | — | — | — | — | — | — |
+| Điều hành › Nhắc chốt suất | `ai-ban-tin-kd` | — | — | — | — | — | — | — | — | — | — | — | X | — | X | — | — | — | — | — |
 | Kinh doanh › Khách hàng | `crm-customer` | X | X | X | X | — | — | — | — | X | X | — | S | Q (IX) | Q (IX) | X | X (IX) | — | X | — |
 | Kinh doanh › Hợp đồng | `crm-contract` | X | X | X | — | — | — | — | — | — | — | — | S | Q (IX) | Q (IX) | — | X (IX) | — | X | — |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X | X | X | X | — | — | — | — | — | X | — | S | Q (IX) | Q (IX) | — | — | — | X | — |
@@ -145,20 +150,20 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào 126 mục · ô quyền  179
-  CEO-PMO       vào 112 mục · ô quyền  131
-  COO           vào 135 mục · ô quyền  196
-  OPS-PLAN      vào  49 mục · ô quyền   97
+  CEO           vào 128 mục · ô quyền  181
+  CEO-PMO       vào 114 mục · ô quyền  133
+  COO           vào 137 mục · ô quyền  198
+  OPS-PLAN      vào  50 mục · ô quyền   98
   OPS-SCM       vào  33 mục · ô quyền   75
-  OPS-WH        vào  31 mục · ô quyền   87
+  OPS-WH        vào  32 mục · ô quyền   88
   OPS-SCM-HEAD  vào  49 mục · ô quyền  152
-  OPS-KIT       vào  41 mục · ô quyền   73
+  OPS-KIT       vào  42 mục · ô quyền   74
   OPS-LOG       vào  32 mục · ô quyền   62
   OPS-POS       vào  21 mục · ô quyền   38
   OPS-MNT       vào  10 mục · ô quyền   14
-  SAL-SALES     vào  30 mục · ô quyền   53
+  SAL-SALES     vào  31 mục · ô quyền   54
   SAL-CON       vào  29 mục · ô quyền   83
-  SAL-HEAD      vào  42 mục · ô quyền  125
+  SAL-HEAD      vào  43 mục · ô quyền  126
   SAL-CS        vào  21 mục · ô quyền   30
   FIN-ACC       vào  52 mục · ô quyền  164
   FIN-HR        vào  22 mục · ô quyền   68

@@ -146,6 +146,8 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResults<KnowledgeAccessModel>> GetAccessLog(string? path);
         // AI-22.3 (D-141 l, §7.11): Hướng dẫn sử dụng trên giao diện.
         Task<int> ExportUserGuideAsync();
+        /// <summary>AI-25.4: ghi bản tin Ban GĐ (mẫu) vào 10 Ban GĐ/Bản tin.</summary>
+        Task<IResult<KnowledgeSaveResultModel>> WriteBriefingAsync(string id, string title, DateTime day, IReadOnlyList<string> lines);
         Task<IResult<KnowledgeHelpModel>> GetHelp(string? screen);
         Task<IResults<KnowledgeGuideModel>> GetGuides();
         Task<IResult<bool>> HelpFeedback(KnowledgeHelpFeedbackRequest request);

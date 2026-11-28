@@ -79,6 +79,7 @@ namespace AppDelicare.Tests.Notifications
             var f = new InMemoryApiFactory();
             f.Settings["SystemUsers:JobUserId"] = SystemUser.ToString();
             f.Settings["Messaging:QuietHours:Enabled"] = quiet ? "true" : "false";
+            f.Settings["Agent:TemplateBriefings"] = "false"; // AI-25.4: test bản tin bot cũ (MorningBrief / DailyReport) – tắt bản tin mẫu thay thế
             return f;
         }
 
