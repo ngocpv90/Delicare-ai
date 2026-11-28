@@ -41,6 +41,7 @@
           <div class="row-flex" style="gap:6px;flex-wrap:wrap">${d.periodLocked ? UI.tag('Kỳ đã khóa', 'green') : UI.tag('Kỳ đang mở – số tạm tính cập nhật hằng ngày', 'orange')}${d.hasAmis ? UI.tag('Đã có số AMIS', 'green') : UI.tag('Chưa nhập sổ AMIS', '')}
             <button class="btn sm" id="rpAmis">${I('database')} Số AMIS tháng</button>${Store.perm('dash-pl').imp ? `<button class="btn sm primary" id="rpImp">${I('upload')} Nhập sổ AMIS</button>` : ''}<button class="btn sm" id="rpRules">${I('settings')} Quy tắc phân loại</button></div></div>
         <div class="rp-cards">${(d.listCard || []).map(card).join('')}</div>
+        <div id="rpRep" class="mt"></div>
         <div class="rp-grid mt">
           <div class="card panel"><div class="panel-head"><div><div class="panel-title">Doanh thu theo khách × bữa</div><div class="panel-desc">Giá trị suất đã giao (đơn × đơn giá hợp đồng); khách chưa xác nhận bảng kê tháng ghi "chưa xác nhận"</div></div><b title="${esc(full(totRev))}">${trd(totRev)} trđ</b></div>
             ${rows.length ? `<div class="table-wrap"><table class="table dc-table rp-t"><thead><tr><th>Khách hàng</th>${meals.map(m => `<th class="num">${esc(MEAL[m] || m)}</th>`).join('')}<th class="num">Suất</th><th class="num">Tổng</th></tr></thead><tbody>
@@ -62,9 +63,55 @@
             ${gm.map(g => `<tr><td>${esc(g.group)}</td>${g.values.map(v => `<td class="num" title="${esc(full(v))}">${v ? trd(v) : '–'}</td>`).join('')}</tr>`).join('')}</tbody>
             <tfoot><tr><td>Tổng</td>${d.months.map((m, i) => `<td class="num">${trd(U.sum(allM.map(g => ({ v: g.values[i] })), 'v'))}</td>`).join('')}</tr></tfoot></table></div>` : '<div class="muted small">Chưa có dữ liệu 12 tháng.</div>'}</div>
         <div class="notice info mt">${I('help')}<div><b>Phần AMIS</b> (nhân công, điện / nước / gas, khấu hao, chi phí bán hàng & quản lý, thu nhập / chi phí khác, lợi nhuận trước thuế, ROA / ROE) có khi Kế toán nhập sổ AMIS của tháng; trước đó các thẻ ghi "Chờ số AMIS".</div></div>`;
+      report(el.querySelector('#rpRep'), d.month);
       el.querySelector('#rpAmis').onclick = () => amisView(d.month);
       el.querySelector('#rpRules').onclick = () => rulesEdit();
       const ib = el.querySelector('#rpImp'); if (ib) ib.onclick = () => importAmis(d.month, () => render(el, p));
+    });
+  }
+
+  // ---------- RPT-1.3 (D-140 f, i): báo cáo KQKD chi tiết Tháng | Lũy kế năm, theo quý, 12 biểu đồ xu hướng, cơ cấu giá vốn ----------
+  const rs = { ytd: false, layer: 'AMIS' };
+  const pctOf = (a, b) => (nil(a) || nil(b) || !b ? null : a / b * 100);
+  function report(host, month) {
+    host.innerHTML = '<div class="card panel"><div class="muted small">Đang tải báo cáo kết quả kinh doanh…</div></div>';
+    Store.query('Dashboard/GetPlReport', { month }).then(x => {
+      if (!host.isConnected) return;
+      if (!x.ok || !x.data) { host.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được báo cáo')}</div>`; return; }
+      const d = x.data, ser = d.series || {}, mlab = d.months.map(m => m.slice(5) + '/' + m.slice(2, 4));
+      const S = k => ser[k] || d.months.map(() => null);
+      const div = (a, b) => a.map((v, i) => pctOf(v, b[i]));
+      const amis = rs.layer === 'AMIS';
+      const rev = S(amis ? 'AMIS_REVENUE' : 'EST_PL_EST_REVENUE');
+      const charts = amis ? [
+        ['Doanh thu', S('AMIS_REVENUE'), 'đ', 'deliver'], ['Giá vốn hàng bán', S('AMIS_COGS'), 'đ', 'actual'], ['Lợi nhuận gộp', S('AMIS_GROSS_PROFIT'), 'đ', 'ok'],
+        ['Chi phí bán hàng & quản lý', S('AMIS_SELLING_ADMIN'), 'đ', 'actual'], ['Lợi nhuận thuần', S('AMIS_NET_OPERATING'), 'đ', 'ok'], ['Lợi nhuận trước thuế', S('AMIS_PROFIT_BEFORE_TAX'), 'đ', 'ok'],
+        ['% GVHB / doanh thu', div(S('AMIS_COGS'), rev), '%', 'over'], ['Biên lợi nhuận gộp', div(S('AMIS_GROSS_PROFIT'), rev), '%', 'ok'], ['% CP bán hàng & quản lý / DT', div(S('AMIS_SELLING_ADMIN'), rev), '%', 'actual'],
+        ['Biên lợi nhuận trước thuế', div(S('AMIS_PROFIT_BEFORE_TAX'), rev), '%', 'ok'], ['ROA (theo tháng)', S('AMIS_ROA'), '%', 'deliver'], ['ROE (theo tháng)', S('AMIS_ROE'), '%', 'deliver'],
+      ] : [
+        ['Doanh thu (tạm tính)', S('EST_PL_EST_REVENUE'), 'đ', 'deliver'], ['Nguyên vật liệu (tạm tính)', S('EST_PL_EST_FOOD_COST'), 'đ', 'actual'], ['Lãi gộp theo NVL', S('EST_PL_EST_FOOD_MARGIN'), 'đ', 'ok'],
+        ['% NVL / doanh thu', S('EST_PL_EST_FOOD_PCT'), '%', 'over'], ['Bao bì', S('EST_PL_EST_PACKAGING'), 'đ', 'actual'], ['Số suất', S('EST_PL_EST_MEALS'), 'suất', 'deliver'],
+      ];
+      const has = arr => arr.some(v => !nil(v));
+      const fmtPct = v => (nil(v) ? '–' : U.num(v, 1) + '%');
+      const st = d.statement || [], col = rs.ytd ? 'ytd' : 'month', revRow = st.find(l => l.code === 'REVENUE');
+      const qs = d.quarters || [];
+      host.innerHTML = `<div class="card panel"><div class="panel-head" style="flex-wrap:wrap;gap:8px"><div><div class="panel-title">Báo cáo kết quả kinh doanh</div><div class="panel-desc">Tháng ${esc(monthName(d.month))} · lũy kế năm ${d.year} · triệu đồng</div></div>
+          <div class="row-flex" style="gap:8px;flex-wrap:wrap"><div class="seg"><button class="seg-b ${rs.ytd ? '' : 'on'}" data-ytd="0">Tháng</button><button class="seg-b ${rs.ytd ? 'on' : ''}" data-ytd="1">Lũy kế năm</button></div>
+            <div class="seg"><button class="seg-b ${amis ? 'on' : ''}" data-ly="AMIS">Chính thức · AMIS</button><button class="seg-b ${amis ? '' : 'on'}" data-ly="EST">Tạm tính</button></div></div></div>
+        ${amis ? (d.hasAmis || st.some(l => !nil(l.ytd)) ? `<div class="table-wrap"><table class="table dc-table rp-t rp-st"><thead><tr><th>Chỉ tiêu</th><th class="num">${rs.ytd ? 'Lũy kế ' + d.year : 'Tháng ' + esc(monthName(d.month))}</th><th class="num">% doanh thu</th>${rs.ytd ? '' : '<th class="num">Tháng trước</th>'}</tr></thead><tbody>
+          ${st.filter(l => l.level < 2 || !nil(l[col])).map(l => { const v = l[col], ratio = l.code === 'ROA' || l.code === 'ROE'; return `<tr class="lv${l.level}"><td>${esc(l.name)}</td><td class="num" title="${esc(ratio ? '' : full(v))}">${ratio ? (rs.ytd ? '–' : fmtPct(v)) : trd(v)}</td><td class="num">${ratio || nil(v) ? '' : fmtPct(pctOf(v, revRow && revRow[col]))}</td>${rs.ytd ? '' : `<td class="num">${ratio ? fmtPct(l.prevMonth) : trd(l.prevMonth)}</td>`}</tr>`; }).join('')}</tbody></table></div>`
+          : '<div class="notice info">Tháng này chưa nhập sổ AMIS – bấm <b>Nhập sổ AMIS</b> (Kế toán).</div>') : '<div class="notice info small">Lớp Tạm tính: số Delicare tự tính (doanh thu theo bảng kê / đơn, nguyên vật liệu, bao bì), chụp hằng đêm – xem biểu đồ bên dưới; báo cáo KQKD đầy đủ chỉ có ở lớp Chính thức.</div>'}
+        ${amis ? `<div class="panel-title mt">Theo quý – năm ${d.year}</div><div class="table-wrap"><table class="table dc-table rp-t"><thead><tr><th>Chỉ tiêu</th>${qs.map(q => `<th class="num">${q.quarter}${q.monthsWithData && q.monthsWithData < 3 ? ` <span class="muted small">(${q.monthsWithData} th)</span>` : ''}</th>`).join('')}</tr></thead><tbody>
+          ${[['revenue', 'Doanh thu'], ['cogs', 'Giá vốn hàng bán'], ['grossProfit', 'Lợi nhuận gộp'], ['sellingAdmin', 'Chi phí bán hàng & quản lý'], ['netOperating', 'Lợi nhuận thuần'], ['profitBeforeTax', 'Lợi nhuận trước thuế']]
+            .map(([k, n]) => `<tr class="${k === 'revenue' || k === 'profitBeforeTax' ? 'lv0' : ''}"><td>${n}</td>${qs.map(q => `<td class="num" title="${esc(full(q[k]))}">${trd(q[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
+        <div class="panel-title mt">Xu hướng 12 tháng ${amis ? '(Chính thức · AMIS)' : '(Tạm tính)'}</div>
+        <div class="rp-charts">${charts.map(([t, vals, unit, role]) => `<div class="rp-ch"><div class="small"><b>${esc(t)}</b></div>${has(vals) ? UI.chart({ type: 'line', title: t, labels: mlab, unit, series: [{ name: t, values: unit === 'đ' ? vals.map(v => nil(v) ? null : Math.round(v / 1e5) / 10) : vals.map(v => nil(v) ? null : Math.round(v * 10) / 10), role }], h: 150, legend: false }) : '<div class="muted small rp-empty">Chưa có số</div>'}</div>`).join('')}</div>
+        <div class="small muted">Đơn vị biểu đồ tiền: triệu đồng.</div>
+        ${amis && (d.cogsMix || []).length ? `<div class="rp-grid eq mt"><div><div class="panel-title">Cơ cấu giá vốn tháng ${esc(monthName(d.month))}</div>${UI.chart({ type: 'donut', title: 'Cơ cấu giá vốn', unit: 'đ', series: d.cogsMix.slice(0, 10).map(i => ({ l: i.item, v: i.value })).concat(d.cogsMix.length > 10 ? [{ l: (d.cogsMix.length - 10) + ' khoản khác', v: U.sum(d.cogsMix.slice(10), 'value') }] : []), h: 240 })}</div>
+          <div class="table-wrap"><table class="table dc-table rp-t"><thead><tr><th>Khoản mục</th><th class="num">trđ</th><th class="num">% GVHB</th></tr></thead><tbody>${d.cogsMix.slice(0, 15).map(i => `<tr><td>${esc(i.item)} <span class="muted small">${esc(i.account)}</span></td><td class="num" title="${esc(full(i.value))}">${trd(i.value)}</td><td class="num">${fmtPct(pctOf(i.value, U.sum(d.cogsMix, 'value')))}</td></tr>`).join('')}</tbody></table></div></div>` : ''}</div>`;
+      host.querySelectorAll('[data-ytd]').forEach(b => b.onclick = () => { rs.ytd = b.dataset.ytd === '1'; report(host, month); });
+      host.querySelectorAll('[data-ly]').forEach(b => b.onclick = () => { rs.layer = b.dataset.ly; report(host, month); });
     });
   }
 

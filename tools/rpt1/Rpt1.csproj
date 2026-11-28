@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- RPT-1.3 (D-140 i): công cụ nạp MỘT LẦN lịch sử KQKD 01 – 08/2026 từ các sheet ẩn của file báo cáo kế toán (Report_YYYYMM.xlsx – KHÔNG đưa vào repo). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Rpt1</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.100.3" />
+  </ItemGroup>
+
+</Project>

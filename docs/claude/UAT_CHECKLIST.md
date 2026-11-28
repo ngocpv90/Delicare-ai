@@ -627,6 +627,17 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## RPT-1.3 – Báo cáo KQKD đầy đủ + lịch sử (D-140, 28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | CEO | Bảng điều hành ngày 31/08/2026 → tab Kết quả kinh doanh | Bảng KQKD tháng 8: DT 13.873,1 · GVHB 11.606,9 · LN gộp 2.266,2 · CP BH & QL 1.091,6 · LN trước thuế 1.042,7 trđ |
+| 2 | CEO | Bấm Lũy kế năm | DT lũy kế 55.097,5 trđ |
+| 3 | CEO | Bảng theo quý | Q1 9.905,8 · Q2 20.119,7 · Q3 25.072,0 trđ |
+| 4 | CEO | 12 biểu đồ xu hướng | Có số 01 – 08/2026; rê chuột / Xem bảng số |
+| 5 | CEO | Bấm Tạm tính | Biểu đồ số Delicare (doanh thu, NVL, bao bì…) |
+| 6 | IT | `dotnet run --project tools/rpt1 -- <file> --check` | 8 tháng × 5 chỉ tiêu KHỚP |
+
 ## RPT-1.2 – Nhập sổ AMIS + quy tắc phân loại (D-140, 28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

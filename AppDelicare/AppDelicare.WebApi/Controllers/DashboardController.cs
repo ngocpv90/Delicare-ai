@@ -10,8 +10,14 @@ namespace AppDelicare.WebApi.Controllers
     /// Dashboard (không gắn bảng – màn <c>#/dash-exec</c> theo PermissionConvention.ControllerScreens). BE3.5 (Catalog 231, 232 – spec 12.1, 12.2):
     /// dashboard điều hành + hành trình đơn hàng. Chỉ đọc.
     /// </summary>
-    public class DashboardController(IDashboardService dashboardService, AppDelicare.Services.Implement.IDashboardPlService plService, AppDelicare.Services.Implement.IAmisPlService amisPl) : BaseController
+    public class DashboardController(IDashboardService dashboardService, AppDelicare.Services.Implement.IDashboardPlService plService, AppDelicare.Services.Implement.IAmisPlService amisPl, AppDelicare.Services.Implement.IAmisPlReportService plReport) : BaseController
     {
+        private readonly AppDelicare.Services.Implement.IAmisPlReportService _plReport = plReport;
+
+        /// <summary>RPT-1.3 (D-140 f, i): báo cáo KQKD Tháng | Lũy kế năm, theo quý, chuỗi 12 tháng (Chính thức / Tạm tính), cơ cấu giá vốn.</summary>
+        [HttpGet("GetPlReport")]
+        [Security.Permission("dash-pl", PermissionAction.View)]
+        public Task<IActionResult> GetPlReport([FromQuery] string? month) => Run(nameof(GetPlReport), () => _plReport.GetReport(month));
         private readonly AppDelicare.Services.Implement.IAmisPlService _amisPl = amisPl;
 
         private async Task<IActionResult> Run<T>(string name, Func<Task<T>> call)

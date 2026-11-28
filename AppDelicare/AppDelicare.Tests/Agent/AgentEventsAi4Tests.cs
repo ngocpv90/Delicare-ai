@@ -109,7 +109,8 @@ namespace AppDelicare.Tests.Agent
                     ctx.Response.Close();
                 }
             });
-            using var f = await AgentToolsAi3Tests.FactoryAsync(("Agent:HermesWebhookUrl", url));
+            // Máy test tải nặng: cho webhook chờ lâu hơn mặc định 3 giây.
+            using var f = await AgentToolsAi3Tests.FactoryAsync(("Agent:HermesWebhookUrl", url), ("Agent:WebhookTimeoutSeconds", "20"));
             await RaiseIncidentAsync(f, "IOT:AI4:once", new { zone = "Kho lạnh 2", contactPhone = "0912345678", note = "gọi 0987654321" });
             await RaiseIncidentAsync(f, "IOT:AI4:once", new { zone = "Kho lạnh 2" });
             // Máy test tải nặng: đợi listener đọc xong body rồi mới dừng (tránh mất body – test chập chờn).
