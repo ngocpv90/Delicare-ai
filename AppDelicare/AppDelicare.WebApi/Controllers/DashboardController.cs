@@ -10,8 +10,67 @@ namespace AppDelicare.WebApi.Controllers
     /// Dashboard (không gắn bảng – màn <c>#/dash-exec</c> theo PermissionConvention.ControllerScreens). BE3.5 (Catalog 231, 232 – spec 12.1, 12.2):
     /// dashboard điều hành + hành trình đơn hàng. Chỉ đọc.
     /// </summary>
-    public class DashboardController(IDashboardService dashboardService, AppDelicare.Services.Implement.IDashboardPlService plService) : BaseController
+    public class DashboardController(IDashboardService dashboardService, AppDelicare.Services.Implement.IDashboardPlService plService, AppDelicare.Services.Implement.IAmisPlService amisPl) : BaseController
     {
+        private readonly AppDelicare.Services.Implement.IAmisPlService _amisPl = amisPl;
+
+        private async Task<IActionResult> Run<T>(string name, Func<Task<T>> call)
+        {
+            try
+            {
+                return Ok(await call());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "] ", name, ": ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
+        /// <summary>RPT-1.2 (D-140 d): nhập sổ AMIS (sổ chi tiết 511, 621, 622, 627, 641, 642, 711, 811 + B01-DN, nhiều tệp một lần) – quyền Nhập mục dash-pl (Kế toán).</summary>
+        [HttpPost("ImportAmis")]
+        [RequestSizeLimit(50_000_000)]
+        [Security.Permission("dash-pl", PermissionAction.Import)]
+        public Task<IActionResult> ImportAmis([FromForm] string? month, [FromForm] List<IFormFile>? files) => Run(nameof(ImportAmis), async () =>
+        {
+            var list = (files ?? []).Where(f => f.Length > 0).ToList();
+            var streams = new List<(string, Stream)>();
+            try
+            {
+                foreach (var f in list)
+                {
+                    var ms = new MemoryStream();
+                    await f.CopyToAsync(ms);
+                    ms.Position = 0;
+                    streams.Add((f.FileName, ms));
+                }
+                return await _amisPl.ImportExcel(string.IsNullOrWhiteSpace(month) ? null : month, streams);
+            }
+            finally
+            {
+                streams.ForEach(x => x.Item2.Dispose());
+            }
+        });
+
+        /// <summary>RPT-1.2 / 1.3: nhập dòng sổ đã chuẩn hóa (công cụ tools/rpt1 nạp lịch sử) – cùng quy tắc với nhập Excel.</summary>
+        [HttpPost("ImportAmisLines")]
+        [RequestSizeLimit(50_000_000)]
+        [Security.Permission("dash-pl", PermissionAction.Import)]
+        public Task<IActionResult> ImportAmisLines([FromBody] AppDelicare.Services.Implement.AmisPlImportRequest request) => Run(nameof(ImportAmisLines), () => _amisPl.Import(request ?? new()));
+
+        /// <summary>RPT-1.2: số AMIS đã nhập của tháng + khoản mục + dòng chưa phân loại.</summary>
+        [HttpGet("GetAmisMonth")]
+        [Security.Permission("dash-pl", PermissionAction.View)]
+        public Task<IActionResult> GetAmisMonth([FromQuery] string? month) => Run(nameof(GetAmisMonth), () => _amisPl.GetMonth(month));
+
+        /// <summary>RPT-1.2 (D-140 d): bảng quy tắc phân loại khoản mục.</summary>
+        [HttpGet("GetPlRules")]
+        [Security.Permission("dash-pl", PermissionAction.View)]
+        public Task<IActionResult> GetPlRules() => Run(nameof(GetPlRules), _amisPl.GetRules);
+
+        [HttpPost("SavePlRules")]
+        [Security.Permission("dash-pl", PermissionAction.Edit)]
+        public Task<IActionResult> SavePlRules([FromBody] List<AppDelicare.Services.Implement.AmisPlRule> rules) => Run(nameof(SavePlRules), () => _amisPl.SaveRules(rules ?? []));
         private readonly AppDelicare.Services.Implement.IDashboardPlService _plService = plService;
 
         /// <summary>RPT-1.1 (D-140 a): tab "Kết quả kinh doanh" (dash-exec?tab=pl) – mục quyền ẩn dash-pl (CEO, COO, FIN-IT, FIN-ACC); người khác 403.</summary>

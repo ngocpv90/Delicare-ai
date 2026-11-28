@@ -35,7 +35,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X (IX) |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) |
-| Điều hành › Kết quả kinh doanh | `dash-pl` | X (IX) | — | X (IX) | X (IX) |
+| Điều hành › Kết quả kinh doanh | `dash-pl` | X (IX) | — | X (IX) | Sửa (IX) |
 | Điều hành › Trung tâm Agent | `ai-agents` | S | — | S | — |
 | Điều hành › Giao việc | `ai-tasks` | S | — | S | — |
 | Điều hành › Lịch chạy | `ai-schedule` | S | — | S | — |
@@ -169,3 +169,13 @@ Tab thứ 4 của **Bảng điều hành**, chỉ **CEO, COO, FIN-IT, Kế toán
 - **Doanh thu theo khách × bữa** (Sáng / Trưa / Tối / Đêm): khách chưa xác nhận bảng kê tháng gắn nhãn **"chưa xác nhận"** (số từ đơn × đơn giá hợp đồng). Hiện theo khách – chưa gộp nhóm khách (SGC, Vinalpha, Vin) vì dữ liệu khách chưa có quan hệ cha – con (GAP-RPT-01 chờ duyệt).
 - **Nguyên vật liệu theo nhóm**: xuất kho × giá lô theo nhóm nguyên liệu (không gồm bao bì), tháng này so tháng trước; **Pareto** (% lũy kế – dòng đậm là nhóm trong 80 % chi phí); bảng **12 tháng**. Hiện 12 nhóm lớn nhất + dòng "N nhóm khác".
 - Đơn vị **triệu đồng (trđ, 1 chữ số thập phân)** – rê chuột lên số xem số đầy đủ.
+
+### Nhập sổ AMIS – số Chính thức (RPT-1.2)
+
+- **Ai:** Kế toán (FIN-ACC – quyền Nhập + Sửa mục Kết quả kinh doanh). CEO / COO / FIN-IT chỉ xem.
+- Tab **Kết quả kinh doanh** → **Nhập sổ AMIS** → chọn **cùng lúc** các tệp Excel xuất từ AMIS: *Sổ chi tiết các tài khoản* 511, 621, 622, 627, 641, 642, 711, 811 (mỗi tài khoản 1 tệp, giữ nguyên mẫu AMIS) + *Báo cáo tài chính* (sheet **B01-DN**) → **Nhập**. Tháng lấy từ dòng "Tháng 8 năm 2026" trong sổ; chứng từ khác tháng → báo lỗi, không ghi.
+- Cách tính (khớp báo cáo kế toán): Doanh thu = PS Có 511 · Giá vốn hàng bán = PS Nợ 621 + 622 + 627 · CP bán hàng & quản lý = PS Nợ 641 + 642 · Thu nhập / chi phí khác = 711 / 811 · bỏ bút toán kết chuyển (911, 154). Lợi nhuận gộp = DT − GVHB; Lợi nhuận thuần = LN gộp − CP bán hàng & quản lý; **Lợi nhuận trước thuế** = LN thuần + TN khác − CP khác. ROA / ROE **theo tháng** = LN trước thuế ÷ bình quân (đầu + cuối kỳ) tổng tài sản (mã 280) / vốn chủ sở hữu (mã 400).
+- **Nhập lại** cùng tháng = ghi đè số của các tài khoản có trong lần nhập (không nhân đôi); có thể nhập riêng 1 sổ để sửa.
+- **Số AMIS tháng**: xem các chỉ tiêu, chi tiết khoản mục từng tài khoản, **dòng chưa phân loại** (đang tính vào "khác").
+- **Quy tắc phân loại**: bảng *Tài khoản + từ khóa trong diễn giải (không dấu, nguyên từ, cách nhau |) hoặc TK đối ứng → khoản mục*; dòng sổ lấy quy tắc đầu tiên khớp. Kế toán thêm / sửa / xóa dòng → **Lưu quy tắc** → nhập lại sổ để phân loại lại.
+- Lớp **Tạm tính** được chụp hằng đêm 23:30 (job *Kết quả kinh doanh – số tạm tính*) để có lịch sử khi chưa có số AMIS.

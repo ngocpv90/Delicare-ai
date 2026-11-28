@@ -38,7 +38,8 @@
       const gm = restM.length ? allM.slice(0, 15).concat([{ group: restM.length + ' nhóm khác', values: (d.months || []).map((m, i) => U.sum(restM.map(g => ({ v: g.values[i] })), 'v')) }]) : allM;
       const totRev = U.sum(rows, 'total'), unconf = rows.filter(r => r.unconfirmed);
       el.innerHTML = `<div class="spread mb" style="flex-wrap:wrap;gap:8px"><div><b>Kết quả kinh doanh tháng ${esc(monthName(d.month))}</b> <span class="small muted">· so tháng ${esc(monthName(d.prevMonth))} và cùng kỳ ${esc(monthName(d.yearAgoMonth))} · đơn vị triệu đồng (rê chuột xem số đủ)</span></div>
-          <div class="row-flex" style="gap:6px;flex-wrap:wrap">${d.periodLocked ? UI.tag('Kỳ đã khóa', 'green') : UI.tag('Kỳ đang mở – số tạm tính cập nhật hằng ngày', 'orange')}${d.hasAmis ? UI.tag('Đã có số AMIS', 'green') : UI.tag('Chưa nhập sổ AMIS', '')}</div></div>
+          <div class="row-flex" style="gap:6px;flex-wrap:wrap">${d.periodLocked ? UI.tag('Kỳ đã khóa', 'green') : UI.tag('Kỳ đang mở – số tạm tính cập nhật hằng ngày', 'orange')}${d.hasAmis ? UI.tag('Đã có số AMIS', 'green') : UI.tag('Chưa nhập sổ AMIS', '')}
+            <button class="btn sm" id="rpAmis">${I('database')} Số AMIS tháng</button>${Store.perm('dash-pl').imp ? `<button class="btn sm primary" id="rpImp">${I('upload')} Nhập sổ AMIS</button>` : ''}<button class="btn sm" id="rpRules">${I('settings')} Quy tắc phân loại</button></div></div>
         <div class="rp-cards">${(d.listCard || []).map(card).join('')}</div>
         <div class="rp-grid mt">
           <div class="card panel"><div class="panel-head"><div><div class="panel-title">Doanh thu theo khách × bữa</div><div class="panel-desc">Giá trị suất đã giao (đơn × đơn giá hợp đồng); khách chưa xác nhận bảng kê tháng ghi "chưa xác nhận"</div></div><b title="${esc(full(totRev))}">${trd(totRev)} trđ</b></div>
@@ -61,6 +62,67 @@
             ${gm.map(g => `<tr><td>${esc(g.group)}</td>${g.values.map(v => `<td class="num" title="${esc(full(v))}">${v ? trd(v) : '–'}</td>`).join('')}</tr>`).join('')}</tbody>
             <tfoot><tr><td>Tổng</td>${d.months.map((m, i) => `<td class="num">${trd(U.sum(allM.map(g => ({ v: g.values[i] })), 'v'))}</td>`).join('')}</tr></tfoot></table></div>` : '<div class="muted small">Chưa có dữ liệu 12 tháng.</div>'}</div>
         <div class="notice info mt">${I('help')}<div><b>Phần AMIS</b> (nhân công, điện / nước / gas, khấu hao, chi phí bán hàng & quản lý, thu nhập / chi phí khác, lợi nhuận trước thuế, ROA / ROE) có khi Kế toán nhập sổ AMIS của tháng; trước đó các thẻ ghi "Chờ số AMIS".</div></div>`;
+      el.querySelector('#rpAmis').onclick = () => amisView(d.month);
+      el.querySelector('#rpRules').onclick = () => rulesEdit();
+      const ib = el.querySelector('#rpImp'); if (ib) ib.onclick = () => importAmis(d.month, () => render(el, p));
+    });
+  }
+
+  // ---------- RPT-1.2 (D-140 d): nhập sổ AMIS · xem số AMIS tháng · bảng quy tắc phân loại ----------
+  const ACC = { 511: 'Doanh thu', 621: 'NVL trực tiếp', 622: 'Nhân công trực tiếp', 627: 'Sản xuất chung', 641: 'Bán hàng', 642: 'Quản lý doanh nghiệp', 711: 'Thu nhập khác', 811: 'Chi phí khác' };
+  const MAIN = [['REVENUE', 'Doanh thu'], ['COGS', 'Giá vốn hàng bán'], ['GROSS_PROFIT', 'Lợi nhuận gộp'], ['SELLING_ADMIN', 'Chi phí bán hàng & quản lý'], ['NET_OPERATING', 'Lợi nhuận thuần'],
+    ['OTHER_INCOME', 'Thu nhập khác'], ['OTHER_EXPENSE', 'Chi phí khác'], ['PROFIT_BEFORE_TAX', 'Lợi nhuận trước thuế'], ['ROA', 'ROA (theo tháng)'], ['ROE', 'ROE (theo tháng)']];
+  function monthBody(d) {
+    const mt = d.metrics || {}, items = d.listItem || [], un = d.listUnclassified || [];
+    if (!Object.keys(mt).length && !items.length) return '<div class="muted">Tháng này chưa nhập sổ AMIS.</div>';
+    return `<div class="small muted mb">${d.importedAt ? 'Nhập lúc ' + esc(U.dt(d.importedAt)) + (d.importedBy ? ' · ' + esc(d.importedBy) : '') : ''}${d.accounts && d.accounts.length ? ' · sổ: ' + esc(d.accounts.join(', ')) : ''}${d.periodLocked ? ' · kỳ đã khóa' : ''}</div>
+      <div class="table-wrap"><table class="table dc-table"><tbody>${MAIN.filter(([k]) => mt[k] !== undefined).map(([k, n]) => `<tr><td>${esc(n)}</td><td class="num"><b>${k === 'ROA' || k === 'ROE' ? U.num(mt[k], 2) + '%' : U.num(Math.round(mt[k])) + ' đ'}</b></td></tr>`).join('')}</tbody></table></div>
+      ${Object.keys(ACC).filter(a => items.some(i => i.account === a)).map(a => `<details class="mt"><summary><b>${a} ${esc(ACC[a])}</b> · ${U.num(Math.round(U.sum(items.filter(i => i.account === a), 'value')))} đ</summary><div class="table-wrap"><table class="table dc-table"><tbody>${items.filter(i => i.account === a).map(i => `<tr><td>${esc(i.item)}</td><td class="num">${U.num(Math.round(i.value))}</td></tr>`).join('')}</tbody></table></div></details>`).join('')}
+      ${un.length ? `<div class="notice warn mt">${I('alert')}<div><b>${un.length} nhóm dòng chưa phân loại</b> (đang tính vào "khác") – thêm quy tắc ở <b>Quy tắc phân loại</b> rồi nhập lại sổ.</div></div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>TK</th><th>Diễn giải</th><th>TK đối ứng</th><th class="num">Số dòng</th><th class="num">Số tiền</th></tr></thead><tbody>${un.slice(0, 200).map(u => `<tr><td>${esc(u.account)}</td><td>${esc(u.description || '')}</td><td>${esc(u.counterAccount || '')}</td><td class="num">${u.count}</td><td class="num">${U.num(Math.round(u.amount))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="small muted mt">Mọi dòng đã phân loại.</div>'}`;
+  }
+  function amisView(month) {
+    UI.modal({ title: 'Số AMIS tháng ' + esc(monthName(month)), size: 'lg', body: '<div id="rpAm" class="muted small">Đang tải…</div>', foot: '<button class="btn" data-close>Đóng</button>',
+      onMount: m => Store.query('Dashboard/GetAmisMonth', { month }).then(x => { const b = m.querySelector('#rpAm'); if (b) b.innerHTML = x.ok && x.data ? monthBody(x.data) : esc(x.message || 'Không tải được'); }) });
+  }
+  function importAmis(month, done) {
+    UI.modal({ title: 'Nhập sổ AMIS', size: 'lg',
+      body: `<p class="small">Chọn cùng lúc các tệp Excel xuất từ AMIS: <b>Sổ chi tiết các tài khoản</b> 511, 621, 622, 627, 641, 642, 711, 811 (mỗi tài khoản 1 tệp, đúng mẫu AMIS – có dòng "Tài khoản: 627, Tháng 8 năm 2026") và <b>Báo cáo tài chính</b> (sheet B01-DN) để tính ROA / ROE. Tháng lấy từ sổ; nhập lại = ghi đè số của các tài khoản có trong lần nhập (không nhân đôi).</p>
+        <input type="file" class="input" id="rpFiles" multiple accept=".xlsx"><div id="rpRes" class="mt"></div>`,
+      foot: '<button class="btn" data-close>Đóng</button><button class="btn primary" id="rpGo">Nhập</button>',
+      onMount: m => {
+        m.querySelector('#rpGo').onclick = () => {
+          const files = [...m.querySelector('#rpFiles').files]; if (!files.length) { UI.toast('Chọn tệp sổ AMIS', 'warn'); return; }
+          const fd = new FormData(); files.forEach(f => fd.append('files', f));
+          const btn = m.querySelector('#rpGo'); btn.disabled = true; m.querySelector('#rpRes').innerHTML = '<div class="muted small">Đang nhập…</div>';
+          Store.act('Dashboard/ImportAmis', { json: fd }).then(x => {
+            btn.disabled = false;
+            if (!x.ok) { m.querySelector('#rpRes').innerHTML = `<div class="notice warn">${esc(x.message || 'Không nhập được')}</div>`; return; }
+            UI.toast(esc((x.res && x.res.responseMessage) || 'Đã nhập'), 'ok');
+            m.querySelector('#rpRes').innerHTML = monthBody(x.data || {}); done();
+          });
+        };
+      } });
+  }
+  function rulesEdit() {
+    const canEdit = Store.perm('dash-pl').edit === true;
+    Store.query('Dashboard/GetPlRules').then(x => {
+      if (!x.ok) return;
+      const rows = (x.list || []).map(r => Object.assign({}, r));
+      const tbl = () => `<div class="table-wrap" style="max-height:60vh"><table class="table dc-table"><thead><tr><th>TK</th><th>Từ khóa trong diễn giải (không dấu, cách nhau |)</th><th>hoặc TK đối ứng</th><th>Khoản mục</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${rows.map((r, i) => canEdit
+        ? `<tr><td><select class="select" data-f="account" data-i="${i}">${Object.keys(ACC).map(a => `<option ${a === r.account ? 'selected' : ''}>${a}</option>`).join('')}</select></td><td><input class="input" data-f="keyword" data-i="${i}" value="${esc(r.keyword || '')}"></td><td><input class="input" style="width:90px" data-f="counter" data-i="${i}" value="${esc(r.counter || '')}"></td><td><input class="input" data-f="item" data-i="${i}" value="${esc(r.item || '')}"></td><td><button class="btn sm" data-del="${i}" aria-label="Xóa dòng">✕</button></td></tr>`
+        : `<tr><td>${esc(r.account)}</td><td>${esc(r.keyword || '')}</td><td>${esc(r.counter || '')}</td><td>${esc(r.item)}</td></tr>`).join('')}</tbody></table></div>`;
+      UI.modal({ title: 'Quy tắc phân loại khoản mục (sổ AMIS)', size: 'lg',
+        body: `<p class="small muted">Mỗi dòng sổ lấy quy tắc <b>đầu tiên</b> khớp: cùng tài khoản và (TK đối ứng bắt đầu bằng … hoặc diễn giải chứa nguyên từ / cụm từ). Không khớp → "khác / chưa phân loại". Sửa xong nhập lại sổ để phân loại lại.</p><div id="rpRt">${tbl()}</div>`,
+        foot: '<button class="btn" data-close>Đóng</button>' + (canEdit ? '<button class="btn" id="rpAdd">+ Thêm dòng</button><button class="btn primary" id="rpSave">Lưu quy tắc</button>' : ''),
+        onMount: (m, close) => {
+          const bind = () => {
+            m.querySelectorAll('[data-f]').forEach(i => { i.oninput = i.onchange = () => { rows[+i.dataset.i][i.dataset.f] = i.value; }; });
+            m.querySelectorAll('[data-del]').forEach(b => { b.onclick = () => { rows.splice(+b.dataset.del, 1); m.querySelector('#rpRt').innerHTML = tbl(); bind(); }; });
+          };
+          bind(); if (!canEdit) return;
+          m.querySelector('#rpAdd').onclick = () => { rows.unshift({ account: '621', keyword: '', counter: '', item: '' }); m.querySelector('#rpRt').innerHTML = tbl(); bind(); };
+          m.querySelector('#rpSave').onclick = () => Store.act('Dashboard/SavePlRules', { json: rows }).then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); close(); } });
+        } });
     });
   }
 

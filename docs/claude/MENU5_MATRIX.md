@@ -36,7 +36,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |
-| Điều hành › Kết quả kinh doanh | `dash-pl` | X (IX) | — | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | X (IX) | — | X (IX) | — |
+| Điều hành › Kết quả kinh doanh | `dash-pl` | X (IX) | — | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | Sửa (IX) | — | X (IX) | — |
 | Điều hành › Trung tâm Agent | `ai-agents` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 | Điều hành › Nhật ký agent | `ai-agent-log` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 | Điều hành › Luồng liên phòng | `ai-flow` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
@@ -153,7 +153,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   SAL-CON       vào  26 mục · ô quyền   75
   SAL-HEAD      vào  38 mục · ô quyền  111
   SAL-CS        vào  19 mục · ô quyền   28
-  FIN-ACC       vào  46 mục · ô quyền  142
+  FIN-ACC       vào  46 mục · ô quyền  144
   FIN-HR        vào  19 mục · ô quyền   55
   FIN-IT        vào 124 mục · ô quyền  249
   QA            vào  41 mục · ô quyền   86
