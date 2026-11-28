@@ -18,7 +18,7 @@ Viết theo code AI-1 … AI-15 (D-133, cập nhật 28/11/2026). Trợ lý AI g
 | Trợ lý AI › Nhật ký agent | `ai-agent-log` | Mọi lời gọi công cụ: lúc, agent, công cụ, người hỏi, kết quả (Thành công / Bị từ chối / Lỗi), thời gian xử lý, số dòng |
 | Trợ lý AI › Lịch chạy | `ai-schedule` | Việc theo giờ của từng agent (05:30 kho, 07:00 bản tin sáng, 08:30 QA, 10:00 bếp, 17:00 cuối ngày, mỗi 5 phút lấy sự kiện…), lần chạy gần nhất |
 
-## 3. Agent làm gì (đợt 1 + đợt 2 + đợt 3)
+## 3. Agent làm gì (đợt 1 – 4)
 
 | Agent | Hỏi được gì | Theo lịch |
 |---|---|---|
@@ -33,6 +33,7 @@ Viết theo code AI-1 … AI-15 (D-133, cập nhật 28/11/2026). Trợ lý AI g
 | HR | Chấm công ngày (chưa vào ca, muộn, vắng); **đề xuất đơn nghỉ / đổi ca / bổ sung chấm công** (`propose_leave`, `propose_shift_swap`, `propose_attendance_fix`) | 07:15 người chưa vào ca |
 | PLAN (đợt 3) | Kế hoạch sản xuất 7 ngày, thực đơn tuần, nhu cầu / thiếu hụt nguyên liệu, giá vốn & lãi gộp; **đề xuất tính lại kế hoạch ngày** (`propose_production_plan` – như nút Tính lại kế hoạch), **đề xuất đổi món** trên thực đơn đã công bố (`propose_menu_change` – yêu cầu đổi món đi tiếp như web: tự duyệt khi đủ 4 điều kiện, còn lại chờ duyệt đổi món) | 20:40 tóm tắt thiếu hụt sau MRP |
 | PKG (đợt 3) | Hộp / khay khách đang giữ, quá hạn trả, tỷ lệ thất thoát, lô vệ sinh trong ngày; **đề xuất ghi khách trả hộp** (`propose_container_return`), **ghi 1 bước vệ sinh khay** (`propose_cleaning_step`, đúng thứ tự 6 bước VS-KHAY), **ghi hộp thất thoát** (`propose_container_loss_charge`) | 16:00 khách giữ hộp quá hạn / vượt ngưỡng |
+| CSKH (đợt 4) | **Khách hàng** hỏi qua Zalo OA DELI-CARE: đơn suất và thực đơn của **chính khách đó**, hướng dẫn chung (ghi chú công khai). Khách xác nhận đơn / báo số suất, báo thiếu suất, phản ánh → **đề xuất** chờ KD / CSKH / điều phối xác nhận; đổi món theo danh sách gợi ý | – |
 | ACC (đợt 3) | **Chỉ đọc:** chứng từ kế toán tháng, đối chiếu AMIS, giá vốn & lãi gộp, hộp khay khách giữ. Không lập / sửa / xuất chứng từ, không thay MISA. Đề xuất duy nhất: ghi hộp thất thoát của khách vượt ngưỡng (`propose_container_loss_charge`) – bảng kê thanh toán tự tính phí theo cấu hình | Ngày 2 hằng tháng 08:30 tóm tắt lệch AMIS + khách vượt ngưỡng hộp |
 
 Đợt 2 các agent cũ có thêm lệnh ghi: WH – lập phiếu nhập theo đơn mua (`propose_goods_receipt`), phiếu xuất cho lệnh SX (`propose_issue`), phiếu kiểm kê (`propose_stock_count`); KITCHEN – ghi bắt đầu / xong / nhiệt độ lõi / lưu mẫu của mẻ (`propose_batch_event`); QA – kết luận QC nhận hàng (`propose_qc_result`), giữ lô (`propose_hold_lot`).
@@ -90,3 +91,11 @@ Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa
 | Chat web báo "đang bận / không phản hồi" | Container Hermes của agent đó dừng / quá `Agent:ChatTimeoutSeconds` | Thử lại sau ít phút; IT xem `docker compose logs hermes-<nhóm>` |
 | Agent trả lời "Phiên chat trên web hết hạn" | Vé người hỏi quá 10 phút (câu trả lời dài, gọi nhiều công cụ) | Đóng ngăn chat, mở lại rồi hỏi lại |
 | Không có tin cảnh báo chi phí | Chưa đặt `Agent:MonthlyBudget` hoặc người nhận chưa liên kết bot Điều hành | IT đặt ngân sách; CEO / FIN-IT liên kết bot |
+
+## 8. Bot Zalo cho khách hàng (AI-19)
+
+- **Kinh doanh cấp mã:** Khách 360 › Tổng quan › Người liên hệ → nút **Mã Zalo** (quyền Sửa Khách hàng) → gửi mã cho người liên hệ (email / điện thoại). Khách quan tâm Zalo OA DELI-CARE rồi nhắn mã vào OA (mã dùng 1 lần, hạn `Zalo:LinkCodeHours` = 72 giờ). Cấp mã mới khi khách đổi số Zalo – Zalo cũ tự bị thu hồi.
+- **Khách dùng bot (gõ số):** 1 đơn 7 ngày · 2 thực đơn theo đơn · 3 <số đơn> xác nhận (3 <số đơn> TRUA=120 đổi số suất) · 4 <số suất> báo thiếu đơn hôm nay · 5 <nội dung> phản ánh · 6 <số đơn> đổi món (chọn món → chọn món thay trong gợi ý). Câu hỏi tự do → Trợ lý CSKH trả lời theo đơn của khách (khi máy chủ Hermes đã cấu hình).
+- **Khách không tự ghi:** xác nhận / đổi số suất, thiếu suất, phản ánh vào **Phê duyệt › Lệnh của agent** (agent CSKH, hạn 12 giờ). Người xác nhận phải có quyền thao tác web tương ứng: đơn – Sửa Đơn hàng (KD); thiếu suất / phản ánh – Thêm Phản ánh (CSKH, điều phối điểm phát, QA). Xác nhận / từ chối → bot nhắn lại khách. Đổi món đi luồng đổi món như web (tự duyệt khi đủ 4 điều kiện, còn lại chờ duyệt).
+- Khách chỉ thấy dữ liệu **của chính mình** – số đơn của khách khác báo "không tìm thấy". Tài khoản khách (CUSTOMER) không đăng nhập web được.
+- Bật kênh: IT cấu hình Zalo OA (app id, app secret, OA secret key, token làm mới lần đầu ở .env – `agents/README.md`), bật kênh ZALO_OA + bot ZALO_KH ở Tích hợp › Kênh, `ZALO_ENABLED=true` cho messaging.

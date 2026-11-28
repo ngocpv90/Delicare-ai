@@ -92,3 +92,10 @@ Sau mỗi lượt trả lời Hermes gọi công cụ `bao_chi_phi` (`mo_hinh, t
 AGENT_KEY_WH=… EVAL_WEB_PASS=… node tools/agent-eval/run.mjs WH        # hoặc không tham số = 5 agent đợt 1
 ```
 Kết quả từng câu ĐÚNG / SAI / BỎ QUA (thiếu khóa) – mã thoát 1 khi có câu sai.
+
+### Zalo OA khách hàng (AI-19, D-06)
+
+- **Định danh:** người liên hệ (CustomerContact) ↔ tài khoản CUSTOMER (cột `CustomerContact.UserId`, D-82: không đăng nhập web) ↔ `UserExternalIdentity` kênh ZALO (id Zalo). KD cấp mã ở Khách 360 (`CustomerLink/CreateCode`, ký HMAC `Messaging:LinkSigningKey`, loại 'C').
+- **Luồng:** Zalo → `/zalo/ZALO_KH` (messaging kiểm chữ ký `X-ZEvent-Signature`, trả 200 ngay) → `api/CustomerChannel/Handle` (khóa client, chống trùng msg_id) → trả lời. Tin chờ kênh ZALO (kết quả xác nhận) do `ZaloOutboundPump` gửi. Token OA: api tự làm mới (`Zalo__AppSecret`, `Zalo__RefreshToken` lần đầu), lưu mã hóa AES-GCM trong `IntegrationChannel.ConfigJson`.
+- **CSKH trên Hermes:** câu hỏi tự do → `POST {Agent:HermesApiUrlByAgent:CSKH | HermesApiUrl}/chat/completions` (model `delicare-cskh`, header `X-On-Behalf-Of: zalo:<id Zalo>`). ToolGateway: người hỏi `zalo:` → khách; CHỈ công cụ dành cho khách (`khach_don_hang`, `khach_thuc_don`, `tim_tri_thuc` / `doc_ghi_chu` – ghi chú công khai, 3 lệnh `propose_*` của khách); mã khách `_khach` do máy chủ gắn.
+- **Biến môi trường:** api – `ZALO_APP_ID`, `ZALO_APP_SECRET`, `ZALO_REFRESH_TOKEN`; messaging – `ZALO_ENABLED`, `ZALO_APP_ID`, `ZALO_OA_SECRET_KEY`; toolgateway / hermes-van-phong – `AGENT_KEY_CSKH`.

@@ -17,6 +17,8 @@ namespace AppDelicare.Messaging.Core
     public interface IDelicareApiClient
     {
         Task<ApiResult<T>> PostInternalAsync<T>(string action, object body, CancellationToken ct = default);
+        /// <summary>AI-19: API nội bộ khác BotChannel (vd api/CustomerChannel/Handle) – JSON + X-Client-Key.</summary>
+        Task<ApiResult<T>> PostInternalToAsync<T>(string path, object body, CancellationToken ct = default) => throw new NotSupportedException();
         Task<ApiResult<T>> GetAsUserAsync<T>(string path, string bearerToken, CancellationToken ct = default);
         Task<ApiResult<T>> PostFormAsUserAsync<T>(string path, IEnumerable<KeyValuePair<string, string>> form, string bearerToken, CancellationToken ct = default);
         /// <summary>BOT-1.5a: action nghiệp vụ nhận [FromBody] JSON (vd. FoodSafetyChecklistResult/Record).</summary>
@@ -34,6 +36,13 @@ namespace AppDelicare.Messaging.Core
         public async Task<ApiResult<T>> PostInternalAsync<T>(string action, object body, CancellationToken ct = default)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, Url("api/BotChannel/" + action)) { Content = JsonContent.Create(body, options: Json) };
+            request.Headers.Add(ClientKeyHeader, options.CurrentValue.ClientKey ?? string.Empty);
+            return await SendAsync<T>(request, ct);
+        }
+
+        public async Task<ApiResult<T>> PostInternalToAsync<T>(string path, object body, CancellationToken ct = default)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, Url(path)) { Content = JsonContent.Create(body, options: Json) };
             request.Headers.Add(ClientKeyHeader, options.CurrentValue.ClientKey ?? string.Empty);
             return await SendAsync<T>(request, ct);
         }

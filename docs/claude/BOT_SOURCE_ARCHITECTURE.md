@@ -238,7 +238,9 @@ AppDelicare.sln       (SỬA) thêm AppDelicare.Messaging
 
 **Môi trường:** 3 bộ bot DEV / TEST / PROD (mỗi bộ: VH, DH, TRO_LY). DEV chạy polling trên máy anh; TEST / PROD webhook. `BotCode` giống nhau ở mọi môi trường, chỉ khác token.
 
-## 8. Mở rộng Zalo / Facebook (chưa làm – để không phải sửa kiến trúc)
+## 8. Mở rộng Zalo / Facebook – Zalo ĐÃ LÀM ở AI-19 (D-06: cột CustomerContact.UserId); Facebook chưa làm
+
+> AI-19: `Channels/Zalo/ZaloChannel.cs` (webhook kiểm chữ ký, client gửi CS, pump tin chờ), API `CustomerChannelController` (khóa client) + `CustomerChannelService` (lệnh khách = đề xuất CSKH), token OA lưu mã hóa ở ConfigJson. Hội thoại khách dùng cú pháp số (không lưu trạng thái hội thoại). Chi tiết: `agents/README.md` mục Zalo OA.
 
 - Thêm `Channels/Zalo/` (client, webhook kiểm chữ ký, làm mới token – refresh token lưu mã hóa ở `api`, chính sách khung gửi 48 giờ / 7 ngày / mẫu ZBS) và `Audiences/Customer/`.
 - Lõi thêm `CustomerChannelController` (nội bộ, client key): `api` tự tra định danh Zalo → `CustomerContact` → `CustomerId`, **chỉ trả dữ liệu của khách đó**; mọi thao tác ghi của khách là **đề xuất** cho nhân viên xác nhận. Liên kết khách: GAP-INT-01 / D-06 (chốt khi làm Zalo).

@@ -112,6 +112,12 @@ namespace AppDelicare.Tests.Agent
             using var f = await AgentToolsAi3Tests.FactoryAsync(("Agent:HermesWebhookUrl", url));
             await RaiseIncidentAsync(f, "IOT:AI4:once", new { zone = "Kho lạnh 2", contactPhone = "0912345678", note = "gọi 0987654321" });
             await RaiseIncidentAsync(f, "IOT:AI4:once", new { zone = "Kho lạnh 2" });
+            // Máy test tải nặng: đợi listener đọc xong body rồi mới dừng (tránh mất body – test chập chờn).
+            for (int i = 0; i < 30 && bodies.Count == 0; i++)
+            {
+                await Task.Delay(100);
+            }
+            await Task.Delay(200);
             listener.Stop();
             await serve;
 

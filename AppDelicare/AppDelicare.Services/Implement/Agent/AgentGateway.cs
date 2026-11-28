@@ -4,7 +4,9 @@ using System.Text.Json;
 using AppDelicare.Data.Interface;
 using AppDelicare.Data.Share;
 using AppDelicare.Model.Entity;
+using AppDelicare.Model.Helper;
 using AppDelicare.Model.Option;
+using AppDelicare.Services.Implement.Identity;
 using AppDelicare.Services.Interface;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -21,6 +23,8 @@ namespace AppDelicare.Services.Implement.Agent
         public Guid AgentUserId { get; init; }
         /// <summary>Người đang hỏi (tra từ <c>UserExternalIdentity</c>); null = việc theo lịch, chỉ quyền agent.</summary>
         public Guid? AskingUserId { get; init; }
+        /// <summary>AI-19: người hỏi là KHÁCH (tài khoản CUSTOMER liên kết Zalo) → mã khách; công cụ chỉ trả / ghi dữ liệu của khách này.</summary>
+        public Guid? CustomerId { get; init; }
         public string CorrelationId { get; init; } = string.Empty;
         public IServiceProvider Services { get; init; } = null!;
     }
@@ -37,6 +41,8 @@ namespace AppDelicare.Services.Implement.Agent
         public string? ScreenId { get; init; }
         public IReadOnlyList<string> Agents { get; init; } = [];
         public Func<AgentToolContext, JsonElement, Task<object?>> RunAsync { get; init; } = (_, _) => Task.FromResult<object?>(null);
+        /// <summary>AI-19: công cụ dành cho KHÁCH (CSKH – Zalo) – chỉ trả / ghi dữ liệu của khách đang hỏi (ctx.CustomerId). Người hỏi là khách chỉ dùng được loại này.</summary>
+        public bool CustomerScoped { get; init; }
 
         public bool AllowedFor(string agentCode) => Agents.Count == 0 || Agents.Contains(agentCode, StringComparer.OrdinalIgnoreCase);
     }
@@ -63,7 +69,7 @@ namespace AppDelicare.Services.Implement.Agent
     }
 
     /// <summary>Kết quả kiểm danh tính agent (AI-2): agent hợp lệ hay mã lỗi + câu báo.</summary>
-    public sealed record AgentIdentity(string AgentCode, Guid AgentUserId, Guid? AskingUserId);
+    public sealed record AgentIdentity(string AgentCode, Guid AgentUserId, Guid? AskingUserId, Guid? CustomerId = null);
 
     /// <summary>
     /// AI-1 (D-133): lõi ToolGateway – danh sách công cụ + gọi công cụ. ToolGateway (MCP <c>/mcp</c> + REST <c>/tools/{name}</c>), web (Trung tâm agent) và test
@@ -82,7 +88,7 @@ namespace AppDelicare.Services.Implement.Agent
         public static JsonSerializerOptions WebJson => Web;
 
         /// <summary>Danh bạ công cụ (AI-1: ping; AI-3 thêm công cụ đọc).</summary>
-        public static IReadOnlyList<AgentToolDef> All { get; } = [.. Build(), .. ReadTools(), .. OpsReadTools(), .. AlertTools(), .. CostTools(), .. KnowledgeTools(), .. Wave3Tools(), .. CommandTools()];
+        public static IReadOnlyList<AgentToolDef> All { get; } = [.. Build(), .. ReadTools(), .. OpsReadTools(), .. AlertTools(), .. CostTools(), .. KnowledgeTools(), .. Wave3Tools(), .. CustomerTools(), .. CommandTools()];
 
         // ---- tham số công cụ (JSON Schema đơn giản) ----
         public static string? Str(JsonElement a, string k) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String && v.GetString() is { Length: > 0 } s ? s.Trim() : null;
@@ -152,6 +158,8 @@ namespace AppDelicare.Services.Implement.Agent
         IOptionsMonitor<AgentOptions> options, IConfiguration configuration, IMemoryCache cache, IClock clock) : IAgentGatewayService
     {
         public const string ChannelCode = "HERMES";
+        /// <summary>AI-19: tiền tố X-On-Behalf-Of khi người hỏi là khách Zalo (Hermes / API chuyển nguyên id Zalo kèm tiền tố).</summary>
+        public const string ZaloAskerPrefix = "zalo:";
         private readonly IServiceProvider _services = services;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -204,7 +212,24 @@ namespace AppDelicare.Services.Implement.Agent
             {
                 return new Auth(AgentCallResult.Fail(403, $"Agent {code} chưa có tài khoản dịch vụ"), null, channel.Id);
             }
-            Guid? asking = null;
+            Guid? asking = null, customer = null;
+            if (request.OnBehalfOf?.Trim() is { } zext && zext.StartsWith(ZaloAskerPrefix, StringComparison.Ordinal))
+            {
+                // AI-19 (D-06): khách hỏi qua Zalo – "zalo:<id Zalo>" → tài khoản CUSTOMER đã liên kết → người liên hệ → khách. Không thấy → từ chối như người chưa liên kết.
+                string zid = zext[ZaloAskerPrefix.Length..];
+                var hit = await (from x in db.UserExternalIdentity.AsNoTracking()
+                                 join c in db.IntegrationChannel.AsNoTracking() on x.IntegrationChannelId equals c.Id
+                                 join u in db.User.AsNoTracking() on x.UserId equals u.Id
+                                 join cc in db.CustomerContact.AsNoTracking() on u.Id equals cc.UserId
+                                 where !x.IsDeleted && x.ExternalUserId == zid && x.IdentityStatus == "Active" && c.ProviderCode == MessagingCode.ProviderZalo && !c.IsDeleted
+                                       && !u.IsDeleted && u.IsActive && u.AccountType == PersonLink.Customer && !cc.IsDeleted
+                                 select new { u.Id, cc.CustomerId }).FirstOrDefaultAsync();
+                if (hit == null)
+                {
+                    return new Auth(AgentCallResult.Fail(403, "Tài khoản Zalo chưa liên kết DELI-CARE – gửi mã liên kết do nhân viên kinh doanh cấp"), null, channel.Id);
+                }
+                return new Auth(null, new AgentIdentity(code, agentUser.Value, hit.Id, hit.CustomerId), channel.Id);
+            }
             if (!string.IsNullOrWhiteSpace(request.OnBehalfOf))
             {
                 string ext = request.OnBehalfOf.Trim();
@@ -238,7 +263,7 @@ namespace AppDelicare.Services.Implement.Agent
                     return new Auth(AgentCallResult.Fail(403, "Trợ lý AI đợt này chỉ dành cho Ban Giám đốc và trưởng bộ phận"), null, channel.Id);
                 }
             }
-            return new Auth(null, new AgentIdentity(code, agentUser.Value, asking), channel.Id);
+            return new Auth(null, new AgentIdentity(code, agentUser.Value, asking, customer), channel.Id);
         }
 
         private static bool SameKey(string expected, string given)
@@ -280,7 +305,11 @@ namespace AppDelicare.Services.Implement.Agent
                 {
                     continue;
                 }
-                if (t.ScreenId == null || await DenyAsync(_permissions, id.AgentUserId, id.AskingUserId, t.ScreenId, PermissionAction.View) == null)
+                if (id.CustomerId != null && !t.CustomerScoped)
+                {
+                    continue;
+                }
+                if (t.ScreenId == null || await DenyAsync(_permissions, id.AgentUserId, id.CustomerId != null ? null : id.AskingUserId, t.ScreenId, PermissionAction.View) == null)
                 {
                     list.Add(t);
                 }
@@ -307,7 +336,8 @@ namespace AppDelicare.Services.Implement.Agent
                 string? deny = tool == null ? null
                     : !tool.AllowedFor(id.AgentCode) ? $"Công cụ «{tool.Name}» không thuộc agent {id.AgentCode}"
                     : _options.CurrentValue.ReadOnly && tool.Name.StartsWith("propose_", StringComparison.Ordinal) ? "Trợ lý AI đang ở chế độ chỉ đọc"
-                    : tool.ScreenId != null ? await DenyAsync(_permissions, id.AgentUserId, id.AskingUserId, tool.ScreenId, PermissionAction.View)
+                    : id.CustomerId != null && !tool.CustomerScoped ? "Khách hàng chỉ dùng được công cụ dành cho khách (đơn, thực đơn, xác nhận suất, báo thiếu, phản ánh của chính mình)"
+                    : tool.ScreenId != null ? await DenyAsync(_permissions, id.AgentUserId, id.CustomerId != null ? null : id.AskingUserId, tool.ScreenId, PermissionAction.View)
                     : null;
                 if (tool == null)
                 {
@@ -322,7 +352,7 @@ namespace AppDelicare.Services.Implement.Agent
                     try
                     {
                         using var scope = _currentActor.BeginScope(ActorInfo.ForAgent(id.AgentUserId, id.AgentCode), correlation);
-                        var ctx = new AgentToolContext { AgentCode = id.AgentCode, AgentUserId = id.AgentUserId, AskingUserId = id.AskingUserId, CorrelationId = correlation, Services = _services };
+                        var ctx = new AgentToolContext { AgentCode = id.AgentCode, AgentUserId = id.AgentUserId, AskingUserId = id.AskingUserId, CustomerId = id.CustomerId, CorrelationId = correlation, Services = _services };
                         var data = await tool.RunAsync(ctx, request.Arguments);
                         // AI-3: che dữ liệu cá nhân + cắt Agent:MaxRows TẬP TRUNG – mọi công cụ (kể cả thêm sau) đều đi qua.
                         var (masked, n) = AgentMask.Apply(data, AgentToolRegistry.MaxRows(ctx), AgentToolRegistry.WebJson);

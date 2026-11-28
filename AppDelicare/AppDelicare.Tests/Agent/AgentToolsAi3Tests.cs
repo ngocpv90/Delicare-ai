@@ -18,7 +18,7 @@ namespace AppDelicare.Tests.Agent
     public class AgentToolsAi3Tests
     {
         internal const string Key = "khoa-ai3-test";
-        private static readonly string[] Agents = ["VIVI", "WH", "KITCHEN", "QA", "PROC", "SALES", "LOG", "HR", "PLAN", "PKG", "ACC"];
+        private static readonly string[] Agents = ["VIVI", "WH", "KITCHEN", "QA", "PROC", "SALES", "LOG", "HR", "PLAN", "PKG", "ACC", "CSKH"];
 
         private static Guid AgentUser(string code) => Guid.Parse($"a3a3a3a3-0000-4000-8000-0000000000{Array.IndexOf(Agents, code) + 10:D2}");
 
@@ -74,7 +74,7 @@ namespace AppDelicare.Tests.Agent
         public async Task Every_read_tool_returns_json_for_its_agents()
         {
             using var f = await FactoryAsync();
-            var readTools = AgentToolRegistry.All.Where(t => t.Name != "ping").ToList();
+            var readTools = AgentToolRegistry.All.Where(t => t.Name != "ping" && !t.Name.StartsWith("khach_", StringComparison.Ordinal)).ToList(); // AI-19: công cụ của khách cần người hỏi Zalo – kiểm ở CustomerZaloAi19Tests
             readTools.Select(t => t.Name).Should().Contain(["bao_cao_dieu_hanh", "kpi_khoang", "su_co_ngay", "ds_cho_duyet", "canh_bao", "get_ton_kho", "get_lo_can_date", "du_bao_thieu_hut",
                 "truy_xuat_lo", "truy_xuat_me", "tien_do_bep", "tien_do_bep_chi_tiet", "ke_hoach_ngay", "thuc_don_tuan", "hao_hut_khoang", "nhiet_do_ngay", "phan_anh_khach"]);
             var failures = new List<string>();

@@ -44,7 +44,7 @@ namespace AppDelicare.Services.Implement.Identity
                 return ConstantHelper.Message.BotLinkCodeInvalid;
             }
             kind = (char)all[0];
-            if (kind is not (MessagingCode.LinkKind.User or MessagingCode.LinkKind.Employee))
+            if (kind is not (MessagingCode.LinkKind.User or MessagingCode.LinkKind.Employee or MessagingCode.LinkKind.CustomerContact))
             {
                 return ConstantHelper.Message.BotLinkCodeInvalid;
             }

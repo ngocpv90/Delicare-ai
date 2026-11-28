@@ -7,6 +7,8 @@ namespace AppDelicare.Model.Helper
     public static class MessagingCode
     {
         public const string ProviderTelegram = "TELEGRAM";
+        /// <summary>AI-19 (D-06): Zalo OA – bot khách hàng (ZALO_KH).</summary>
+        public const string ProviderZalo = "ZALO";
 
         /// <summary>Mã bot (BotConfiguration.BotCode) – giống nhau ở mọi môi trường, chỉ khác token.</summary>
         public const string BotVanHanh = "VH";
@@ -68,6 +70,8 @@ namespace AppDelicare.Model.Helper
         {
             public const char User = 'U';
             public const char Employee = 'E';
+            /// <summary>AI-19: người liên hệ của khách (CustomerContact) – chỉ đổi được ở bot Zalo khách.</summary>
+            public const char CustomerContact = 'C';
         }
 
         public const string StatusActive = "Active";

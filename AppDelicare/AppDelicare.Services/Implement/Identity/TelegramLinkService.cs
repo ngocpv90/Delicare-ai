@@ -87,6 +87,10 @@ namespace AppDelicare.Services.Implement.Identity
             {
                 return Result<BotIdentityModel>.Fail(ConstantHelper.Message.BotLinkCodeUsed);
             }
+            if (kind == MessagingCode.LinkKind.CustomerContact)
+            {
+                return Result<BotIdentityModel>.Fail(ConstantHelper.Message.BotLinkCodeInvalid); // AI-19: mã khách chỉ dùng ở bot Zalo khách
+            }
             Guid? userId = null, employeeId = null;
             if (kind == MessagingCode.LinkKind.User)
             {

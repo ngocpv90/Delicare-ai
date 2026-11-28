@@ -122,7 +122,7 @@
     const locHref = lid => (APP.detailHref && APP.detailHref('CustomerDeliveryLocation', lid)) || null;
     const locHtml = locs.map(l => `<div class="dc-it"><div class="top"><b>${locHref(l.Id) ? `<a href="${locHref(l.Id)}">${esc(l.Name || l.Code || '')}</a>` : esc(l.Name || l.Code || '')} ${l.Status && l.Status !== 'Active' ? UI.badge(l.Status, 'CustomerDeliveryLocation', 'Status') : ''}</b><span class="row-flex">${perLoc[String(l.Id).toLowerCase()] ? `<span class="ip-muted">${U.num(perLoc[String(l.Id).toLowerCase()])} suất TB/ngày</span>` : ''}${can('crm-location', 'edit') ? `<button class="btn xs" data-loc-edit="${esc(l.Id)}" title="Sửa / ngừng hoạt động điểm giao">${I('edit')}</button>` : ''}</span></div>
       <div class="sub">${esc(join(l.Address, l.DeliveryWindowFrom && 'nhận ' + U.time(l.DeliveryWindowFrom) + (l.DeliveryWindowTo ? '–' + U.time(l.DeliveryWindowTo) : ''), join(l.ContactName, l.ContactPhone).replace(' · ', ' ')))}</div></div>`).join('');
-    const ctHtml = contacts.sort((a, b) => (b.IsPrimary === true) - (a.IsPrimary === true)).map(x => `<div class="dc-it"><div class="top"><b>${esc(x.FullName || x.Name || '')}${x.IsPrimary ? ' ' + UI.tag('Chính', 'green') : ''}</b>${x.Phone ? `<span class="ip-muted">${UI.tel(x.Phone)}</span>` : ''}</div>
+    const ctHtml = contacts.sort((a, b) => (b.IsPrimary === true) - (a.IsPrimary === true)).map(x => `<div class="dc-it"><div class="top"><b>${esc(x.FullName || x.Name || '')}${x.IsPrimary ? ' ' + UI.tag('Chính', 'green') : ''}</b>${x.Phone ? `<span class="ip-muted">${UI.tel(x.Phone)}</span>` : ''}${can('crm-customer', 'edit') && x.Id ? `<button class="btn xs" data-zalo="${esc(x.Id)}" title="Cấp mã liên kết bot Zalo cho người liên hệ (AI-19)">${x.UserId ? 'Zalo ✓ · mã mới' : 'Mã Zalo'}</button>` : ''}</div>
       ${x.Position || x.Email ? `<div class="sub">${[esc(x.Position || ''), x.Email ? UI.mail(x.Email) : ''].filter(Boolean).join(' · ')}</div>` : ''}</div>`).join('');
     const today = Store.ctx.date;
     const active = (d.listContract || []).filter(x => x.status === 'Active' && U.day(x.startDate || x.effectiveFrom || '') <= today && (!(x.endDate || x.effectiveTo) || U.day(x.endDate || x.effectiveTo) >= today));
@@ -149,6 +149,14 @@
     UI.wireInfoPanel(box, cfg);
     box.querySelectorAll('[data-go]').forEach(a => a.onclick = () => APP.go(a.dataset.go));
     box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => UI.form(b.dataset.add, null, { title: b.dataset.add === 'CustomerContact' ? 'Người liên hệ' : 'Điểm giao', defaults: { CustomerId: id }, onSave: () => APP.refresh() }));
+    // AI-19 (D-06): mã liên kết bot Zalo khách – gửi cho người liên hệ (email / điện thoại); dùng 1 lần, hạn theo Zalo:LinkCodeHours.
+    box.querySelectorAll('[data-zalo]').forEach(b => b.onclick = () => Store.act('CustomerLink/CreateCode', { form: { ContactId: b.dataset.zalo } }).then(r => {
+      if (!r.ok || !r.data) return;
+      const d = r.data;
+      UI.modal({ title: 'Mã liên kết Zalo', sub: esc(d.contactName) + ' · hạn ' + esc(U.date(d.expiresAt) + ' ' + U.time(d.expiresAt)),
+        body: `<p class="small">${esc(d.instruction)}</p><div class="row-flex" style="gap:6px"><input class="input" readonly value="${esc(d.code)}" data-zcode style="font-family:monospace"><button class="btn primary" data-copy>Sao chép</button></div><p class="small muted mt">Khách quan tâm Zalo OA DELI-CARE rồi nhắn mã này. Mỗi mã dùng 1 lần; cấp mã mới khi khách đổi số Zalo.</p>`,
+        onMount: (m) => { m.querySelector('[data-copy]').onclick = () => { const i = m.querySelector('[data-zcode]'); i.select(); navigator.clipboard && navigator.clipboard.writeText(i.value); UI.toast && UI.toast('Đã sao chép mã', 'ok'); }; } });
+    }));
     box.querySelectorAll('[data-loc-edit]').forEach(b => b.onclick = () => UI.form('CustomerDeliveryLocation', b.dataset.locEdit, { title: 'Điểm giao', onSave: () => APP.refresh() }));
     box.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => APP.openDetail('Contract', b.dataset.ct, APP.FN['crm-contract']));
     box.querySelectorAll('[data-renew]').forEach(b => b.onclick = () => APP.go('crm-contract?customer=' + encodeURIComponent(id)));

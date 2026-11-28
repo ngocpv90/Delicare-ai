@@ -50,6 +50,10 @@ services:
       Clients__MESSAGING__KeyHash: ${MESSAGING_CLIENT_KEY_HASH:-}
       Messaging__LinkSigningKey: ${MESSAGING_LINK_SIGNING_KEY:-}
       Agent__SchedulesFile: /app/agents/schedules.json
+      # AI-19 (D-06): Zalo OA khách – token làm mới lần đầu + khóa ứng dụng (sau đó api tự làm mới, lưu mã hóa trong DB).
+      Zalo__AppId: ${ZALO_APP_ID:-}
+      Zalo__AppSecret: ${ZALO_APP_SECRET:-}
+      Zalo__RefreshToken: ${ZALO_REFRESH_TOKEN:-}
       # AI-6 / AI-15: Trung tâm agent báo "máy chủ có khóa agent" – cùng biến với toolgateway (trống = chưa cấp). Đủ 13 agent; agent chưa bật thì để trống.
       AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
       AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
@@ -165,6 +169,10 @@ services:
       Telegram__Bots__DH__Token: ${TELEGRAM_DH_TOKEN:-}
       Telegram__Bots__DH__WebhookSecret: ${TELEGRAM_DH_WEBHOOK_SECRET:-}
       Telegram__Bots__DH__Username: ${TELEGRAM_DH_USERNAME:-}
+      # AI-19 (D-06): bot Zalo khách – tắt tới khi có Zalo OA thật (ZALO_ENABLED=true, app id, OA secret key ở .env).
+      Zalo__Enabled: ${ZALO_ENABLED:-false}
+      Zalo__AppId: ${ZALO_APP_ID:-}
+      Zalo__OaSecretKey: ${ZALO_OA_SECRET_KEY:-}
     expose:
       - "8080"
     restart: unless-stopped

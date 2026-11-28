@@ -23,5 +23,7 @@ namespace AppDelicare.Model.Entity
         public string? Status { get; set; }
         public string? Note { get; set; }
         public string? FullName { get; set; }
+        /// <summary>AI-19 (D-06): tài khoản CUSTOMER (D-82) của người liên hệ – bot Zalo khách. Thêm bằng migration 20261128_02 (anh duyệt).</summary>
+        public Guid? UserId { get; set; }
     }
 }

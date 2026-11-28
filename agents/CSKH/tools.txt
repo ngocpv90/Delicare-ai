@@ -2,5 +2,10 @@
 bao_chi_phi
 doc_ghi_chu
 ghi_nhat_ky
+khach_don_hang
+khach_thuc_don
 ping
+propose_complaint
+propose_portion_confirm
+propose_shortage_report
 tim_tri_thuc
