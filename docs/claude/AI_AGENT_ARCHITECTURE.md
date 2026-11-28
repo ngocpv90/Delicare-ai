@@ -362,6 +362,57 @@ Agent quyết định tra lõi hay tra kho theo **loại câu hỏi**. Quy tắc
 Mỗi luật ở 7.5–7.8 có một test trong `AppDelicare.Tests/Knowledge`. Ví dụ: agent ghi vào 45 phải bị từ chối; CSKH tìm ghi chú nội bộ phải ra rỗng.
 
 
+### 7.9 Mở rộng: Kho tài liệu & tri thức – lưu toàn bộ tài liệu doanh nghiệp (D-141, anh chốt 2026-11-28)
+
+Kho lưu **toàn bộ tài liệu của doanh nghiệp**: công văn, biên bản họp giao ban, báo cáo, hợp đồng khách hàng / nhà cung cấp / lao động, hồ sơ nhân viên, chứng từ kế toán gốc, hướng dẫn sử dụng. Kho có hai tầng trong cùng một thư mục `knowledge` (phương án B, **không bảng / cột mới**):
+
+- **Tầng Lưu trữ:** file gốc (PDF, bản scan, Word, Excel, ảnh) + **phiếu mô tả** markdown cùng tên đặt cạnh file. Frontmatter phiếu mô tả: `id`, `type` (cong-van-den / cong-van-di / bien-ban-hop / hop-dong-kh / hop-dong-ncc / hop-dong-ld / ho-so-nv / chung-tu / bao-cao / hdsd…), `so_hieu`, `ngay`, `doi_tuong` (mã khách / NCC / nhân viên / chứng từ trong lõi hoặc AMIS), `owner`, `confidentiality`, `retain_until`, `refs`.
+- **Tầng Tri thức:** như §7.1–7.8 (SOP, bài học, quyết định, đào tạo…).
+
+**Nguyên tắc giữ nguyên:** số liệu luôn lấy từ lõi hoặc AMIS – kho giữ **bản gốc** và **tri thức**, không nhập lại số liệu (chứng từ kế toán: số hạch toán chính thức ở AMIS, D-131). File không lưu trong DB.
+
+#### Danh mục và phân quyền mặc định
+
+Mỗi dòng dưới đây là **một mục `ObjectMenu` cấp 2** trong nhóm "Tri thức" (ẩn khỏi sidebar, điều hướng bằng cây thư mục của màn Kho tài liệu). Quyền chỉ cấp trên ma trận quyền cũ (D-31); **mặc định từ chối** – nhóm không được cấp thì không thấy thư mục, không thấy trong kết quả tìm, mở link trực tiếp bị 403. Cột "Xem / Sửa" là gợi ý seed ban đầu (CodeGen `Seeds.Menu5.cs`), admin chỉnh trên màn phân quyền.
+
+| Mục (screen-id) | Nội dung | Xem (mặc định) | Sửa / tải lên | Agent |
+|---|---|---|---|---|
+| **80 › Hướng dẫn sử dụng** (`kb-80-hdsd`) | HDSD từng tính năng, tự nhập từ `docs/user-guide/*.md` mỗi lần phát hành | **Mọi tài khoản nội bộ** | Chỉ máy (tự sinh) | Mọi agent nội bộ |
+| 80 › Đào tạo (`kb-80`) | Tài liệu đào tạo theo vai trò, câu hỏi thường gặp | Mọi tài khoản nội bộ | TP Vận hành | Mọi agent nội bộ |
+| 05 › Công văn đến / đi (`kb-05`) | Sổ công văn: số đến / đi, ngày, nơi gửi / nhận, trích yếu, người xử lý, hạn xử lý, file gốc | Ban GĐ, Hành chính | Hành chính | VIVI: phiếu mô tả, trừ công văn mật |
+| 10 › Ban GĐ (`kb-10`) | Báo cáo ngày / tuần / tháng, quyết định điều hành | Ban GĐ, trưởng bộ phận | Ban GĐ (+ tự sinh) | VIVI, KNOW |
+| 15 › Họp & giao ban (`kb-15`) | Biên bản họp: chủ trì, thành phần, nội dung, kết luận, việc giao (người, hạn) | Ban GĐ, trưởng bộ phận | Người lập biên bản | VIVI |
+| 20 › Kinh doanh (`kb-20`) | Hồ sơ khách tóm tắt, phản ánh đã đóng, ghi chú chăm sóc | Kinh doanh, Ban GĐ | Kinh doanh | SALES, LOG, PKG |
+| 20 › Hợp đồng khách hàng (`kb-20-hd`) | File hợp đồng + phụ lục đã ký, gắn mã hợp đồng `Contract` | TP Kinh doanh, Ban GĐ, Kế toán | Kinh doanh | SALES: phiếu mô tả + tóm tắt điều khoản |
+| 30 · 45 · 50 · 55 (`kb-30` …) | Như §7.4 | Như §7.4 | Như §7.4 | Như §7.8 |
+| 40 › Kho & mua hàng (`kb-40`) | Quy trình kho, đánh giá NCC | Kho, Mua hàng, Ban GĐ | Thủ kho, Mua hàng | WH, PROC, PLAN, QA |
+| 40 › Hợp đồng nhà cung cấp (`kb-40-hd`) | File hợp đồng NCC đã ký, gắn mã NCC | Mua hàng, Ban GĐ, Kế toán | Mua hàng | PROC: phiếu mô tả + tóm tắt điều khoản |
+| 60 › Kế toán (`kb-60`) | Quy trình đối soát, khóa kỳ, khớp mã AMIS | Kế toán, Ban GĐ | Kế toán trưởng | ACC |
+| 60 › Chứng từ gốc (`kb-60-ct`) | Hóa đơn đầu vào, phiếu có ký nhận, biên bản đối chiếu, bảng kê đã xác nhận – gắn số chứng từ lõi / AMIS | Kế toán, Ban GĐ | Kế toán | ACC: chỉ phiếu mô tả (tìm chứng từ thiếu / lệch) |
+| 70 › Nhân sự (`kb-70`) | Nội quy, quy định ca, nghỉ phép (công khai nội bộ) | Mọi tài khoản nội bộ | TP Nhân sự | HR |
+| 70 › Hồ sơ cá nhân (`kb-70-hs`) – **vùng cá nhân** | Hồ sơ nhân viên, hợp đồng lao động, quyết định nhân sự cá nhân | **Chỉ Nhân sự** (+ CEO) | Nhân sự | **Không agent nào** đọc nội dung; nhắc hết hạn HĐLĐ lấy ngày từ lõi |
+| 95–99 (`kb-95` …) | Nguồn BOT, nhật ký / tương tác / việc của agent, mẫu | FIN-IT, Ban GĐ | Theo §7.5 | Theo §7.5 |
+| BOD › Bảo mật (`kb-bod`) | Chiến lược, đàm phán, nhân sự cấp cao | Người CEO cấp | CEO | **Không agent nào** |
+
+#### Luật phân quyền (chặn bằng code, mỗi luật một test)
+
+1. **Quyền theo mục menu:** `AllowAccess` = xem danh sách, phiếu mô tả, nội dung; `AllowEdit` = tải lên / soạn / sửa phiếu; `AllowExport` = tải file gốc; `AllowPrint` = in; `AllowDelete` = chuyển **Lưu trữ** (không xóa cứng). Quyền cộng dồn theo nhóm như cũ; `IsAdmin` có mọi quyền **trừ** BOD và vùng cá nhân (chỉ người được cấp đích danh trên ma trận). *(PROPOSED – BA/PO CONFIRM: admin IT không tự xem hồ sơ cá nhân.)*
+2. **Tìm kiếm lọc theo quyền** trước khi trả kết quả: không lộ cả tiêu đề / số hiệu của tài liệu người dùng không có quyền.
+3. **Agent:** quyền agent ∩ quyền người hỏi (§5) + chặn cứng vùng cá nhân, BOD, `confidentiality: BOD | ca-nhan`. Agent không đọc nội dung file gốc nhị phân; chỉ đọc phiếu mô tả và ghi chú tri thức (HDSD là markdown nên đọc được).
+4. **Nhật ký truy cập:** mọi lần xem / tải file ở 20 › Hợp đồng, 40 › Hợp đồng, 60 › Chứng từ, 70 › Hồ sơ cá nhân, BOD ghi một dòng (ai, lúc nào, file nào, xem hay tải) – Claude Code chọn bảng nhật ký có sẵn phù hợp (`AuditChange` hoặc `IntegrationLog`), ghi "Quyết định tự chọn"; không thêm bảng.
+5. **Đồng bộ Obsidian máy cá nhân (AI-18) không bao giờ** gồm vùng cá nhân, BOD, chứng từ gốc, hợp đồng (file gốc).
+6. **Hạn lưu trữ:** `retain_until` trên phiếu mô tả (chứng từ kế toán theo quy định lưu trữ kế toán – kế toán trưởng xác nhận số năm; HĐLĐ theo Nhân sự). Hết hạn → KNOW báo chủ thư mục; **không tự xóa**.
+7. **Bảo mật file:** chỉ nhận pdf, docx, xlsx, jpg, png; giới hạn dung lượng `Knowledge:MaxFileMb`; tên file trên đĩa do máy chủ đặt (không dùng tên người dùng gửi); không phục vụ file qua đường dẫn tĩnh – chỉ qua API có kiểm quyền.
+
+#### Tính năng đi kèm
+
+- **Sổ công văn đến / đi:** số đến / đi máy chủ tự cấp theo D-63 (đăng ký tiền tố ở BUSINESS_RULES §11); giao người xử lý + hạn → thành việc theo dõi (98), quá hạn nhắc qua bot.
+- **Biên bản họp giao ban:** mẫu ở 99; mỗi "việc giao" (người, hạn) tự thành việc theo dõi (98) có nút "Xong"; bản tin 07:00 của VIVI nhắc việc giao sắp / quá hạn.
+- **Hồ sơ gắn đối tượng:** trang chi tiết Khách hàng / NCC / Nhân viên / Hợp đồng có tab "Tài liệu" hiện file theo `doi_tuong` (chỉ file người xem có quyền); tải lên ngay tại trang chi tiết.
+- **Nhắc hết hạn hợp đồng** (khách, NCC, lao động) trước `Knowledge:ContractExpiryNoticeDays` (30) ngày.
+- **Nút "?" trên mỗi màn** mở đúng mục HDSD của màn đó (HDSD gắn `screens: [screen-id…]`).
+
+
 ## 8. Triển khai
 
 Giữ nguyên `docker-compose.yml` hiện tại, chỉ thêm container `toolgateway` và volume `knowledge`. Hermes làm việc trong mạng Docker nội bộ, không có chuỗi kết nối DB.

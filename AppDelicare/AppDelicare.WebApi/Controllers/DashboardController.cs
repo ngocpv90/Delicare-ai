@@ -10,8 +10,25 @@ namespace AppDelicare.WebApi.Controllers
     /// Dashboard (không gắn bảng – màn <c>#/dash-exec</c> theo PermissionConvention.ControllerScreens). BE3.5 (Catalog 231, 232 – spec 12.1, 12.2):
     /// dashboard điều hành + hành trình đơn hàng. Chỉ đọc.
     /// </summary>
-    public class DashboardController(IDashboardService dashboardService) : BaseController
+    public class DashboardController(IDashboardService dashboardService, AppDelicare.Services.Implement.IDashboardPlService plService) : BaseController
     {
+        private readonly AppDelicare.Services.Implement.IDashboardPlService _plService = plService;
+
+        /// <summary>RPT-1.1 (D-140 a): tab "Kết quả kinh doanh" (dash-exec?tab=pl) – mục quyền ẩn dash-pl (CEO, COO, FIN-IT, FIN-ACC); người khác 403.</summary>
+        [HttpGet("GetPl")]
+        [Security.Permission("dash-pl", PermissionAction.View)]
+        public async Task<IActionResult> GetPl([FromQuery] string? month, [FromQuery] Guid? branchId)
+        {
+            try
+            {
+                return Ok(await _plService.GetPl(month, branchId));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " GetPl: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(System.Net.HttpStatusCode.InternalServerError), AppDelicare.Model.Helper.ConstantHelper.Message.InternalServer);
+            }
+        }
         private readonly IDashboardService _dashboardService = dashboardService;
 
         private const int Forbidden = 403;

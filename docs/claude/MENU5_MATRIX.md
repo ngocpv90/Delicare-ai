@@ -36,6 +36,7 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 | Điều hành › Bảng điều hành | `dash-exec` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X (IX) | X (IX) | X (IX) | X | — | — | X | — | — | — | — | — | — | X | — | X (IX) | — | X | X |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) | X | X | X (IX) | — | — | — | — | — | — | — | — | — | X | — | X (IX) | — | X | — |
+| Điều hành › Kết quả kinh doanh | `dash-pl` | X (IX) | — | X (IX) | — | — | — | — | — | — | — | — | — | — | — | — | X (IX) | — | X (IX) | — |
 | Điều hành › Trung tâm Agent | `ai-agents` | S | — | S | — | — | — | — | — | — | — | — | — | — | — | — | — | — | S | — |
 | Điều hành › Nhật ký agent | `ai-agent-log` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
 | Điều hành › Luồng liên phòng | `ai-flow` | X | — | X | — | — | — | — | — | — | — | — | — | — | — | — | — | — | X | — |
@@ -137,9 +138,9 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
 ## Số mục được vào / số ô quyền
 
 ```
-  CEO           vào 118 mục · ô quyền  154
+  CEO           vào 119 mục · ô quyền  157
   CEO-PMO       vào 106 mục · ô quyền  112
-  COO           vào 128 mục · ô quyền  174
+  COO           vào 129 mục · ô quyền  177
   OPS-PLAN      vào  47 mục · ô quyền   95
   OPS-SCM       vào  30 mục · ô quyền   70
   OPS-WH        vào  28 mục · ô quyền   82
@@ -152,9 +153,9 @@ Nguồn duy nhất: `tools/AppDelicare.CodeGen/Seeds.Menu5.cs` (ScreenMatrix + A
   SAL-CON       vào  26 mục · ô quyền   75
   SAL-HEAD      vào  38 mục · ô quyền  111
   SAL-CS        vào  19 mục · ô quyền   28
-  FIN-ACC       vào  45 mục · ô quyền  139
+  FIN-ACC       vào  46 mục · ô quyền  142
   FIN-HR        vào  19 mục · ô quyền   55
-  FIN-IT        vào 123 mục · ô quyền  246
+  FIN-IT        vào 124 mục · ô quyền  249
   QA            vào  41 mục · ô quyền   86
   Duyệt: crm-contract = CEO; crm-price-policy = CEO; scm-po-director = CEO; crm-order = SAL-HEAD, COO; menu-recipe = COO; menu-menu = COO; menu-change-request = COO; prod-plan = COO; scm-adjustment = COO; scm-po = COO; scm-pr-l1 = OPS-SCM-HEAD; scm-pr-l2 = COO; scm-stockcount = OPS-SCM-HEAD, COO; scm-stockcount-l2 = FIN-ACC; hr-leave = FIN-HR, COO; hr-swap = FIN-HR, COO; qc-inspection = QA; prod-batch = QA; scm-lot = QA; adm-user = FIN-IT; crm-recon-reopen = COO; acc-period-unlock = COO; ai-agent-cmd = OPS-WH, OPS-KIT, QA, OPS-SCM, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-HR, COO, OPS-PLAN, OPS-POS, SAL-SALES, SAL-CON, SAL-CS; kb-sop = CEO, COO, OPS-KIT, QA, OPS-WH, OPS-SCM-HEAD, SAL-HEAD, OPS-LOG, FIN-ACC, FIN-HR; log-load-short = COO, OPS-SCM-HEAD
 ```

@@ -512,7 +512,7 @@ WHERE NOT EXISTS (SELECT 1 FROM [dbo].[UserRole] ur WHERE ur.UserGroupId = g.Id 
 -- AI-21 (D-138 g): nhóm agent không bao giờ có mục chi phí AI – thu quyền nếu đã cấp (giữ dòng).
 UPDATE ur SET AllowAccess = 0, AllowAdd = 0, AllowEdit = 0, AllowDelete = 0, AllowPrint = 0, AllowExport = 0, AllowImport = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy
 FROM [dbo].[UserRole] ur JOIN [dbo].[UserGroup] g ON g.Id = ur.UserGroupId JOIN [dbo].[ObjectMenu] m ON m.Id = ur.ObjectMenuId
-WHERE ISNULL(NULLIF(g.Code, N''), g.Name) LIKE N'AGENT[_]%' AND m.MetaLink IN (N'#/ai-cost') AND ur.IsDeleted = 0 AND ISNULL(ur.AllowAccess, 0) = 1;
+WHERE ISNULL(NULLIF(g.Code, N''), g.Name) LIKE N'AGENT[_]%' AND m.MetaLink IN (N'#/ai-cost', N'#/dash-pl') AND ur.IsDeleted = 0 AND ISNULL(ur.AllowAccess, 0) = 1;
 
 COMMIT;
 SELECT (SELECT COUNT(*) FROM [dbo].[BotConfiguration] WHERE IntegrationChannelId = @Ch AND IsDeleted = 0) AS [Agent],

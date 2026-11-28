@@ -627,6 +627,17 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## RPT-1.1 – Tab Kết quả kinh doanh (D-140, 28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Kế toán (uat.fin-acc) / CEO / COO / FIN-IT | Bảng điều hành → tab Kết quả kinh doanh | Thấy tab; tháng = tháng của ngày chọn |
+| 2 | QA / Bếp / KD trưởng | Bảng điều hành | Không có tab; API Dashboard/GetPl 403 |
+| 3 | Kế toán | So thẻ Doanh thu / NVL / % NVL với tab Giá vốn cùng tháng | Trùng số |
+| 4 | Kế toán | Thẻ Lợi nhuận gộp / CP bán hàng & quản lý / LN trước thuế | "Chờ số AMIS" khi chưa nhập sổ |
+| 5 | Kế toán | Doanh thu theo khách × bữa | Khách chưa xác nhận bảng kê có nhãn "chưa xác nhận" |
+| 6 | Kế toán | NVL theo nhóm / Pareto / 12 tháng | Rê chuột thấy số đầy đủ; bao bì không nằm trong NVL |
+
 ## UI-6.52 – Bảng điều hành 3 tab + bộ lọc lịch (D-139, 28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |
