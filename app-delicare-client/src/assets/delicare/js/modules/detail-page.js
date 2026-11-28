@@ -26,6 +26,8 @@
     PurchaseRequest: 'scm-pr-detail', StockCount: 'scm-stockcount-detail', CustomerDeliveryLocation: 'crm-location-detail',
   };
   APP.DETAIL_PAGE_OF = PAGE_OF;
+  // AI-17 (D-133): bảng có tab Tri thức (loại đối tượng của Knowledge/GetByEntity).
+  const KB_OF = { Dishe: 'dish', MaterialLot: 'lot', ProductionBatche: 'batch', DeliveryRoute: 'route' };
   APP.detailPageOf = t => (Store.isLive && PAGE_OF[t] && APP.SCREENS[PAGE_OF[t]] ? PAGE_OF[t] : null);
   APP.detailHref = (t, id) => { const p = APP.detailPageOf(t); return p ? APP.href(p + '?id=' + encodeURIComponent(id)) : null; };
 
@@ -122,6 +124,7 @@
           .concat(def.approval !== false && (d.approvalRequestId || d.pendingApproval) ? [{ label: 'Duyệt', render: D.approvalTab }] : [])
           .concat(res && def.related !== false ? [{ label: 'Chứng từ liên quan', render: D.relatedTab(res) }] : [])
           .concat(res && def.docs !== false ? [{ label: 'Tài liệu', render: D.documentsTab(res, D.can(def.screen, 'edit')) }] : [])
+          .concat(KB_OF[def.table] && def.knowledge !== false ? [{ label: 'Tri thức', render: D.knowledgeTab(KB_OF[def.table]) }] : [])
           .concat(res ? [{ label: 'Lịch sử', render: D.historyTab(res, true) }] : []);
         D.buildTabs(el.querySelector('[data-dptabs]'), el.querySelector('[data-dppane]'), tabs, d, id);
       });

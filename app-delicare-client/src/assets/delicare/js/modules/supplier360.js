@@ -267,6 +267,7 @@
     { label: 'Nhận hàng và QC', screen: 'scm-gr', render: receiptTab },
     { label: 'Lô nguyên liệu', screen: 'scm-lot', render: lotTab },
     { label: 'Sự cố', screen: 'qc-supplier-issue', render: issueTab },
+    { label: 'Tri thức', render: (box, d, id) => APP.D360.knowledgeTab('supplier')(box, d, id) }, // AI-17 (D-133)
     { label: 'Tài liệu', render: (box, d, id) => APP.D360.documentsTab('Supplier', Store.perm('scm-supplier').edit !== false)(box, d, id) },
     { label: 'Lịch sử', render: APP.D360.historyTab('Supplier') },
   ];

@@ -56,3 +56,10 @@ Máy tự xuất (job **Xuất kho tri thức** 23:30, **Bản tin sáng / Báo 
 - **Agent đề xuất sửa ghi chú:** agent không sửa thẳng thư mục nghiệp vụ; đề xuất (`propose_note_update`) vào Phê duyệt › Lệnh của agent, người có quyền Sửa thư mục xác nhận mới lưu (nguồn ghi là người duyệt). SOP sửa qua đề xuất vẫn phải Gửi duyệt mới có hiệu lực.
 - **Trợ lý AI › Việc agent theo dõi:** việc agent ghi ở thư mục 98 (hạn, người phụ trách) – 4 chỉ số (đang mở, quá hạn, hạn hôm nay, agent đang theo dõi); **Xong**, **Giao lại** (người phụ trách mới), **Mở lại**; mỗi thao tác có lịch sử.
 - **Bảo trì (thứ Hai 22:30):** nhắc chủ thư mục ghi chú quá hạn rà soát (1 tin / thư mục); nhật ký agent quá `Knowledge:LogRetentionDays` (90) ngày gộp thành "Tóm tắt yyyy-MM" của agent; bản tin ngày quá `Knowledge:BriefKeepMonths` (13) tháng chuyển sang "10 Ban GĐ/Lưu trữ bản tin".
+
+## AI-17 – Tab "Tri thức" trên trang chi tiết
+
+- Trang chi tiết **khách hàng, nhà cung cấp, món, lô nguyên liệu, mẻ nấu, chuyến giao** có tab **Tri thức**: liệt kê ghi chú trong kho có mã của bản ghi (số lô, số mẻ, số chuyến, mã món, mã khách / CIF, mã NCC).
+- Nhãn **gắn mã** = mã nằm trong `refs` của ghi chú (xếp trước); **nhắc tới** = mã chỉ xuất hiện trong nội dung (kèm đoạn trích). Nhãn trạng thái (hiệu lực / nháp / lưu trữ) và **cần rà soát** như ở màn Kho tri thức.
+- Chỉ hiện ghi chú bạn được xem (quyền thư mục); thư mục BOD chỉ người được cấp rõ. Bấm ghi chú → mở đúng ghi chú ở Kho tri thức.
+- Muốn ghi chú hiện ở một hồ sơ: khi soạn, ghi mã vào `refs` (vd `refs: [LO-261128-NC00173-03, NCC-0012]`).

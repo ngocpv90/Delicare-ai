@@ -230,5 +230,23 @@
     const color = v === null ? 'var(--muted)' : v >= (good || 90) ? 'var(--green, #91AF42)' : v >= (good || 90) - 15 ? '#F07825' : '#D9534F';
     return `<div class="d360-meter"><div class="spread small"><span>${esc(label)}</span><b>${v === null ? '–' : U.num(v, 1) + '%'}</b></div><div class="bar"><i style="width:${v || 0}%;background:${color}"></i></div>${sub ? `<div class="small muted">${sub}</div>` : ''}</div>`;
   };
+  // AI-17 (D-133): tab "Tri thức" – ghi chú kho tri thức gắn mã của bản ghi (refs trong frontmatter, hoặc nhắc trong nội dung). Máy chủ lọc theo quyền thư mục của người xem.
+  // type = customer | supplier | dish | lot | batch | route. Bấm ghi chú → mở Kho tri thức đúng ghi chú đó.
+  const kchip = (t, c) => `<span class="badge ${c || ''}">${esc(t)}</span>`;
+  const KB_STATUS = { 'hiệu lực': 'green', 'nháp': 'blue', 'chờ duyệt': 'orange', 'lưu trữ': '' };
+  D.knowledgeTab = type => (box, d, id) => {
+    box.innerHTML = D.loading;
+    Store.query('Knowledge/GetByEntity', { type, id }).then(x => {
+      if (!box.isConnected) return;
+      if (!x.ok) { box.innerHTML = D.failBox(x.message); return; }
+      const list = x.list || x.listData || x.data || [];
+      if (!list.length) { box.innerHTML = `<div class="muted small">Kho tri thức chưa có ghi chú nào gắn mã này (hoặc bạn chưa được xem thư mục chứa ghi chú). Khi soạn SOP / bài học, ghi mã vào <code>refs</code> để hiện ở đây.</div>`; return; }
+      box.innerHTML = `<div class="small muted mb">${list.length} ghi chú · gắn mã trước, nhắc trong nội dung sau</div><div class="kb-ent">${list.map(r => {
+        const n = r.note || {}, st = String(n.status || '').toLowerCase();
+        return `<a class="card panel kb-ent-row" href="${esc(APP.href('knowledge?path=' + encodeURIComponent(n.path)))}"><div class="spread"><b>${esc(n.title || n.path)}</b><span class="row-flex" style="gap:4px">${n.status ? kchip(n.status, KB_STATUS[st] || '') : ''}${r.byRef ? kchip('gắn mã', 'blue') : kchip('nhắc tới', '')}${n.needsReview ? kchip('cần rà soát', 'orange') : ''}</span></div>
+          <div class="small muted">${esc(n.folder || '')} · ${esc(n.type || '')}${n.validFrom ? ' · hiệu lực ' + esc(U.date(n.validFrom)) : ''}</div>${r.snippet ? `<div class="small mt">${esc(r.snippet)}</div>` : ''}</a>`;
+      }).join('')}</div>`;
+    });
+  };
   APP.D360 = D;
 })();

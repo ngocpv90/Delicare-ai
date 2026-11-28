@@ -40,6 +40,10 @@ namespace AppDelicare.WebApi.Controllers
         [HttpGet("Search")]
         public Task<IActionResult> Search([FromQuery] KnowledgeSearchRequest request) => Run(nameof(Search), () => _service.Search(request ?? new KnowledgeSearchRequest()));
 
+        /// <summary>AI-17 (D-133): tab Tri thức trên trang chi tiết – ghi chú gắn mã của bản ghi (refs / nhắc trong nội dung), theo quyền thư mục của người xem.</summary>
+        [HttpGet("GetByEntity")]
+        public Task<IActionResult> GetByEntity([FromQuery] string? type, [FromQuery] Guid id) => Run(nameof(GetByEntity), () => _service.GetByEntity(type, id));
+
         [HttpGet("GetBacklinks")]
         public Task<IActionResult> GetBacklinks([FromQuery] string? path) => Run(nameof(GetBacklinks), () => _service.GetBacklinks(path));
 
