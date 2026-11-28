@@ -982,3 +982,8 @@ tr.bb-late td{background:#FFF5F4}
 .ai-chat-input { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid #E5E9E0; flex: none; }
 .ai-chat-input textarea { flex: 1; resize: none; }
 .ai-msg.assistant > :last-child { margin-bottom: 0; }
+
+/* AI-17 (D-133): tab Tri thức trên trang chi tiết */
+.kb-ent { display: flex; flex-direction: column; gap: 8px; }
+.kb-ent-row { display: block; color: inherit; text-decoration: none; padding: 10px 12px; }
+.kb-ent-row:hover { border-color: #91AF42; }

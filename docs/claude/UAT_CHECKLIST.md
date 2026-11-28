@@ -627,6 +627,15 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-17 – Tab "Tri thức" trên trang chi tiết (D-133)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | QA (uat.qa) | Soạn bài học ở 45 ATTP, `refs: [<số lô>]` → mở trang chi tiết lô đó → tab Tri thức | Ghi chú hiện, nhãn gắn mã; bấm → mở đúng ghi chú |
+| 2 | uat.qa | Ghi chú khác chỉ nhắc số lô trong nội dung | Hiện sau, nhãn nhắc tới, có đoạn trích |
+| 3 | Bếp (uat.ops-kit) | Mở cùng lô (nếu có quyền màn) | Không thấy ghi chú thư mục mình không được xem; BOD không bao giờ hiện nếu không cấp rõ |
+| 4 | Kinh doanh / Mua hàng | Khách 360 / NCC 360 / món / mẻ / chuyến → tab Tri thức | Ghi chú gắn mã khách (mã hoặc CIF), mã NCC, mã món, số mẻ, số chuyến |
+
 ## AI-16 – Bật PLAN, PKG, ACC (D-133 đợt 3)
 
 Chuẩn bị (IT): `.env` server thêm `AGENT_KEY_PLAN / PKG / ACC` (PLAN, ACC ở `hermes-van-phong`; PKG ở `hermes-van-hanh`); DB cũ chạy `AI16_activate_agents.sql` (once.order tự chạy khi deploy); lịch `gen-cron.mjs --group van-hanh / van-phong` chạy lại.

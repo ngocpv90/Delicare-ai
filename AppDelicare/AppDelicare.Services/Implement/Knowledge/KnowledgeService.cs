@@ -133,6 +133,8 @@ namespace AppDelicare.Services.Implement.Knowledge
         Task<IResult<KnowledgeSaveResultModel>> Import(string? folderCode, string? type, string fileName, Stream file);
         Task<IResults<KnowledgeTaskModel>> GetTasks(bool includeDone);
         Task<IResult<KnowledgeSaveResultModel>> SetTask(KnowledgeTaskSetRequest request);
+        /// <summary>AI-17: ghi chú gắn 1 đối tượng (type = customer | supplier | dish | lot | batch | route, id = Id bản ghi) – theo refs (ưu tiên) hoặc nhắc mã trong nội dung; chỉ ghi chú người hỏi được xem.</summary>
+        Task<IResults<KnowledgeEntityNoteModel>> GetByEntity(string? type, Guid id);
         Task<string?> SopStateAsync(Guid key);
         (string? Path, string? Title, string? Folder, string? Status) SopInfo(Guid key);
         Task<string?> ApplySopDecisionAsync(Guid key, bool approved, Guid actorUserId, string? note);
