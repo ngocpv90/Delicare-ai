@@ -21,6 +21,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | Duyệt |
 | Điều hành › Bảng điều hành | `dash-exec` | X |
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X |
+| Điều hành › Giao việc | `ai-tasks` | S |
 | Kinh doanh › Phản ánh khách hàng | `log-complaint` | S (IX) |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X |
@@ -47,7 +48,6 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 55 Giao vận | `knowledge?folder=55` | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X |
-| Trợ lý AI › Việc agent theo dõi | `ai-tasks` | S |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ngày

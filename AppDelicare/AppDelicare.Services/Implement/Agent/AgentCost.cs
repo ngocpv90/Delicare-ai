@@ -62,6 +62,12 @@ namespace AppDelicare.Services.Implement.Agent
         public decimal TodayVnd { get; set; }
         /// <summary>Ước tính cả tháng theo bình quân ngày đã qua.</summary>
         public decimal ForecastVnd { get; set; }
+        /// <summary>AI-21 (D-138 g): tháng trước (yyyy-MM), tổng tháng trước, bình quân / lượt, số ngày của tháng, ngày đang tính (mốc thời gian trên thanh ngân sách).</summary>
+        public string PrevMonth { get; set; } = string.Empty;
+        public decimal PrevTotalVnd { get; set; }
+        public decimal? PerTurnVnd { get; set; }
+        public int DaysInMonth { get; set; }
+        public int DaysPassed { get; set; }
         public List<AgentCostAgentModel> ListAgent { get; set; } = [];
         public List<AgentCostDayModel> ListDay { get; set; } = [];
     }
@@ -151,6 +157,12 @@ namespace AppDelicare.Services.Implement.Agent
                 ListDay = [.. Enumerable.Range(0, (m1 - m0).Days).Select(i => m0.AddDays(i)).Select(d => new AgentCostDayModel { Date = d, CostVnd = rows.Where(r => r.At.Date == d).Sum(r => r.Row.Vnd) })],
             };
             m.Pct = m.Budget is { } b ? Math.Round(total / b * 100m, 1) : null;
+            var prev = await RowsAsync(m0.AddMonths(-1), m0);
+            m.PrevMonth = m0.AddMonths(-1).ToString("yyyy-MM");
+            m.PrevTotalVnd = prev.Sum(r => r.Row.Vnd);
+            m.PerTurnVnd = rows.Count > 0 ? Math.Round(total / rows.Count, 0) : null;
+            m.DaysInMonth = (m1 - m0).Days;
+            m.DaysPassed = clock.Today < m0 ? 0 : daysPassed;
             return Result<AgentCostModel>.Success(m, ConstantHelper.Message.GetAllSuccessfully);
         }
 

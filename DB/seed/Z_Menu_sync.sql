@@ -46,6 +46,12 @@ INSERT INTO @T VALUES
     (N'#/kpi-daily', 2, N'#/group/01', 102, N'Chỉ số kinh doanh', N'', 1),
     (N'#/kpi-monthly', 2, N'#/group/01', 103, N'Chỉ số theo tháng', N'', 0),
     (N'#/cost-meal', 2, N'#/group/01', 104, N'Giá vốn & lãi gộp', N'', 1),
+    (N'#/ai-agents', 2, N'#/group/01', 105, N'Trung tâm Agent', N'AI', 1),
+    (N'#/ai-agent-log', 2, N'#/group/01', 106, N'Nhật ký agent', N'AI', 1),
+    (N'#/ai-flow', 2, N'#/group/01', 107, N'Luồng liên phòng', N'AI', 1),
+    (N'#/ai-tasks', 2, N'#/group/01', 108, N'Giao việc', N'AI', 1),
+    (N'#/ai-schedule', 2, N'#/group/01', 109, N'Lịch chạy', N'AI', 1),
+    (N'#/ai-cost', 2, N'#/group/01', 110, N'Sử dụng & chi phí', N'AI', 1),
     (N'#/group/02', 1, NULL, 200, N'Kinh doanh', N'sales', 1),
     (N'#/crm-customer', 2, N'#/group/02', 201, N'Khách hàng', N'', 1),
     (N'#/crm-contract', 2, N'#/group/02', 202, N'Hợp đồng', N'', 1),
@@ -185,12 +191,7 @@ INSERT INTO @T VALUES
     (N'#/kpi-refresh', 2, N'#/group/09', 1061, N'Nhật ký tính chỉ số', N'', 1),
     (N'#/bot-van-hanh', 2, N'#/group/09', 1062, NULL, N'', 1),
     (N'#/bot-dieu-hanh', 2, N'#/group/09', 1063, NULL, N'', 1),
-    (N'#/group/14', 1, NULL, 1060, N'Trợ lý AI', N'ai', 1),
-    (N'#/ai-agents', 2, N'#/group/14', 1061, N'Trung tâm agent', N'AI', 1),
-    (N'#/ai-agent-log', 2, N'#/group/14', 1062, N'Nhật ký agent', N'AI', 1),
-    (N'#/ai-flow', 2, N'#/group/14', 1063, N'Luồng liên phòng', N'AI', 1),
-    (N'#/ai-tasks', 2, N'#/group/14', 1064, N'Việc agent theo dõi', N'AI', 1),
-    (N'#/ai-schedule', 2, N'#/group/14', 1065, N'Lịch chạy', N'AI', 1);
+    (N'#/group/14', 1, NULL, 1060, N'Trợ lý AI', N'ai', 0);
 DECLARE @Changed TABLE (Id UNIQUEIDENTIFIER, Link NVARCHAR(400), What NVARCHAR(400));
 -- 1. Thêm nhóm / mục còn thiếu (mục cấp 2 cần nhóm cha có sẵn – nhóm thêm trước).
 INSERT INTO dbo.ObjectMenu (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)

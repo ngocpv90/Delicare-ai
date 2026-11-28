@@ -447,7 +447,7 @@ UPDATE [dbo].[ObjectMenu] SET Name = N'Nghỉ & đổi ca', ModifiedDate = @Now,
 UPDATE [dbo].[ObjectMenu] SET Name = N'Nghỉ & đổi ca', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/wf-inbox?type=hr-leave' AND IsDeleted = 0 AND Name IN (N'Đơn xin nghỉ', N'Duyệt – Đơn xin nghỉ');
 UPDATE [dbo].[ObjectMenu] SET Name = N'Công ty & đơn vị', ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink = N'#/adm-orgunit' AND IsDeleted = 0 AND Name IN (N'Sơ đồ tổ chức', N'Duyệt – Sơ đồ tổ chức');
 -- MENU-2 / D-58: ẩn nhóm Database Architecture và 2 màn tra cứu cấu trúc DB; MENU-4 (D-75 e): ẩn bảng con, màn chưa làm, mục trùng (IsActive = 0, không xóa).
-UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment', N'#/crm-price-policy', N'#/menu-change-request', N'#/crm-location', N'#/scm-ingredient-cat', N'#/menu-dish-cat', N'#/scm-uom-conversion', N'#/prod-order', N'#/prod-output', N'#/prod-workstation', N'#/cost-standard', N'#/cost-actual', N'#/group/05b', N'#/kpi-monthly', N'#/scm-zone', N'#/scm-location', N'#/scm-lot', N'#/scm-inv-txn', N'#/scm-inv-policy', N'#/scm-reservation', N'#/scm-consumption-var', N'#/qc-cleaning-result', N'#/log-return-inspection', N'#/log-packing-result', N'#/log-delivery-order', N'#/log-loading', N'#/log-gps', N'#/log-pod', N'#/log-container-return', N'#/hr-swap', N'#/wf-inbox?type=hr-swap', N'#/adm-company', N'#/adm-permission') AND IsDeleted = 0 AND IsActive = 1;
+UPDATE [dbo].[ObjectMenu] SET IsActive = 0, ModifiedDate = @Now, ModifiedBy = @SeedBy WHERE MetaLink IN (N'#/group/11', N'#/dbx-explorer', N'#/dbx-gap', N'#/crm-contract-meal', N'#/crm-order-line', N'#/menu-recipe-line', N'#/menu-menu-line', N'#/scm-pr-line', N'#/scm-po-line', N'#/scm-gr-line', N'#/scm-issue-line', N'#/scm-stockcount-line', N'#/prod-plan-line', N'#/qc-inspection-line', N'#/qc-checklist-item', N'#/log-stop', N'#/log-event', N'#/log-complaint-history', N'#/wf-step', N'#/wf-decision', N'#/wf-item', N'#/scm-transfer', N'#/scm-adjustment', N'#/adm-person', N'#/menu-assignment', N'#/crm-price-policy', N'#/menu-change-request', N'#/crm-location', N'#/scm-ingredient-cat', N'#/menu-dish-cat', N'#/scm-uom-conversion', N'#/prod-order', N'#/prod-output', N'#/prod-workstation', N'#/cost-standard', N'#/cost-actual', N'#/group/05b', N'#/kpi-monthly', N'#/scm-zone', N'#/scm-location', N'#/scm-lot', N'#/scm-inv-txn', N'#/scm-inv-policy', N'#/scm-reservation', N'#/scm-consumption-var', N'#/qc-cleaning-result', N'#/log-return-inspection', N'#/log-packing-result', N'#/log-delivery-order', N'#/log-loading', N'#/log-gps', N'#/log-pod', N'#/log-container-return', N'#/hr-swap', N'#/wf-inbox?type=hr-swap', N'#/adm-company', N'#/adm-permission', N'#/group/14') AND IsDeleted = 0 AND IsActive = 1;
 -- MENU-5 (D-79): 14 nhóm theo vai trò. Seed CHỈ THÊM nhóm / mục mới (đặt thẳng vào chỗ mới); chuyển nhóm / thứ tự / đổi tên / ẩn – mở CHỈ áp cho dòng do chính lần chạy
 -- này tạo (DB mới). DB đang chạy: sắp lại bằng DB/scripts/D79_menu_regroup.sql (DryRun, AuditChange). Nguồn: tools/AppDelicare.CodeGen/Seeds.Menu5.cs.
 DECLARE @By UNIQUEIDENTIFIER = @SeedBy;
@@ -489,6 +489,12 @@ INSERT INTO @P VALUES
     (N'#/kpi-daily', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 102, N'', N'', NULL),
     (N'#/kpi-monthly', 2, N'#/group/09', 901, 999, N'', N'#/group/01', 103, N'', N'', 0),
     (N'#/cost-meal', 2, N'#/group/05', 501, 599, N'', N'#/group/01', 104, N'', N'', NULL),
+    (N'#/ai-agents', 2, NULL, 0, -1, N'', N'#/group/01', 105, N'Trung tâm Agent', N'AI', NULL),
+    (N'#/ai-agent-log', 2, NULL, 0, -1, N'', N'#/group/01', 106, N'Nhật ký agent', N'AI', NULL),
+    (N'#/ai-flow', 2, NULL, 0, -1, N'', N'#/group/01', 107, N'Luồng liên phòng', N'AI', NULL),
+    (N'#/ai-tasks', 2, NULL, 0, -1, N'', N'#/group/01', 108, N'Giao việc', N'AI', NULL),
+    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/01', 109, N'Lịch chạy', N'AI', NULL),
+    (N'#/ai-cost', 2, NULL, 0, -1, N'', N'#/group/01', 110, N'Sử dụng & chi phí', N'AI', NULL),
     (N'#/group/02', 1, NULL, 200, 200, N'Kinh doanh & Đơn hàng', NULL, 200, N'Kinh doanh', N'sales', NULL),
     (N'#/crm-customer', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 201, N'', N'', NULL),
     (N'#/crm-contract', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 202, N'', N'', NULL),
@@ -628,12 +634,7 @@ INSERT INTO @P VALUES
     (N'#/kpi-refresh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1061, N'', N'', NULL),
     (N'#/bot-van-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1062, N'', N'', NULL),
     (N'#/bot-dieu-hanh', 2, N'#/group/09', 901, 999, N'', N'#/group/09', 1063, N'', N'', NULL),
-    (N'#/group/14', 1, NULL, 1400, 1400, N'', NULL, 1060, N'Trợ lý AI', N'ai', NULL),
-    (N'#/ai-agents', 2, NULL, 0, -1, N'', N'#/group/14', 1061, N'Trung tâm agent', N'AI', NULL),
-    (N'#/ai-agent-log', 2, NULL, 0, -1, N'', N'#/group/14', 1062, N'Nhật ký agent', N'AI', NULL),
-    (N'#/ai-flow', 2, NULL, 0, -1, N'', N'#/group/14', 1063, N'Luồng liên phòng', N'AI', NULL),
-    (N'#/ai-tasks', 2, NULL, 0, -1, N'', N'#/group/14', 1064, N'Việc agent theo dõi', N'AI', NULL),
-    (N'#/ai-schedule', 2, NULL, 0, -1, N'', N'#/group/14', 1065, N'Lịch chạy', N'AI', NULL);
+    (N'#/group/14', 1, NULL, 1400, 1400, N'', NULL, 1060, N'Trợ lý AI', N'ai', NULL);
 INSERT INTO [dbo].[ObjectMenu] (Id, Name, ShortName, MetaLink, ParentId, LevelShow, OrderShow, IsActive, IsDefault, CreatedDate, CreatedBy, IsDeleted)
 SELECT NEWID(), p.NewName, p.ShortName, p.Link, NULL, 1, p.NewOrder, 1, 0, @Now, @By, 0
 FROM @P p WHERE p.Lvl = 1 AND NOT EXISTS (SELECT 1 FROM [dbo].[ObjectMenu] m WHERE m.MetaLink = p.Link AND m.IsDeleted = 0);

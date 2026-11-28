@@ -4,7 +4,8 @@
   const FN = {}; CAT.funcs.forEach(f => FN[f.id] = f);
   // Màn hình điều hướng (không phải bảng) – bổ sung vào menu
   FN['flow-e2e'] = { ph: '—', grp: 'Điều hành', fn: 'Luồng nghiệp vụ End-to-End', id: 'flow-e2e', name: 'Luồng nghiệp vụ E2E (9 luồng)', types: ['DB'], table: null, rel: [], st: 'NAV', note: '' };
-  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact', 'crm-location', 'scm-ingredient-cat', 'menu-dish-cat', 'scm-uom-conversion']); // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
+  const CHILD = new Set(['crm-order-line', 'scm-pr-line', 'scm-po-line', 'scm-gr-line', 'scm-issue-line', 'scm-stockcount-line', 'prod-plan-line', 'qc-inspection-line', 'qc-checklist-item', 'menu-recipe-line', 'menu-menu-line', 'wf-step', 'wf-decision', 'wf-item', 'log-stop', 'log-event', 'log-complaint-history', 'crm-contract-meal', 'crm-contact', 'crm-location', 'scm-ingredient-cat', 'menu-dish-cat', 'scm-uom-conversion',
+    'ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost']); // AI-21 (D-138 b): 5 mục là tab của Trung tâm Agent – không lên sidebar, giữ dòng quyền // MENU-5 (D-79): Người liên hệ nhập ở Khách hàng 360
   // Ẩn tạm khỏi menu + tìm kiếm khi chạy với dữ liệu thật (chế độ DEMO vẫn hiện đủ như mockup). Bỏ id khỏi danh sách để hiện lại.
   //  - Chưa có API: màn tĩnh / GAP (danh mục tham chiếu, chuyển kho, điều chỉnh tồn) và 2 màn tra cứu cấu trúc database (D-58).
   //  - Tích hợp bot: kênh, bot, nhật ký – backend mới có CRUD thô. Định danh, tin vào / ra đã có action nghiệp vụ (BOT-1.1, BOT-1.2) → hiện, nối ở modules/ghep.js.
@@ -132,6 +133,15 @@
       if (g) g.items.push(apr);
       else res.splice(res.length && res[0].items.some(i => i.link === 'hr-my') ? 1 : 0, 0, { name: 'Điều hành', items: [apr] });
     }
+    // AI-21 (D-138 a): Trung tâm Agent ngay dưới Phê duyệt (cuối nhóm Điều hành); người chỉ có quyền 1 tab (vd Giao việc) vẫn thấy mục.
+    if (FN['ai-agents'] && Store.perm('ai-agents').access !== false) {
+      let item = null;
+      res.forEach(x => { const k = x.items.findIndex(i => i.link === 'ai-agents'); if (k >= 0) item = x.items.splice(k, 1)[0]; });
+      item = item || { f: FN['ai-agents'], label: 'Trung tâm Agent', link: 'ai-agents' };
+      const g = res.find(x => x.items.some(i => i.link === 'dash-exec' || i.link === 'wf-inbox')) || res.find(x => x.name === 'Điều hành');
+      if (g) g.items.push(item); else res.splice(res.length && res[0].items.some(i => i.link === 'hr-my') ? 1 : 0, 0, { name: 'Điều hành', items: [item] });
+    }
+    for (let k = res.length - 1; k >= 0; k--) if (!res[k].items.length) res.splice(k, 1);
     return res;
   }
   // Mở một nhóm menu (đóng các nhóm khác – kiểu metismenu của theme).

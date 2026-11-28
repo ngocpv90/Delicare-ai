@@ -404,7 +404,8 @@ public static partial class Seeds
         "#/log-packing-result", "#/log-delivery-order", "#/log-loading", // UI-6.34 (D-115)
         "#/log-gps", "#/log-pod", "#/log-container-return", // UI-6.35 (D-116)
         "#/hr-swap", "#/wf-inbox?type=hr-swap", // UI-6.39 (D-120)
-        "#/adm-company", "#/adm-permission"]; // UI-6.43 (D-124): Phân quyền là tab của trang Nhóm quyền // UI-6.41 (D-122): Công ty & đơn vị (quyền sửa công ty giữ theo mục Công ty) // UI-6.39 (D-120): Nghỉ & đổi ca gộp Đơn xin nghỉ + Đơn đổi ca (quyền duyệt từng loại giữ nguyên) // UI-6.35 (D-116): Theo dõi giao hàng + Khay hộp theo khách // UI-6.34 (D-115): Đóng gói & giao hàng – 2 mục thao tác; UI-6.32 (D-113): Kiểm tra vệ sinh + Kiểm tra khay thu hồi gộp vào Vệ sinh khay hộp // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
+        "#/adm-company", "#/adm-permission",
+        "#/group/14"]; // AI-21 (D-138 a): bỏ nhóm sidebar Trợ lý AI (mục chuyển vào Điều hành) // UI-6.43 (D-124): Phân quyền là tab của trang Nhóm quyền // UI-6.41 (D-122): Công ty & đơn vị (quyền sửa công ty giữ theo mục Công ty) // UI-6.39 (D-120): Nghỉ & đổi ca gộp Đơn xin nghỉ + Đơn đổi ca (quyền duyệt từng loại giữ nguyên) // UI-6.35 (D-116): Theo dõi giao hàng + Khay hộp theo khách // UI-6.34 (D-115): Đóng gói & giao hàng – 2 mục thao tác; UI-6.32 (D-113): Kiểm tra vệ sinh + Kiểm tra khay thu hồi gộp vào Vệ sinh khay hộp // UI-6.27 (D-108): 3 màn Giá thành gộp vào Giá vốn & lãi gộp (Điều hành) // UI-6.24 (D-105): menu Sản xuất 7 → 4 mục
 
     public static string[] HiddenMenuLinks => ["#/group/11", "#/dbx-explorer", "#/dbx-gap", .. Menu4HiddenLinks, .. Ui6HiddenLinks];
 
