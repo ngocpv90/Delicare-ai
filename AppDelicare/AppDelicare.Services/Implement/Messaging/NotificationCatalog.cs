@@ -79,6 +79,11 @@ namespace AppDelicare.Services.Implement.Messaging
         public const string FoodCostOver = "FOOD_COST_OVER";
         /// <summary>RETAIL-1: khách lẻ đặt đơn trên trang web – người xử lý đơn khách lẻ gọi xác nhận.</summary>
         public const string RetailOrderNew = "RETAIL_ORDER_NEW";
+        /// <summary>UI-6.51 (D-137): kế hoạch mua – tới hạn đặt chưa có đơn mua / quá hạn; gửi NCC lỗi; NCC chưa xác nhận sát giờ giao; ngày dùng nguyên liệu thay thế.</summary>
+        public const string PurchaseDueNoOrder = "PURCHASE_DUE_NO_ORDER";
+        public const string PurchaseSendFailed = "PURCHASE_SEND_FAILED";
+        public const string PurchaseSupplierUnconfirmed = "PURCHASE_SUPPLIER_UNCONFIRMED";
+        public const string PurchaseSubstitution = "PURCHASE_SUBSTITUTION";
 
         private const string P = MessagingCode.Scope.Personal, D = MessagingCode.Scope.Department, X = MessagingCode.Scope.CrossDepartment,
             A = MessagingCode.Scope.Approval, C = MessagingCode.Scope.Critical;
@@ -100,6 +105,10 @@ namespace AppDelicare.Services.Implement.Messaging
             new(IotOutOfRange, D, Urgent, "Nhiệt độ kho / khu ngoài ngưỡng (cảm biến hoặc đo tay) – QA, thủ kho"),
             new(SupplierIssueOverdue, D, Normal, "Sự cố nhà cung cấp quá hạn xử lý – QA, mua hàng"),
             new(RetailOrderNew, D, Normal, "Đơn khách lẻ mới đặt trên trang web – nhân viên bán lẻ (quyền Thêm màn Đơn khách lẻ)"),
+            new(PurchaseDueNoOrder, D, Normal, "Kế hoạch mua: nguyên liệu tới hạn / quá hạn đặt chưa có đơn mua sau lần chạy 14:00 – Mua hàng"),
+            new(PurchaseSendFailed, D, Normal, "Đơn mua chưa gửi được cho NCC (không kênh / lỗi) – Mua hàng gửi tay"),
+            new(PurchaseSupplierUnconfirmed, D, Normal, "Đơn đã gửi sắp tới giờ giao chưa nhận hàng – Mua hàng gọi NCC xác nhận"),
+            new(PurchaseSubstitution, D, Normal, "Ngày cần hàng có dùng nguyên liệu thay thế (vd vai 60 kg + mông 60 kg) – Bếp trưởng"),
             new(RouteReady, D, Normal, "Chuyến đủ hàng / sắp xuất bến mà chưa đủ thực đơn – điều phối"),
             new(TemperatureDue, D, Normal, "Khu chưa đo nhiệt độ trong ca / cảm biến mất tín hiệu – trưởng ca, QA"),
             new(ChecklistDue, D, Normal, "Kiểm tra ATTP theo ca quá hạn – trưởng ca, QA"),

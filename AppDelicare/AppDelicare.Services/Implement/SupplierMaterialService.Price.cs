@@ -279,7 +279,7 @@ namespace AppDelicare.Services.Implement
                         SupplierId = g.Key, PriceId = cur.Id, UnitPrice = cur.UnitPrice, UnitName = cur.PurchaseUomId is { } u ? units.GetValueOrDefault(u) : row.BaseUnitName, PricePerBase = per,
                         IsPreferred = cur.IsPreferred, MinimumOrderQty = cur.MinimumOrderQuantity ?? cur.MinimumOrderQty, LeadTimeDays = cur.LeadTimeDays, DeliveryDays = cur.DeliveryFrequency,
                         EffectiveFrom = cur.EffectiveFrom, EffectiveTo = cur.EffectiveTo, ChangePct = prevPer is > 0 && per != null ? Math.Round((per.Value - prevPer.Value) / prevPer.Value * 100m, 1) : null,
-                        NoConversion = f == null,
+                        NoConversion = f == null, AllocationPct = cur.AllocationPct,
                     });
                 }
                 var priced = row.ListCell.Where(c => c.PricePerBase != null).ToList();

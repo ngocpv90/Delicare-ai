@@ -19,8 +19,10 @@ namespace AppDelicare.Services.Implement
 {
     public partial class PurchaseRequestService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IDocumentNumberService documentNumberService, IUomConversionService uomConversionService
-        , IClock clock, IApprovalRequestService approvalRequestService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules, INotificationService notifications, AppDelicare.Data.Share.ICurrentActor currentActor) : IPurchaseRequestService
+        , IClock clock, IApprovalRequestService approvalRequestService, Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.BusinessRulesOptions> rules, INotificationService notifications, AppDelicare.Data.Share.ICurrentActor currentActor
+        , Microsoft.Extensions.Options.IOptions<AppDelicare.Model.Option.PurchasePlanOptions> purchasePlan) : IPurchaseRequestService
     {
+        private readonly AppDelicare.Model.Option.PurchasePlanOptions _plan = purchasePlan.Value;
         private readonly INotificationService _notifications = notifications;
         private readonly AppDelicare.Data.Share.ICurrentActor _currentActor = currentActor;
         private readonly IApprovalRequestService _approvalRequestService = approvalRequestService;
@@ -527,8 +529,28 @@ namespace AppDelicare.Services.Implement
                 DateTime date = (pr?.RequiredDate ?? _clock.Today).Date;
                 // UI-6.18 C (D-99): NCC theo quy tắc gợi ý chung (SupplierPick) cho từng dòng; dòng không có NCC đủ điều kiện → không lập PO, đưa sang "Chọn nhà cung cấp".
                 var picks = error != null ? [] : await SupplierPick.SuggestAsync(db, _uomConversionService, _rules, _clock.Today,
-                    lines.Select(l => new SupplierPick.Need(l.Id, l.IngredientId, l.Quantity, l.UnitId != Guid.Empty ? l.UnitId : l.UomId, (l.RequiredDate ?? pr!.RequiredDate ?? _clock.Today).Date)).ToList());
+                    lines.Select(l => new SupplierPick.Need(l.Id, l.IngredientId, l.Quantity, l.UnitId != Guid.Empty ? l.UnitId : l.UomId, (l.RequiredDate ?? pr!.RequiredDate ?? _clock.Today).Date)).ToList(),
+                    _plan.SplitMaxCorrectionPct);
                 var pickedLines = lines.Where(l => picks.TryGetValue(l.Id, out var pk) && pk.SupplierId != null && pk.PriceId != null).ToList();
+                // UI-6.51 (D-137 g): dòng có phần chia NCC → mỗi phần một dòng PO của NCC đó (bản sao dòng đề nghị với số lượng phần chia); không chia → 1 NCC như cũ.
+                var allocations = new List<(PurchaseRequestLine Line, Guid SupplierId, Guid PriceId, bool Preferred)>();
+                foreach (var l in pickedLines)
+                {
+                    var pk = picks[l.Id];
+                    if (pk.ListSplit.Count > 0)
+                    {
+                        allocations.AddRange(pk.ListSplit.Where(s => s.PriceId != null && s.Quantity > 0).Select(s => (new PurchaseRequestLine
+                        {
+                            Id = l.Id, PurchaseRequestId = l.PurchaseRequestId, IngredientId = l.IngredientId, Quantity = s.Quantity, UnitId = l.UnitId, UomId = l.UomId, RequiredDate = l.RequiredDate,
+                            Note = PurchasingRules.AppendNote(l.Note, $"Chia NCC {s.Pct:0.#}% (mục tiêu {s.TargetPct:0.#}%{(s.CumPct is { } cp ? $", lũy kế tháng {cp:0.#}%" : string.Empty)})"),
+                        }, s.SupplierId, s.PriceId!.Value, s.IsPreferred || !pk.SplitManual)));
+                    }
+                    else
+                    {
+                        allocations.Add((l, pk.SupplierId!.Value, pk.PriceId!.Value, pk.ListCard.Any(c => c.Suggested && c.IsPreferred)));
+                    }
+                }
+                bool systemAuto = PurchasePlan.PurchasePlanRules.IsAutoApproved(pr);
                 if (error == null && pickedLines.Count == 0)
                 {
                     error = string.Format(ConstantHelper.Message.PurchaseRequestNoSupplier, string.Join(", ", ingredientIds.Select(i => ingredients.GetValueOrDefault(i)?.Name ?? i.ToString())))
@@ -542,14 +564,16 @@ namespace AppDelicare.Services.Implement
                 string prNumber = pr!.RequestNumber ?? pr.RequestNo ?? string.Empty;
                 var result = new PurchaseRequestConvertResultModel { PurchaseRequestId = pr.Id, RequestNumber = prNumber };
                 DateTime orderDate = request.OrderDate?.Date ?? _clock.Today;
-                var priceIds = pickedLines.Select(l => picks[l.Id].PriceId!.Value).Distinct().ToList();
+                var priceIds = allocations.Select(a => a.PriceId).Distinct().ToList();
                 var priceRows = await db.SupplierMaterial.AsNoTracking().Where(m => priceIds.Contains(m.Id)).ToDictionaryAsync(m => m.Id);
-                var supplierIds = pickedLines.Select(l => picks[l.Id].SupplierId!.Value).Distinct().ToList();
+                var supplierIds = allocations.Select(a => a.SupplierId).Distinct().ToList();
                 var supplierRows = await db.Supplier.AsNoTracking().Where(x => supplierIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
-                foreach (var bySupplier in pickedLines.GroupBy(l => picks[l.Id].SupplierId!.Value))
+                foreach (var bySupplierAlloc in allocations.GroupBy(a => a.SupplierId))
                 {
-                    var supplier = supplierRows[bySupplier.Key];
-                    bool allPreferred = bySupplier.All(l => picks[l.Id].ListCard.Any(c => c.Suggested && c.IsPreferred));
+                    var supplier = supplierRows[bySupplierAlloc.Key];
+                    var priceOf = bySupplierAlloc.GroupBy(a => a.Line.IngredientId).ToDictionary(g => g.Key, g => g.First().PriceId);
+                    var bySupplier = bySupplierAlloc.Select(a => a.Line).ToList();
+                    bool allPreferred = bySupplierAlloc.All(a => a.Preferred);
                     string number = await _documentNumberService.NextAsync(DocumentKind.PurchaseOrder, orderDate);
                     var po = new PurchaseOrder
                     {
@@ -564,7 +588,7 @@ namespace AppDelicare.Services.Implement
                     foreach (var byIngredient in bySupplier.GroupBy(l => l.IngredientId))
                     {
                         Guid ingredientId = byIngredient.Key;
-                        var offer = priceRows[picks[byIngredient.First().Id].PriceId!.Value];
+                        var offer = priceRows[priceOf[byIngredient.Key]];
                         string name = ingredients.GetValueOrDefault(ingredientId)?.Name ?? ingredientId.ToString();
                         var mine = byIngredient.ToList();
                         Guid purchaseUnit = offer.PurchaseUomId is { } pu && pu != Guid.Empty ? pu : mine[0].UnitId;
@@ -619,7 +643,13 @@ namespace AppDelicare.Services.Implement
                     // và tổng < ngưỡng Giám đốc → tự Đã duyệt; sai một điều kiện → Nháp, gửi duyệt như cũ. MOQ chỉ cảnh báo (số vẫn ≤ đề nghị).
                     bool clean = result.ListWarning.Skip(warningsBefore).All(w => w.Contains("dưới MOQ"));
                     // UI-6.18 B (D-99): tự duyệt PO tự lập khi đủ 3 điều kiện – mọi dòng NCC ưu tiên, giá không cao hơn giá ước tính lúc duyệt (= giá bảng giá hiện hành), tổng < ngưỡng GĐ.
-                    if (_rules.PurchaseOrderAutoApproveFromRequest && _rules.PurchaseOrderAutoApproveFromApprovedRequest && allPreferred && priced && clean && total > 0 && total < _rules.PurchaseOrderDirectorApprovalAmount)
+                    if (systemAuto && priced && clean && total > 0 && total < _rules.PurchaseOrderDirectorApprovalAmount)
+                    {
+                        // UI-6.51 (D-137 c): đề nghị do kế hoạch mua lập, đúng định mức → tự lập + tự duyệt PO (NCC theo quy tắc gợi ý / phần chia tỷ lệ).
+                        po.Status = PurchaseOrderStatus.Approved;
+                        po.Note = PurchasingRules.AppendNote(po.Note, PurchasePlan.PurchasePlanRules.AutoApprovedNote);
+                    }
+                    else if (_rules.PurchaseOrderAutoApproveFromRequest && _rules.PurchaseOrderAutoApproveFromApprovedRequest && allPreferred && priced && clean && total > 0 && total < _rules.PurchaseOrderDirectorApprovalAmount)
                     {
                         po.Status = PurchaseOrderStatus.Approved;
                         po.Note = PurchasingRules.AppendNote(po.Note, string.Format(ConstantHelper.Message.PurchaseOrderAutoApprovedFromRequest, prNumber,

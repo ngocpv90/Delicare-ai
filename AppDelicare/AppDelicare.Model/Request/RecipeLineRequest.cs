@@ -16,5 +16,8 @@ namespace AppDelicare.Model.Request
 		public decimal? YieldPercent { get; set; }
 		public int? SequenceNo { get; set; }
 		public string? Note { get; set; }
+		/// <summary>UI-6.51 (D-137): nhóm thay thế + % tối đa (dòng thay thế định lượng 0).</summary>
+		public string? SubstituteGroup { get; set; }
+		public decimal? MaxSharePct { get; set; }
 	}
 }

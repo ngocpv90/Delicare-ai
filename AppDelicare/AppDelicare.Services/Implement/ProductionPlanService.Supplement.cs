@@ -79,7 +79,7 @@ namespace AppDelicare.Services.Implement
                         missing.Add(dishNames.GetValueOrDefault(dishId) ?? dishId.ToString());
                         continue;
                     }
-                    recipes[dishId] = (recipe, ProductionRules.ParseSnapshot(recipe.SnapshotJson).Count != 0 ? recipe.SnapshotJson! : Newtonsoft.Json.JsonConvert.SerializeObject(snapshot));
+                    recipes[dishId] = (recipe, !snapshot.Any(l => l.Substituted) && ProductionRules.ParseSnapshot(recipe.SnapshotJson).Count != 0 ? recipe.SnapshotJson! : Newtonsoft.Json.JsonConvert.SerializeObject(snapshot));
                 }
                 bool compensation = order.Note?.Contains("[DON_BU:", StringComparison.Ordinal) == true;
                 string label = compensation ? "🔴 Đơn bù" : "🔴 Bổ sung sau chốt";

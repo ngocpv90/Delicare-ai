@@ -358,7 +358,7 @@ namespace AppDelicare.Services.Implement
                     {
                         warnings.Add(string.Format(ConstantHelper.Message.ReleaseRecipeNotLocked, dishName));
                     }
-                    recipes[dishId] = (recipe, locked && ProductionRules.ParseSnapshot(recipe.SnapshotJson).Count != 0
+                    recipes[dishId] = (recipe, locked && !snapshot.Any(l => l.Substituted) && ProductionRules.ParseSnapshot(recipe.SnapshotJson).Count != 0
                         ? recipe.SnapshotJson! : Newtonsoft.Json.JsonConvert.SerializeObject(snapshot));
                 }
                 if (missing.Count != 0)

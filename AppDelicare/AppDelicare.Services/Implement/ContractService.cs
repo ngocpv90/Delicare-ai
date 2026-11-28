@@ -344,7 +344,7 @@ namespace AppDelicare.Services.Implement
                 {
                     Id = Guid.NewGuid(), CustomerId = request.CustomerId, Name = request.Name?.Trim(), SignedDate = request.SignedDate,
                     EffectiveFrom = request.EffectiveFrom.Date, EffectiveTo = request.EffectiveTo?.Date, StartDate = request.EffectiveFrom.Date, EndDate = request.EffectiveTo?.Date,
-                    PaymentTerm = request.PaymentTerm, ContractValue = request.ContractValue, Note = request.Note, Status = ContractStatus.Draft,
+                    PaymentTerm = request.PaymentTerm, ContractValue = request.ContractValue, Note = request.Note, Status = ContractStatus.Draft, StandardIngredientOnly = request.StandardIngredientOnly,
                     ConfigJson = ContractConfig.WithBillingBasis(null, request.BillingBasis),
                 };
                 await AssignNumberAsync(contract, request.ContractNumber);

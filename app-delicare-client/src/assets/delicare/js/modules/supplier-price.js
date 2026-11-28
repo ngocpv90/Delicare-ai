@@ -145,11 +145,11 @@
         h += `<tr class="od-grp" data-smg="${esc(k)}"><td colspan="${3 + sups.length}"><span class="od-caret">${closed ? '▸' : '▾'}</span> <b>${esc(k)}</b> <span class="small muted">· ${list.length} nguyên liệu</span></td></tr>`;
         if (closed) return;
         list.forEach(r => {
-          h += `<tr><td><input type="checkbox" data-smsel="${esc(r.ingredientId)}" ${sm.sel.has(r.ingredientId) ? 'checked' : ''}></td><td><b>${esc(r.ingredientName || '')}</b><div class="small muted">${r.listFlag.map(fl => esc((FLAGS.find(x => x[0] === fl) || [])[1] || '')).join(' · ')}</div></td><td>${esc(r.baseUnitName || '')}</td>${sups.map(s => {
+          h += `<tr><td><input type="checkbox" data-smsel="${esc(r.ingredientId)}" ${sm.sel.has(r.ingredientId) ? 'checked' : ''}></td><td><b>${esc(r.ingredientName || '')}</b><div class="small muted">${r.listFlag.map(fl => esc((FLAGS.find(x => x[0] === fl) || [])[1] || '')).join(' · ')}</div></td><td>${esc(r.baseUnitName || '')}${r.listCell.length > 1 && can('edit') ? `<div><a href="javascript:void 0" class="small" data-smalloc="${esc(r.ingredientId)}">${r.listCell.some(c => c.allocationPct > 0) ? 'Chia ' + r.listCell.filter(c => c.allocationPct > 0).map(c => U.num(c.allocationPct, 0)).join('/') + '%' : 'Tỷ lệ chia NCC…'}</a></div>` : ''}</td>${sups.map(s => {
             const c = r.listCell.find(x => x.supplierId === s.supplierId);
             if (!c) return `<td class="num">${can('add') ? `<button class="btn xs" data-smadd="${esc(r.ingredientId)}|${esc(s.supplierId)}">+ Thêm giá</button>` : ''}</td>`;
             const tip = `${U.money(c.unitPrice)} / ${c.unitName || ''} · tối thiểu ${nil(c.minimumOrderQty) ? '–' : U.num(c.minimumOrderQty)} · giao ${nil(c.leadTimeDays) ? '–' : c.leadTimeDays + ' ngày'} · ${c.deliveryDays || ''} · ${U.date(c.effectiveFrom)} – ${c.effectiveTo ? U.date(c.effectiveTo) : '…'}${nil(c.changePct) ? '' : ' · ' + (c.changePct > 0 ? '+' : '') + U.num(c.changePct, 1) + '% lần trước'}`;
-            return `<td class="num sp-cell ${c.isPreferred ? 'pref' : ''}" title="${esc(tip)}" data-smc="${esc(c.priceId)}">${c.isCheapest ? '<i class="sp-dot"></i>' : ''}${c.noConversion ? '<span class="bad small">chưa quy đổi</span>' : U.money(c.pricePerBase)}${!nil(c.changePct) && c.changePct >= pct() ? ' <span class="bad small">↑' + U.num(c.changePct, 0) + '%</span>' : ''}${!c.isPreferred && can('edit') ? ` <button class="btn xs sp-pref" data-smp="${esc(c.priceId)}" title="Đặt ưu tiên">★</button>` : ''}</td>`;
+            return `<td class="num sp-cell ${c.isPreferred ? 'pref' : ''}" title="${esc(tip)}" data-smc="${esc(c.priceId)}">${c.isCheapest ? '<i class="sp-dot"></i>' : ''}${c.allocationPct > 0 ? `<span class="tag blue small" title="Tỷ lệ chia đơn">${U.num(c.allocationPct, 0)}%</span> ` : ''}${c.noConversion ? '<span class="bad small">chưa quy đổi</span>' : U.money(c.pricePerBase)}${!nil(c.changePct) && c.changePct >= pct() ? ' <span class="bad small">↑' + U.num(c.changePct, 0) + '%</span>' : ''}${!c.isPreferred && can('edit') ? ` <button class="btn xs sp-pref" data-smp="${esc(c.priceId)}" title="Đặt ưu tiên">★</button>` : ''}</td>`;
           }).join('')}</tr>`;
         });
       });
@@ -158,6 +158,27 @@
       el.querySelectorAll('[data-smg]').forEach(r => r.onclick = () => { const k = r.dataset.smg; if (sm.closed.has(k)) sm.closed.delete(k); else sm.closed.add(k); draw(); });
       const open = id => Store.query('SupplierMaterial/GetById', { id }).then(x => { if (!x.ok || !x.data) return; const row = {}; Object.keys(x.data).forEach(k2 => { row[k2.charAt(0).toUpperCase() + k2.slice(1)] = x.data[k2]; }); priceForm(row, { onSave: () => { sm.data = null; APP.refresh(); } }); });
       el.querySelectorAll('[data-smc]').forEach(td => td.onclick = e => { if (e.target.closest('button')) return; open(td.dataset.smc); });
+      // UI-6.51 (D-137 g, GAP-PUR-SPLIT): tỷ lệ chia đơn cho nhiều NCC của một nguyên liệu – tổng các NCC có tỷ lệ = 100; trống = chọn 1 NCC như cũ.
+      el.querySelectorAll('[data-smalloc]').forEach(a2 => a2.onclick = () => {
+        const r = d.listRow.find(x => x.ingredientId === a2.dataset.smalloc); if (!r) return;
+        const nm = id => (sups.find(s => s.supplierId === id) || {}).supplierName || '';
+        const ot = id => { const s = sups.find(x => x.supplierId === id) || {}; return nil(s.onTimePct) ? 'chưa có lịch sử giao' : U.num(s.onTimePct, 0) + '% đúng hẹn 90 ngày'; };
+        UI.modal({
+          title: 'Tỷ lệ chia NCC – ' + esc(r.ingredientName || ''), size: 'sm',
+          sub: 'Mỗi lần đặt chia số lượng theo tỷ lệ, bù lệch lũy kế tháng (tối đa ±15 điểm); phần dưới mức tối thiểu dồn NCC khác. Để trống tất cả = chọn 1 NCC theo quy tắc gợi ý.',
+          body: r.listCell.map(c => `<div class="field"><label>${esc(nm(c.supplierId))} <span class="small muted">· ${U.money(c.pricePerBase)} · ${esc(ot(c.supplierId))}</span></label><input class="input" type="number" min="0" max="100" step="5" data-al="${esc(c.priceId)}" value="${nil(c.allocationPct) ? '' : U.num(c.allocationPct, 0)}" placeholder="không chia"></div>`).join('') + '<div class="small" id="alSum"></div>',
+          foot: '<button class="btn" data-close>Hủy</button><button class="btn primary" id="alSave">Lưu</button>',
+          onMount: (m, cl) => {
+            const sum = () => { let t = 0; m.querySelectorAll('[data-al]').forEach(i => { t += Number(i.value) || 0; }); const box = m.querySelector('#alSum'); box.innerHTML = t === 0 ? '<span class="muted">Không chia – chọn 1 NCC</span>' : t === 100 ? '<span class="up">Tổng 100% ✓</span>' : `<span class="bad">Tổng ${U.num(t, 2)}% – phải bằng 100%</span>`; return t; };
+            m.querySelectorAll('[data-al]').forEach(i => i.oninput = sum); sum();
+            m.querySelector('#alSave').onclick = () => {
+              const t = sum(); if (t !== 0 && t !== 100) return UI.toast('Tổng tỷ lệ chia phải bằng 100%', 'warn');
+              const pct = {}; m.querySelectorAll('[data-al]').forEach(i => { pct[i.dataset.al] = i.value === '' ? null : Number(i.value); });
+              Store.act('SupplierMaterial/SaveAllocation', { json: { ingredientId: r.ingredientId, pct }, tables: ['SupplierMaterial'] }).then(x => { if (x.ok) { cl(); UI.toast(esc((x.res && x.res.responseMessage) || 'Đã lưu'), 'ok'); sm.data = null; APP.refresh(); } });
+            };
+          },
+        });
+      });
       el.querySelectorAll('[data-smadd]').forEach(b => b.onclick = () => { const [ing, sup] = b.dataset.smadd.split('|'); priceForm(null, { defaults: { IngredientId: ing, SupplierId: sup }, onSave: () => { sm.data = null; APP.refresh(); } }); });
       el.querySelectorAll('[data-smp]').forEach(b => b.onclick = e => { e.stopPropagation(); Store.query('SupplierMaterial/GetById', { id: b.dataset.smp }).then(x => { const o = x.data || {}; UI.confirm('Đặt NCC này là ưu tiên cho nguyên liệu? NCC ưu tiên hiện tại (nếu có) sẽ bị bỏ ưu tiên.', () => Store.act('SupplierMaterial/Update', { method: 'PUT', form: { Id: o.id, SupplierId: o.supplierId, IngredientId: o.ingredientId, UnitPrice: o.unitPrice, PurchaseUomId: o.purchaseUomId, EffectiveFrom: day(o.effectiveFrom), EffectiveTo: day(o.effectiveTo) || null, MinimumOrderQuantity: o.minimumOrderQuantity, LeadTimeDays: o.leadTimeDays, DeliveryFrequency: o.deliveryFrequency, SupplierMaterialCode: o.supplierMaterialCode, QualityRequirement: o.qualityRequirement, IsPreferred: true, Status: o.status || 'Active' }, tables: ['SupplierMaterial'] }).then(y => { if (y.ok) { UI.toast(esc((y.res && y.res.responseMessage) || 'Đã đặt ưu tiên'), 'ok'); sm.data = null; APP.refresh(); } }), { ok: 'Đặt ưu tiên' }); }); });
       el.querySelectorAll('[data-smsel]').forEach(c => c.onchange = () => { if (c.checked) sm.sel.add(c.dataset.smsel); else sm.sel.delete(c.dataset.smsel); bulk(); });

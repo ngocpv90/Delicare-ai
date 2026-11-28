@@ -39,53 +39,22 @@
     return tbl;
   }
 
-  // ---------- BIZ-1.3 (D-77 c): kế hoạch mua theo ngày cần hàng – D+1 → D+7, nguồn đơn chốt → đăng ký → dự báo, trừ tồn lũy kế ----------
-  // MaterialRequirement/GetHorizon chỉ tính khi xem (không lưu); "Lập đề nghị mua cho phần phải đặt" → CreateHorizonPurchaseRequest (dòng theo ngày cần hàng).
-  const hz = { data: null, busy: false };
-  const HZ_TAG = { LATE: 'red', TODAY: 'orange', UPCOMING: 'blue', NONE: 'green' };
-  const HZ_SRC = { LOCKED: 'green', CONFIRMED: 'blue', FORECAST: 'purple', MIXED: 'orange', NONE: '' };
-  function horizonPanel(el) {
-    if (!el) return;
-    hz.host = el;   // màn vẽ lại nhiều lần khi đang tải – luôn vẽ vào khung mới nhất
-    const draw = () => {
-      const host = hz.host;
-      if (!host || !host.isConnected) return;
-      const x = hz.data;
-      if (!x) { host.innerHTML = `<div class="card panel mb"><div class="panel-title">Kế hoạch mua 7 ngày tới</div><div class="muted small mt">Đang tính…</div></div>`; return; }
-      if (!x.ok) { host.innerHTML = `<div class="notice gap">${I('alert')}<div><b>Không tính được kế hoạch mua</b>${esc(x.message || '')}</div></div>`; return; }
-      const d = x.data || {}, days = d.listDay || [], items = d.listItem || [];
-      const due = items.filter(i => ['LATE', 'TODAY'].includes(i.orderStatus) && i.totalShortage > 0);
-      const dd = v => U.date(v).slice(0, 5);
-      host.innerHTML = `<div class="card panel mb"><div class="panel-head"><div><div class="panel-title">Kế hoạch mua theo ngày cần hàng · ${dd(d.fromDate)} – ${dd(d.toDate)}</div>
-          <div class="panel-desc">Mỗi ngày lấy đơn đã chốt; chưa chốt thì đăng ký / đơn đã xác nhận; chưa có thì dự báo đã công bố. Tồn kho, hàng sắp về và đề nghị mua đang mở được trừ dồn qua các ngày. Ngày phải đặt = ngày cần − thời gian giao của NCC − 1 ngày.</div></div>
-          <div class="row-flex">${due.length ? `<button class="btn sm primary" id="hzPr">${I('plus')} Lập đề nghị mua cho phần phải đặt (${due.length})</button>` : ''}<button class="btn sm" id="hzReload">${I('reset')} Tính lại</button></div></div>
-        <div class="kpis">${UI.kpi('Phải đặt hôm nay', U.num(d.dueTodayCount || 0), 'nguyên liệu', 'clipboard', d.dueTodayCount ? 'orange' : 'green')}${UI.kpi('Đã trễ ngày đặt', U.num(d.lateCount || 0), 'nguyên liệu', 'alert', d.lateCount ? 'red' : 'green')}${UI.kpi('Nguyên liệu trong kỳ', U.num(items.length), '', 'layers', 'blue')}</div>
-        ${(d.listWarning || []).map(w => `<div class="notice warn small">${I('alert')}<div>${esc(w)}</div></div>`).join('')}
-        <div class="table-wrap"><table class="table dc-table dt"><thead><tr><th>Nguyên liệu</th>${days.map(x => `<th class="num" title="${esc((x.listWarning || []).join('\n'))}">${dd(x.date)}<span class="sub"><span class="tag ${HZ_SRC[x.source] || ''}">${esc(x.sourceName || '')}</span></span></th>`).join('')}<th class="num">Phải mua</th><th>ĐVT</th><th>Ngày phải đặt</th><th>NCC gợi ý</th></tr></thead>
-          <tbody>${items.map(i => `<tr><td><b>${esc(i.ingredientName || '')}</b><span class="sub">${esc(i.ingredientCode || '')}${i.safetyStock ? ' · tồn an toàn ' + U.num(i.safetyStock, 2) : ''}</span></td>${days.map(x => { const c = (i.listDay || []).find(y => U.day(y.date) === U.day(x.date)); return `<td class="num">${c ? U.num(c.required, 2) : '<span class="muted">–</span>'}${c && c.shortage > 0 ? `<span class="sub bad">mua ${U.num(c.shortage, 2)}</span>` : ''}</td>`; }).join('')}<td class="num">${i.totalShortage > 0 ? `<b class="bad">${U.num(i.totalShortage, 2)}</b>` : '<span class="up">0</span>'}</td><td>${esc(i.unitName || '')}</td><td><span class="tag ${HZ_TAG[i.orderStatus] || ''}">${esc(i.orderStatusName || '')}</span></td><td>${i.supplierName ? esc(i.supplierName) + (i.leadTimeDays ? `<span class="sub">giao ${i.leadTimeDays} ngày</span>` : '') : '<span class="muted">Chưa có NCC</span>'}</td></tr>`).join('') || `<tr><td colspan="${days.length + 5}" class="empty">Không có nhu cầu nguyên liệu trong kỳ</td></tr>`}</tbody></table></div></div>`;
-      host.querySelector('#hzReload').onclick = () => load(true);
-      const b = host.querySelector('#hzPr');
-      if (b) b.onclick = () => UI.confirm(`Lập đề nghị mua <b>Nháp</b> cho ${due.length} nguyên liệu phải đặt tới hôm nay? Mỗi dòng ghi ngày cần hàng; gửi duyệt ở màn Đề nghị mua.`, () =>
-        Store.act('MaterialRequirement/CreateHorizonPurchaseRequest', { json: { onlyDue: true, organizationUnitId: Store.ctx.branch || null }, tables: PUR_TABLES }).then(r => {
-          if (!r.ok) return; UI.toast(okText(r, 'Đã lập đề nghị mua nháp'), 'ok'); hz.data = { ok: true, data: r.data }; draw();
-        }), { ok: 'Lập đề nghị mua' });
-    };
-    const load = force => {
-      if (hz.busy) return; if (hz.data && !force) return draw();
-      hz.busy = true; if (force) { hz.data = null; draw(); }
-      Store.query('MaterialRequirement/GetHorizon', { organizationUnitId: Store.ctx.branch }).then(x => { hz.busy = false; hz.data = x; draw(); });
-    };
-    draw(); load(false);
-  }
-
   // ---------- Nhu cầu nguyên liệu: kết quả do máy chủ tính theo ngày sản xuất ----------
-  const rq = { date: null, data: {}, busy: {} };
+  // UI-6.51 (D-137 h): tab mặc định "Kế hoạch mua" (modules/purchase-plan.js – thay khối Kế hoạch mua 7 ngày); tab "Tính nhu cầu theo ngày" giữ MRP chính thức.
+  const rq = { date: null, data: {}, busy: {}, tab: 'plan' };
+  const reqTabs = () => `<div class="tabs mb" id="rqTabs"><button class="tab ${rq.tab === 'plan' ? 'active' : ''}" data-tab="plan">Kế hoạch mua 7 ngày</button><button class="tab ${rq.tab === 'day' ? 'active' : ''}" data-tab="day">Tính nhu cầu theo ngày sản xuất</button></div>`;
+  const wireReqTabs = el => el.querySelectorAll('#rqTabs [data-tab]').forEach(b => b.onclick = () => { rq.tab = b.dataset.tab; APP.refresh(); });
   function reqLive(el, f) {
+    if (rq.tab === 'plan' && APP.purchasePlan) {
+      el.innerHTML = reqTabs() + '<div id="ppBody"></div>';
+      wireReqTabs(el);
+      return APP.purchasePlan(el.querySelector('#ppBody'));
+    }
     if (!rq.date) rq.date = U.addDays(Store.ctx.date, 1);
     const date = rq.date;
     el.innerHTML = APP.header(f, `<input type="date" class="input" id="rqDate" value="${date}" style="width:auto"><button class="btn primary" id="rqCalc">${I('calc')} Tính nhu cầu</button><button class="btn" id="rqTop" style="display:none">${I('plus')} Tính bổ sung</button><button class="btn" id="rqPrint" style="display:none">${I('export')} In phiếu trước sản xuất</button>`,
-      { noNote: true, sub: 'Chọn ngày sản xuất rồi bấm Tính nhu cầu. Hệ thống lấy các đơn đã chốt của ngày, tính nguyên liệu theo công thức, so với tồn kho và tự lập đề nghị mua nháp cho phần thiếu.' }) + `<div id="hzBody"></div><div id="rqBody"><div class="card panel empty">${I('calc')}<h2 class="mt">Đang tải…</h2></div></div>`;
-    horizonPanel(el.querySelector('#hzBody'));
+      { noNote: true, sub: 'Chọn ngày sản xuất rồi bấm Tính nhu cầu. Hệ thống lấy các đơn đã chốt của ngày, tính nguyên liệu theo công thức, so với tồn kho (trừ đề nghị mua đang mở của kế hoạch mua) và lập đề nghị mua nháp cho phần còn thiếu.' }) + reqTabs() + `<div id="rqBody"><div class="card panel empty">${I('calc')}<h2 class="mt">Đang tải…</h2></div></div>`;
+    wireReqTabs(el);
     const body = el.querySelector('#rqBody');
     const draw = x => {
       if (!body.isConnected) return;

@@ -812,7 +812,7 @@
           <div class="field"><label>Hiệu lực từ <span class="req">*</span></label><input type="date" class="input" id="ctFrom" value="${Store.ctx.date}"></div>
           <div class="field"><label>Hiệu lực đến</label><input type="date" class="input" id="ctTo"></div>
           <div class="field"><label>Điều khoản thanh toán</label><input class="input" id="ctPay" maxlength="250"></div>
-          <div class="field"><label>Cách tính tiền đối soát</label>${billingSelect('ctBill', '')}</div>
+          <div class="field"><label>Cách tính tiền đối soát</label>${billingSelect('ctBill', '')}</div><div class="field"><label><input type="checkbox" id="ctStd"> Khách chỉ dùng nguyên liệu chuẩn</label><span class="small muted">Phần suất của khách không dùng nguyên liệu thay thế</span></div>
           <div class="field"><label>Giá trị hợp đồng</label><input type="number" min="0" step="any" class="input" id="ctVal"></div>
           <div class="field full"><label>Ghi chú</label><textarea class="input" rows="2" id="ctNote"></textarea></div></div>
         <div class="spread mt"><h3 style="margin:0">Loại suất & đơn giá <span class="req">*</span></h3><button class="btn xs" id="ctAdd">${I('plus')} Thêm loại suất</button></div>
@@ -837,7 +837,7 @@
           if (new Set(meals.map(x => x.mealType.toLowerCase())).size !== meals.length) return UI.toast('Mỗi loại suất chỉ được xuất hiện một lần', 'err');
           if (meals.some(x => x.unitPrice !== null && !(x.unitPrice > 0))) return UI.toast('Đơn giá phải lớn hơn 0', 'err');
           // JSON vì có danh sách loại suất lồng trong hợp đồng.
-          Store.act('Contract/Create', { json: { customerId: v('#ctCus'), name: v('#ctName'), signedDate: v('#ctSigned') || null, effectiveFrom: v('#ctFrom'), effectiveTo: v('#ctTo') || null, paymentTerm: v('#ctPay') || null, billingBasis: v('#ctBill') || null, contractValue: v('#ctVal') === '' ? null : Number(v('#ctVal')), note: v('#ctNote') || null, listMeal: meals }, tables: ['Contract', 'ContractMeal'] })
+          Store.act('Contract/Create', { json: { customerId: v('#ctCus'), name: v('#ctName'), signedDate: v('#ctSigned') || null, effectiveFrom: v('#ctFrom'), effectiveTo: v('#ctTo') || null, paymentTerm: v('#ctPay') || null, billingBasis: v('#ctBill') || null, standardIngredientOnly: !!(m.querySelector('#ctStd') || {}).checked, contractValue: v('#ctVal') === '' ? null : Number(v('#ctVal')), note: v('#ctNote') || null, listMeal: meals }, tables: ['Contract', 'ContractMeal'] })
             .then(r => { if (!r.ok) return; bust(); close(); const ct = r.data && r.data.contract; UI.toast('Đã tạo hợp đồng ' + esc(ct ? ct.contractNumber || '' : '') + ' (Nháp)', 'ok'); APP.refresh(); });
         };
       }

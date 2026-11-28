@@ -30,5 +30,7 @@ namespace AppDelicare.Model.Entity
         public decimal? ContractValue { get; set; }
         /// <summary>D-78 (2) – GAP-BIZ-01: cấu hình theo hợp đồng (JSON), vd. {"billingBasis":"RECEIVED"} – migration 20261123_01.</summary>
         public string? ConfigJson { get; set; }
+        /// <summary>UI-6.51 (D-137, GAP-PUR-STD): khách chỉ dùng nguyên liệu chuẩn – phần suất của khách không bao giờ thay thế. Migration 20261128_01.</summary>
+        public bool StandardIngredientOnly { get; set; }
     }
 }

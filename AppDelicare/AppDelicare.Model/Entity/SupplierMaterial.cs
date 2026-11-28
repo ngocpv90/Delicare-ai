@@ -32,5 +32,8 @@ namespace AppDelicare.Model.Entity
         [Column(TypeName = "decimal(18,4)")]
         public decimal? MinimumOrderQuantity { get; set; }
         public bool IsPreferred { get; set; }
+        /// <summary>UI-6.51 (D-137, GAP-PUR-SPLIT): tỷ lệ chia đơn % cho NCC này; tổng các NCC có tỷ lệ của một nguyên liệu = 100; trống = chọn 1 NCC như cũ. Migration 20261128_01.</summary>
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? AllocationPct { get; set; }
     }
 }

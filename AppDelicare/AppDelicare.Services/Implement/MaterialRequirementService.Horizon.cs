@@ -30,6 +30,8 @@ namespace AppDelicare.Services.Implement
         {
             public MaterialHorizonModel Model { get; } = new();
             public Dictionary<Guid, MaterialHorizonItemModel> Items { get; } = [];
+            /// <summary>UI-6.51: kết quả tính từng ngày (trang chi tiết ô kế hoạch mua).</summary>
+            public Dictionary<DateTime, Computation> Days { get; } = [];
         }
 
         public async Task<IResult<MaterialHorizonModel>> GetHorizon(MaterialHorizonRequest request)
@@ -104,7 +106,25 @@ namespace AppDelicare.Services.Implement
             }
         }
 
-        private async Task<(HorizonRun? Run, string? Error)> HorizonAsync(MaterialHorizonRequest request)
+        public async Task<(MaterialHorizonModel? Model, string? Error)> PlanHorizonAsync(MaterialHorizonRequest request, IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null, DateTime? detailDate = null)
+        {
+            var (run, error) = await HorizonAsync(request, excludePurchaseRequestIds);
+            if (run == null)
+            {
+                return (null, error);
+            }
+            if (detailDate is { } dd && run.Days.TryGetValue(dd.Date, out var c))
+            {
+                run.Model.ListDishUse = [.. c.DishUse.GroupBy(u => (u.IngredientId, u.DishId)).Select(g => new MaterialHorizonDishUseModel
+                {
+                    Date = dd.Date, IngredientId = g.Key.IngredientId, DishId = g.Key.DishId, DishName = c.Dishes.FirstOrDefault(x => x.DishId == g.Key.DishId)?.DishName,
+                    Portions = Round4(g.Max(x => x.Portions)), Gross = Round4(g.Sum(x => x.Gross)),
+                })];
+            }
+            return (run.Model, null);
+        }
+
+        private async Task<(HorizonRun? Run, string? Error)> HorizonAsync(MaterialHorizonRequest request, IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null)
         {
             int days = request.Days ?? _rules.PurchaseHorizonDays;
             if (days is < 1 or > 31)
@@ -123,26 +143,21 @@ namespace AppDelicare.Services.Implement
             m.ToDate = to;
             m.Today = today;
 
-            // Đề nghị mua đang mở (chưa lập PO, chưa hủy / từ chối): coi như hàng sẽ về đúng ngày cần – tránh đề nghị trùng.
-            var openStatuses = new[] { PurchaseRequestStatus.Draft, PurchaseRequestStatus.PendingApproval, PurchaseRequestStatus.Approved };
-            var openPr = await (from l in db.PurchaseRequestLine.AsNoTracking()
-                                join p in db.PurchaseRequest.AsNoTracking() on l.PurchaseRequestId equals p.Id
-                                where !l.IsDeleted && !p.IsDeleted && p.Status != null && openStatuses.Contains(p.Status) && l.Quantity > 0
-                                select new { l.IngredientId, l.Quantity, Unit = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, Date = l.RequiredDate ?? p.RequiredDate ?? p.RequestDate })
-                .ToListAsync();
+            // Đề nghị mua đang mở (chưa lập PO, chưa hủy / từ chối): coi như hàng sẽ về đúng ngày cần – tránh đề nghị trùng (UI-6.51: bỏ dòng đã lên PO – PO tính ở hàng sắp về).
+            var openPr = await OpenRequestLinesAsync(excludePurchaseRequestIds);
 
             var cumRequired = new Dictionary<Guid, decimal>();
             var maxShort = new Dictionary<Guid, decimal>();
             var seen = new Dictionary<Guid, Guid>();
             for (DateTime d = from; d <= to; d = d.AddDays(1))
             {
-                var (lines, labels, dayModel) = await HorizonDemandAsync(db, d);
+                var (lines, labels, customers, dayModel) = await HorizonDemandAsync(db, d);
                 m.ListDay.Add(dayModel);
                 if (lines.Count == 0 && seen.Count == 0)
                 {
                     continue;
                 }
-                var (c, error) = await ComputeAsync(d, request.OrganizationUnitId, request.WarehouseId, seen, null, (lines, labels));
+                var (c, error) = await ComputeAsync(d, request.OrganizationUnitId, request.WarehouseId, seen, null, (lines, labels), customers);
                 if (c == null)
                 {
                     if (error != null)
@@ -151,6 +166,7 @@ namespace AppDelicare.Services.Implement
                     }
                     continue;
                 }
+                run.Days[d] = c;
                 dayModel.ListWarning.AddRange(c.Warnings.Distinct());
                 foreach (var item in c.Items.Values)
                 {
@@ -187,6 +203,26 @@ namespace AppDelicare.Services.Implement
                     {
                         Date = d, Required = Round4(item.Required), Shortage = inc,
                         OrderByDate = inc > 0 ? d.AddDays(-lead - Math.Max(0, _rules.PurchaseOrderLeadBufferDays)) : null,
+                        CumRequired = Round4(cum), Available = Round4(item.Available), Incoming = Round4(item.Incoming), Requested = Round4(requested), SafetyStock = Round4(item.Safety),
+                        LeadTimeDays = item.Best?.LeadTimeDays,
+                    });
+                }
+                foreach (var ((std, sub), dec) in c.Substitutions)
+                {
+                    var uses = c.SubstitutionUses.Where(u => u.StdIngredientId == std && u.SubIngredientId == sub).ToList();
+                    decimal moved = uses.Sum(u => u.SubGross) * (1m - (dec.SubWastePct ?? 0m) / 100m); // kg dùng được đã thay
+                    m.ListSubstitution.Add(new MaterialHorizonSubstitutionModel
+                    {
+                        Date = d, Group = dec.Group, StdIngredientId = std, StdIngredientName = c.Ingredients.GetValueOrDefault(std)?.Name, SubIngredientId = sub,
+                        SubIngredientName = c.Ingredients.GetValueOrDefault(sub)?.Name, SharePct = dec.SharePct, MaxSharePct = dec.MaxSharePct, StdUnitPrice = dec.StdUnitPrice,
+                        SubUnitPrice = dec.SubUnitPrice, StdUsablePrice = dec.StdUsablePrice, SubUsablePrice = dec.SubUsablePrice, StdWastePct = dec.StdWastePct, SubWastePct = dec.SubWastePct,
+                        SavingPct = dec.SavingPct, StdSupplierName = dec.StdSupplierName, SubSupplierName = dec.SubSupplierName, Source = dec.Source, Stored = dec.Stored, Reason = dec.Reason,
+                        SavingAmount = moved > 0 && dec.StdUsablePrice is { } su && dec.SubUsablePrice is { } bu ? Math.Round(moved * (su - bu), 0) : null,
+                        ListDish = [.. uses.Select(u => new MaterialHorizonSubstitutionDishModel
+                        {
+                            DishId = u.DishId, DishName = c.Dishes.FirstOrDefault(x => x.DishId == u.DishId)?.DishName, Portions = Round4(u.Portions), StdOnlyPortions = Round4(u.StdOnlyPortions),
+                            EffectivePct = u.EffectivePct, StdGross = Round4(u.StdGross), SubGross = Round4(u.SubGross),
+                        })],
                     });
                 }
             }
@@ -213,8 +249,31 @@ namespace AppDelicare.Services.Implement
             return (run, null);
         }
 
+        /// <summary>
+        /// UI-6.51 (D-137 b): dòng đề nghị mua ĐANG MỞ (Nháp / Chờ duyệt / Đã duyệt) – chống mua trùng ở mọi chỗ tính. Đề nghị Đã duyệt đã lên PO một phần: bỏ dòng
+        /// có nguyên liệu đã nằm trên PO của đề nghị đó (PO tính ở hàng sắp về). <paramref name="excludePurchaseRequestIds"/> = đề nghị nơi gọi sẽ tự ghi đè.
+        /// </summary>
+        private async Task<List<(Guid IngredientId, decimal Quantity, Guid Unit, DateTime Date, Guid PurchaseRequestId)>> OpenRequestLinesAsync(IReadOnlyCollection<Guid>? excludePurchaseRequestIds)
+        {
+            var db = _unitOfWork.DbContext;
+            var openStatuses = new[] { PurchaseRequestStatus.Draft, PurchaseRequestStatus.PendingApproval, PurchaseRequestStatus.Approved };
+            var exclude = excludePurchaseRequestIds?.ToList() ?? [];
+            var rows = await (from l in db.PurchaseRequestLine.AsNoTracking()
+                              join p in db.PurchaseRequest.AsNoTracking() on l.PurchaseRequestId equals p.Id
+                              where !l.IsDeleted && !p.IsDeleted && p.Status != null && openStatuses.Contains(p.Status) && l.Quantity > 0 && !exclude.Contains(p.Id)
+                              select new { l.IngredientId, l.Quantity, Unit = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, Date = l.RequiredDate ?? p.RequiredDate ?? p.RequestDate, PrId = p.Id, p.Status })
+                .ToListAsync();
+            var approvedIds = rows.Where(r => r.Status == PurchaseRequestStatus.Approved).Select(r => r.PrId).Distinct().ToList();
+            var onPo = approvedIds.Count == 0 ? [] : await (from ol in db.PurchaseOrderLine.AsNoTracking()
+                                                            join o in db.PurchaseOrder.AsNoTracking() on ol.PurchaseOrderId equals o.Id
+                                                            where !ol.IsDeleted && !o.IsDeleted && o.PurchaseRequestId != null && approvedIds.Contains(o.PurchaseRequestId.Value) && o.Status != PurchaseOrderStatus.Cancelled
+                                                            select new { PrId = o.PurchaseRequestId!.Value, ol.IngredientId }).Distinct().ToListAsync();
+            var covered = onPo.Select(x => (x.PrId, x.IngredientId)).ToHashSet();
+            return [.. rows.Where(r => !covered.Contains((r.PrId, r.IngredientId))).Select(r => (r.IngredientId, r.Quantity, r.Unit, r.Date, r.PrId))];
+        }
+
         /// <summary>Nhu cầu 1 ngày: dòng đơn chốt / đăng ký, dự báo đã công bố quy ra dòng (thực đơn theo phân công) – theo (khách, điểm giao, loại suất).</summary>
-        private async Task<(List<OrderLine> Lines, Dictionary<Guid, string> Labels, MaterialHorizonDayModel Day)> HorizonDemandAsync(DatabaseContext db, DateTime d)
+        private async Task<(List<OrderLine> Lines, Dictionary<Guid, string> Labels, Dictionary<Guid, Guid> Customers, MaterialHorizonDayModel Day)> HorizonDemandAsync(DatabaseContext db, DateTime d)
         {
             var day = new MaterialHorizonDayModel { Date = d };
             DateTime next = d.AddDays(1);
@@ -226,6 +285,7 @@ namespace AppDelicare.Services.Implement
             static string Meal(string? s) => (s ?? string.Empty).Trim().ToUpperInvariant();
             var lines = new List<OrderLine>();
             var labels = orders.ToDictionary(o => o.Id, o => o.OrderNumber ?? o.OrderNo ?? o.Id.ToString("N")[..8]);
+            var customersOf = orders.ToDictionary(o => o.Id, o => o.CustomerId);
             var covered = new HashSet<(Guid, Guid?, string)>();
             foreach (var g in orderLines.GroupBy(l => (byId[l.OrderId].CustomerId, byId[l.OrderId].DeliveryLocationId, Meal(l.MealType))))
             {
@@ -265,6 +325,7 @@ namespace AppDelicare.Services.Implement
                     }
                     Guid pseudo = Guid.NewGuid();
                     labels[pseudo] = "Dự báo " + who;
+                    customersOf[pseudo] = f.CustomerId;
                     lines.Add(new OrderLine { Id = Guid.NewGuid(), OrderId = pseudo, MenuId = menu.MenuId, MealType = f.MealType, ShiftId = f.ShiftId, Quantity = qty });
                     day.ForecastMeals += qty;
                 }
@@ -275,7 +336,7 @@ namespace AppDelicare.Services.Implement
                 : day.LockedMeals > 0 ? ("LOCKED", "Đơn đã chốt")
                 : day.ConfirmedMeals > 0 ? ("CONFIRMED", "Đăng ký / đơn đã xác nhận")
                 : ("FORECAST", "Dự báo đã công bố");
-            return (lines, labels, day);
+            return (lines, labels, customersOf, day);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace AppDelicare.Services.Implement
 {
     public partial class MaterialRequirementService(IUnitOfWork unitOfWork, IDapperRepository dapperRepository, IMapper mapper
         , IAuditChangeService auditChangeService, IUomConversionService uomConversionService, IDocumentNumberService documentNumberService
-        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules) : IMaterialRequirementService
+        , IClock clock, ICurrentActor currentActor, IOptions<BusinessRulesOptions> rules, IOptions<PurchasePlanOptions> purchasePlan) : IMaterialRequirementService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IDapperRepository _dapperRepository = dapperRepository;
@@ -35,6 +35,7 @@ namespace AppDelicare.Services.Implement
         private readonly IClock _clock = clock;
         private readonly ICurrentActor _currentActor = currentActor;
         private readonly BusinessRulesOptions _rules = rules.Value;
+        private readonly PurchasePlanOptions _plan = purchasePlan.Value;
 
         public async Task<IResults<MaterialRequirementViewModel>> GetAll(MaterialRequirementSearchRequest request)
         {
@@ -232,6 +233,9 @@ namespace AppDelicare.Services.Implement
             public decimal? WastePercent { get; set; }
             /// <summary>BIZ-1.1: % hao hụt chế biến (RecipeLine.ExpectedWasteRate).</summary>
             public decimal? ExpectedWasteRate { get; set; }
+            /// <summary>UI-6.51 (D-137): nhóm thay thế / % tối đa (ảnh chụp cũ không có → không thay thế).</summary>
+            public string? SubstituteGroup { get; set; }
+            public decimal? MaxSharePct { get; set; }
         }
 
         /// <summary>Kết quả tính của 1 nguyên liệu (trước khi ghi).</summary>
@@ -240,6 +244,8 @@ namespace AppDelicare.Services.Implement
             public Guid IngredientId { get; set; }
             public Guid UnitId { get; set; }
             public decimal Required { get; set; }
+            /// <summary>UI-6.51: dòng đề nghị mua đang mở của nơi khác cùng ngày cần (đã trừ khỏi thiếu).</summary>
+            public decimal Requested { get; set; }
             public decimal Available { get; set; }
             public decimal Blocked { get; set; }
             public decimal Safety { get; set; }
@@ -269,6 +275,75 @@ namespace AppDelicare.Services.Implement
             public Dictionary<Guid, Ingredient> Ingredients { get; set; } = [];
             public Dictionary<Guid, string?> UnitNames { get; set; } = [];
             public List<string> Warnings { get; } = [];
+            /// <summary>UI-6.51: phần suất (0..1) / số suất của khách chỉ dùng chuẩn theo món.</summary>
+            public Dictionary<Guid, decimal> StdOnlyByDish { get; } = [];
+            public Dictionary<Guid, decimal> StdOnlyPortions { get; } = [];
+            /// <summary>UI-6.51: quyết định thay thế đã dùng trong lần tính (theo cặp chuẩn – thay thế) + món dùng.</summary>
+            public Dictionary<(Guid Std, Guid Sub), PurchasePlan.SubstitutionRules.Decision> Substitutions { get; } = [];
+            public List<SubstitutionUse> SubstitutionUses { get; } = [];
+            /// <summary>UI-6.51: lượng mua (đơn vị cơ sở) của từng nguyên liệu theo món – bước 1 trang chi tiết.</summary>
+            public List<(Guid IngredientId, Guid DishId, decimal Portions, decimal Gross)> DishUse { get; } = [];
+        }
+
+        /// <summary>UI-6.51: một món dùng cặp thay thế trong lần tính – cho trang chi tiết kế hoạch mua (bước 1).</summary>
+        public sealed record SubstitutionUse(Guid DishId, Guid StdIngredientId, Guid SubIngredientId, decimal Portions, decimal StdOnlyPortions, decimal EffectivePct,
+            decimal StdNetBefore, decimal StdGross, decimal SubGross, Guid UnitId);
+
+        /// <summary>
+        /// UI-6.51 (D-137 e): áp nguyên liệu thay thế cho dòng công thức của một món – quyết định đã lưu của ngày (đúng tỷ lệ đã mua) hoặc tính theo giá
+        /// (<see cref="PurchasePlan.SubstitutionRules.LiveAsync"/>); phần suất khách chỉ dùng chuẩn không thay.
+        /// </summary>
+        private async Task<List<RecipeLineInput>> SubstituteAsync(Computation c, DateTime date, Guid dishId, decimal portions, decimal servings, List<RecipeLineInput> lines)
+        {
+            var db = _unitOfWork.DbContext;
+            var input = lines.Select(l => new PurchasePlan.SubstitutionRules.Line
+            {
+                IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate,
+                SubstituteGroup = l.SubstituteGroup, MaxSharePct = l.MaxSharePct,
+            }).ToList();
+            var pairs = PurchasePlan.SubstitutionRules.Pairs(input).ToList();
+            if (pairs.Count == 0)
+            {
+                return [.. lines.Where(l => l.Quantity > 0)];
+            }
+            decimal fraction = c.StdOnlyByDish.GetValueOrDefault(dishId);
+            foreach (var (std, sub) in pairs)
+            {
+                if (!c.Substitutions.TryGetValue((std.IngredientId, sub.IngredientId), out var d))
+                {
+                    d = await PurchasePlan.SubstitutionRules.StoredAsync(db, date, std.IngredientId, sub.IngredientId)
+                        ?? await PurchasePlan.SubstitutionRules.LiveAsync(db, _uomConversionService, _rules, _plan, _clock.Today, date, std, sub);
+                    d.StdOnlyByDish = new Dictionary<Guid, decimal>(d.StdOnlyByDish);
+                    c.Substitutions[(std.IngredientId, sub.IngredientId)] = d;
+                }
+                d.StdOnlyByDish[dishId] = fraction;
+            }
+            var applied = PurchasePlan.SubstitutionRules.Apply(input, (s, b) => c.Substitutions.GetValueOrDefault((s.IngredientId, b.IngredientId)), fraction);
+            foreach (var (std, sub) in pairs)
+            {
+                var moved = applied.FirstOrDefault(l => l.Substituted && l.IngredientId == sub.IngredientId && l.SubstituteGroup == std.SubstituteGroup);
+                var d = c.Substitutions[(std.IngredientId, sub.IngredientId)];
+                decimal eff = moved == null ? 0m : PurchasePlan.SubstitutionRules.EffectivePct(d, sub.MaxSharePct, fraction);
+                var stdAfter = applied.First(l => !l.Substituted && l.IngredientId == std.IngredientId && l.SubstituteGroup == std.SubstituteGroup);
+                decimal per = servings > 0 ? portions / servings : 0m; // định lượng tinh của cả món (đơn vị dòng chuẩn)
+                c.SubstitutionUses.Add(new SubstitutionUse(dishId, std.IngredientId, sub.IngredientId, portions, c.StdOnlyPortions.GetValueOrDefault(dishId), eff, std.Quantity * per,
+                    WasteRules.Gross(stdAfter.Quantity * per, std.WastePercent, std.ExpectedWasteRate), moved == null ? 0m : WasteRules.Gross(moved.Quantity * per, moved.WastePercent, moved.ExpectedWasteRate), std.UnitId));
+            }
+            return [.. applied.Where(l => l.Quantity > 0).Select(l => new RecipeLineInput
+            {
+                IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate,
+                SubstituteGroup = l.SubstituteGroup, MaxSharePct = l.MaxSharePct,
+            })];
+        }
+
+        /// <summary>UI-6.51: lưu quyết định thay thế đã dùng (lập đề nghị / tính nhu cầu chính thức) – sản xuất áp đúng tỷ lệ đã mua. Không SaveChanges.</summary>
+        private async Task PersistSubstitutionsAsync(Computation c)
+        {
+            Guid? by = _currentActor.Actor?.UserId;
+            foreach (var d in c.Substitutions.Values)
+            {
+                await PurchasePlan.SubstitutionRules.SaveAsync(_unitOfWork.DbContext, d, PurchasePlan.SubstitutionRules.ActionDecide, by, _clock.Now);
+            }
         }
 
         private static string Day(DateTime date) => date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
@@ -375,7 +450,8 @@ namespace AppDelicare.Services.Implement
         /// <param name="demand">BIZ-1.3: nguồn nhu cầu do nơi gọi dựng sẵn (dòng đơn chốt / đăng ký / dự báo quy ra dòng – nhãn hiển thị theo OrderId).
         /// Trống = tính chính thức: chỉ đơn Đã chốt của ngày (A9).</param>
         private async Task<(Computation? Data, string? Error)> ComputeAsync(DateTime date, Guid? unitId, Guid? warehouseId, IReadOnlyDictionary<Guid, Guid>? extraIngredients = null,
-            IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null, (List<OrderLine> Lines, Dictionary<Guid, string> Labels)? demand = null)
+            IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null, (List<OrderLine> Lines, Dictionary<Guid, string> Labels)? demand = null,
+            IReadOnlyDictionary<Guid, Guid>? demandCustomers = null)
         {
             var db = _unitOfWork.DbContext;
             // 2) Đơn đã chốt × thực đơn → món × suất.
@@ -458,6 +534,19 @@ namespace AppDelicare.Services.Implement
                 portions[d.DishId] = portions.GetValueOrDefault(d.DishId) + d.Quantity;
                 c.FirstOrderLine.TryAdd(d.DishId, d.OrderLineId);
             }
+            // UI-6.51 (D-137 f): phần suất của khách chỉ dùng nguyên liệu chuẩn theo món (không bao giờ thay thế phần này).
+            IReadOnlyDictionary<Guid, Guid> customerOf = demand != null ? demandCustomers ?? new Dictionary<Guid, Guid>() : c.LockedOrders.ToDictionary(o => o.Id, o => o.CustomerId);
+            var stdOnlyCustomers = await PurchasePlan.SubstitutionRules.StandardOnlyCustomersAsync(db, customerOf.Values, date);
+            if (stdOnlyCustomers.Count != 0)
+            {
+                foreach (var g in lineDemands.GroupBy(d => d.DishId))
+                {
+                    decimal total = g.Sum(d => d.Quantity);
+                    decimal std = g.Where(d => customerOf.TryGetValue(d.OrderId, out var cu) && stdOnlyCustomers.Contains(cu)).Sum(d => d.Quantity);
+                    c.StdOnlyByDish[g.Key] = total > 0 ? Math.Round(std / total, 6) : 0m;
+                    c.StdOnlyPortions[g.Key] = std;
+                }
+            }
 
             // 3) Món × công thức → nhu cầu theo nguyên liệu (đơn vị cơ sở).
             var dishIds = portions.Keys.ToList();
@@ -510,7 +599,7 @@ namespace AppDelicare.Services.Implement
                 {
                     model.RecipeSource = "Lines";
                     lines = await db.RecipeLine.AsNoTracking().Where(l => l.RecipeId == recipe.Id && !l.IsDeleted)
-                        .Select(l => new RecipeLineInput { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate })
+                        .Select(l => new RecipeLineInput { IngredientId = l.IngredientId, Quantity = l.Quantity, UnitId = l.UnitId != Guid.Empty ? l.UnitId : l.UomId, WastePercent = l.WastePercent, ExpectedWasteRate = l.ExpectedWasteRate, SubstituteGroup = l.SubstituteGroup, MaxSharePct = l.MaxSharePct })
                         .ToListAsync();
                 }
                 if (!lockedRecipe)
@@ -519,6 +608,10 @@ namespace AppDelicare.Services.Implement
                     warnings.Add($"Cảnh báo: món {dish?.Name} – {ConstantHelper.Message.MrpRecipeNotLocked}");
                 }
                 decimal servings = recipe.StandardOutputQty is > 0 ? recipe.StandardOutputQty.Value : _rules.RecipeStandardServings;
+                if (lines.Any(l => !string.IsNullOrWhiteSpace(l.SubstituteGroup)))
+                {
+                    lines = await SubstituteAsync(c, date, dishId, qty, servings, lines);
+                }
                 inputs.AddRange(lines.Where(l => l.Quantity > 0).Select(l => (dishId, qty, servings, l)));
             }
 
@@ -554,6 +647,7 @@ namespace AppDelicare.Services.Implement
                     continue;
                 }
                 item.Required += converted.Value;
+                c.DishUse.Add((line.IngredientId, dishId, qty, converted.Value));
             }
             foreach (var (ingredientId, fallbackUnit) in extraIngredients ?? new Dictionary<Guid, Guid>())
             {
@@ -878,6 +972,21 @@ namespace AppDelicare.Services.Implement
                     return Fail(error!);
                 }
                 var items = calc.Items;
+                // UI-6.51 (D-137 b): chống mua trùng – trừ dòng đề nghị mua đang mở của ngày cần này do nơi khác lập (job kế hoạch mua, Kế hoạch mua 7 ngày),
+                // trừ đề nghị của chính kế hoạch (được ghi đè). Ngày cần trước đó đã nằm trong nhu cầu của ngày đó (tính 1 ngày) – không trừ.
+                var ownPrIds = new[] { oldPrId, purchaseRequest?.Id }.Where(x => x != null).Select(x => x!.Value).Distinct().ToList();
+                foreach (var open in (await OpenRequestLinesAsync(ownPrIds)).Where(x => x.Date.Date == date && items.ContainsKey(x.IngredientId)))
+                {
+                    var item = items[open.IngredientId];
+                    decimal requested = await calc.Converter.ConvertAsync(open.Quantity, open.Unit, item.UnitId) ?? 0m;
+                    item.Requested += requested;
+                }
+                foreach (var item in items.Values.Where(i => i.Requested > 0))
+                {
+                    item.Requested = Round4(item.Requested);
+                    item.Shortage = Round4(Math.Max(0, item.Required + item.Safety - item.Available - item.Incoming - item.Requested));
+                    item.Warnings.Add($"Đã trừ {Num(item.Requested)} đang có trong đề nghị mua khác của ngày {Day(date)}");
+                }
                 foreach (var item in items.Values)
                 {
                     await PriceAsync(calc, item, item.Shortage, date);
@@ -1014,6 +1123,7 @@ namespace AppDelicare.Services.Implement
                 {
                     _unitOfWork.ProductionPlanRepository.Update(plan);
                 }
+                await PersistSubstitutionsAsync(calc); // UI-6.51: sản xuất áp đúng tỷ lệ thay thế đã mua
                 await _unitOfWork.MaterialRequirementRepository.CommitAsync(ConstantHelper.TypeSave.Update);
                 _unitOfWork.CommitTransaction();
                 var detail = await DetailAsync(plan.Id);

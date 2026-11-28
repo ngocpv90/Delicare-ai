@@ -209,6 +209,21 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>UI-6.51 (D-137 g): lưu tỷ lệ chia đơn các NCC của một nguyên liệu (tổng = 100%).</summary>
+        [HttpPost("SaveAllocation")]
+        public async Task<IActionResult> SaveAllocation([FromBody] AppDelicare.Model.Request.Custom.SupplierMaterialAllocationRequest request)
+        {
+            try
+            {
+                return Ok(await _service.SaveAllocation(request ?? new AppDelicare.Model.Request.Custom.SupplierMaterialAllocationRequest()));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(string.Concat("[", GetType().Name, "]", " SaveAllocation: ", ex.ToString()));
+                return StatusCode(Convert.ToInt32(HttpStatusCode.InternalServerError), ConstantHelper.Message.InternalServer);
+            }
+        }
+
         [HttpGet("GetAllData")]
         public IActionResult GetAllData()
         {

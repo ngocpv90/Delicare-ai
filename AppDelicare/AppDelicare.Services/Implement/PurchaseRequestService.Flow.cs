@@ -207,6 +207,20 @@ namespace AppDelicare.Services.Implement
             }
         }
 
+        public async Task<IReadOnlyList<string>> ApprovalStepScreenIdsAsync(Guid id)
+        {
+            var db = _unitOfWork.DbContext;
+            var pr = await db.PurchaseRequest.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            if (!PurchasePlan.PurchasePlanRules.IsSystem(pr))
+            {
+                return [PurchaseRequestStatus.Level1ScreenId, PurchaseRequestStatus.Level2ScreenId];
+            }
+            var (total, _) = await PurchasePlan.PurchasePlanRules.EstimateAsync(db, _uomConversionService, _rules, _plan, _clock.Today, id);
+            return total >= _rules.PurchaseOrderDirectorApprovalAmount
+                ? [PurchaseRequestStatus.Level1ScreenId, PurchaseRequestStatus.Level2ScreenId]
+                : [PurchaseRequestStatus.Level1ScreenId];
+        }
+
         private async Task NotifyAutoPoAsync(Guid prId, string message)
         {
             try

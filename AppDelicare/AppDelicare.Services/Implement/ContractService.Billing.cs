@@ -38,5 +38,26 @@ namespace AppDelicare.Services.Implement
                 throw;
             }
         }
+
+        /// <summary>UI-6.51 (D-137 f, GAP-PUR-STD): bật / tắt "Khách chỉ dùng nguyên liệu chuẩn" (mọi trạng thái trừ Hết hạn) – kế hoạch mua không thay thế phần suất của khách này từ lần tính sau.</summary>
+        public async Task<IResult<ContractDetailModel>> UpdateStandardIngredientOnly(ContractStandardOnlyRequest request)
+        {
+            var contract = _unitOfWork.ContractRepository.GetSingle(c => c.Id == request.Id && !c.IsDeleted);
+            if (contract == null)
+            {
+                return Result<ContractDetailModel>.Fail(ConstantHelper.Message.RecordNotFoundMessage);
+            }
+            if (contract.Status is ContractStatus.Expired)
+            {
+                return Result<ContractDetailModel>.Fail(string.Format(ConstantHelper.Message.ContractEditOnlyDraft, ContractStatus.Label(contract.Status)));
+            }
+            if (contract.StandardIngredientOnly != request.StandardIngredientOnly)
+            {
+                contract.StandardIngredientOnly = request.StandardIngredientOnly;
+                _unitOfWork.ContractRepository.Update(contract);
+                await _unitOfWork.ContractRepository.CommitAsync(ConstantHelper.TypeSave.Update);
+            }
+            return Result<ContractDetailModel>.Success((await GetDetail(contract.Id)).Data!, request.StandardIngredientOnly ? "Đã bật: khách chỉ dùng nguyên liệu chuẩn" : "Đã tắt: khách được dùng nguyên liệu thay thế theo công thức");
+        }
     }
 }

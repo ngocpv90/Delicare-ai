@@ -28,6 +28,10 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<AppDelicare.Model.Model.MaterialHorizonModel>> GetHorizon(MaterialHorizonRequest request);
         /// <summary>BIZ-1.3: lập đề nghị mua Nháp cho phần phải đặt (dòng theo ngày cần hàng).</summary>
         public Task<IResult<AppDelicare.Model.Model.MaterialHorizonModel>> CreateHorizonPurchaseRequest(MaterialHorizonPurchaseRequest request);
+
+        /// <summary>UI-6.51 (D-137): kế hoạch mua 7 ngày cho job / màn Kế hoạch mua – <paramref name="excludePurchaseRequestIds"/> = đề nghị Nháp của job sẽ được ghi đè (không trừ);
+        /// <paramref name="detailDate"/> = ngày cần lấy thêm lượng mua theo món (trang chi tiết ô).</summary>
+        public Task<(AppDelicare.Model.Model.MaterialHorizonModel? Model, string? Error)> PlanHorizonAsync(MaterialHorizonRequest request, IReadOnlyCollection<Guid>? excludePurchaseRequestIds = null, DateTime? detailDate = null);
         /// <summary>T14: kết quả đã lưu theo kế hoạch sản xuất.</summary>
         public Task<IResult<MaterialRequirementResultModel>> GetDetail(Guid productionPlanId);
         /// <summary>T15: in Phiếu trước sản xuất (.xlsx) từ kết quả tính nhu cầu của kế hoạch.</summary>

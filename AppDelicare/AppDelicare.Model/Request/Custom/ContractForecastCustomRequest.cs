@@ -24,6 +24,8 @@ namespace AppDelicare.Model.Request.Custom
         /// <summary>D-78 (2): cách tính tiền đối soát của hợp đồng (RECEIVED / SERVED / ORDERED …); trống = cấu hình chung.</summary>
         [MaxLength(20)]
         public string? BillingBasis { get; set; }
+        /// <summary>UI-6.51 (D-137 f): khách chỉ dùng nguyên liệu chuẩn.</summary>
+        public bool StandardIngredientOnly { get; set; }
         [MaxLength(2000)]
         public string? Note { get; set; }
         public List<ContractMealCreateRequest> ListMeal { get; set; } = [];
@@ -74,6 +76,14 @@ namespace AppDelicare.Model.Request.Custom
         public Guid Id { get; set; }
         [MaxLength(20)]
         public string? BillingBasis { get; set; }
+    }
+
+    /// <summary>UI-6.51 (D-137 f): bật / tắt "Khách chỉ dùng nguyên liệu chuẩn" của hợp đồng (form) – áp cho kế hoạch mua từ lần tính sau.</summary>
+    public class ContractStandardOnlyRequest
+    {
+        [Required]
+        public Guid Id { get; set; }
+        public bool StandardIngredientOnly { get; set; }
     }
 
     /// <summary>BE2.2 (spec 6.5 GET forecasts/matrix, Catalog 87): ma trận khách × ngày (query).</summary>

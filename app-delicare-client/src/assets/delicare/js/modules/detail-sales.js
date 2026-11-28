@@ -278,11 +278,15 @@
           ['Điểm giao của khách', U.num(x.locationCount || 0)], ['NV phụ trách khách', esc(x.responsibleName || '')], ['Ghi chú', esc(c.note || '')]])),
         notices((d.listWarning || []).map(w => ['warn', esc(w)]).concat([d.pendingApprovalNo && ['warn', `Đang chờ duyệt <b>${esc(d.pendingApprovalNo)}</b>`]]))
         + D.block('Loại suất & đơn giá', '<div data-meals></div>')
-        + D.block('Cách tính tiền đối soát', `<div class="spread"><b>${esc(d.billingBasisName || 'Theo cấu hình chung')}</b>${canBill ? `<div class="row-flex">${APP.crmContract.billingSelect('dpBill', d.billingBasis)}<button class="btn sm" data-bill>Đổi</button></div>` : ''}</div><div class="small muted mt">Áp cho các lần đối soát sau; trống = theo cấu hình chung của hệ thống.</div>`));
+        + D.block('Cách tính tiền đối soát', `<div class="spread"><b>${esc(d.billingBasisName || 'Theo cấu hình chung')}</b>${canBill ? `<div class="row-flex">${APP.crmContract.billingSelect('dpBill', d.billingBasis)}<button class="btn sm" data-bill>Đổi</button></div>` : ''}</div><div class="small muted mt">Áp cho các lần đối soát sau; trống = theo cấu hình chung của hệ thống.</div>`)
+        + D.block('Nguyên liệu thay thế', `<div class="spread"><b>${c.standardIngredientOnly ? 'Khách chỉ dùng nguyên liệu chuẩn' : 'Theo công thức (được thay thế khi rẻ hơn)'}</b>${canBill ? `<button class="btn sm" data-std>${c.standardIngredientOnly ? 'Cho phép thay thế' : 'Chỉ dùng nguyên liệu chuẩn'}</button>` : ''}</div><div class="small muted mt">Bật thì phần suất của khách này không bao giờ dùng nguyên liệu thay thế (vd thịt mông thay thịt vai) – kế hoạch mua áp từ lần tính sau.</div>`));
       fill(box, '[data-meals]', d.listMeal || [], [{ label: 'Loại suất', html: m => UI.tag(m.mealType || '') }, { label: 'Tên suất', html: m => esc(m.mealName || '') }, { label: 'Hình thức phục vụ', html: m => esc(m.serviceType || '') },
         { label: 'Đơn giá', num: true, html: m => U.money(m.unitPrice || 0) }, { label: 'Trạng thái', html: m => UI.badge(m.status, 'ContractMeal', 'Status') }]);
       const b = box.querySelector('[data-bill]');
       if (b) b.onclick = () => APP.crmContract.setBilling(id, box.querySelector('#dpBill').value).then(r => { if (r.ok) APP.refresh(); });
+      const sb = box.querySelector('[data-std]');
+      if (sb) sb.onclick = () => Store.act('Contract/UpdateStandardIngredientOnly', { method: 'PUT', form: { Id: id, StandardIngredientOnly: !c.standardIngredientOnly }, tables: ['Contract'] })
+        .then(r => { if (r.ok) { UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); APP.refresh(); } });
       bindLinks(box);
     },
     tabs: [

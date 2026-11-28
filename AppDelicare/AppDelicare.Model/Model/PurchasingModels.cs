@@ -220,6 +220,28 @@ namespace AppDelicare.Model.Model
         public string? PurchaseRequestNumber { get; set; }
         public Guid? PurchaseRequestLineId { get; set; }
         public List<SupplierPickCardModel> ListCard { get; set; } = [];
+        /// <summary>UI-6.51 (D-137 g, GAP-PUR-SPLIT): chia số lượng cho nhiều NCC theo tỷ lệ + bù lệch lũy kế tháng; trống = 1 NCC như cũ.</summary>
+        public List<SupplierSplitModel> ListSplit { get; set; } = [];
+        /// <summary>UI-6.51: người mua đã sửa phần chia (không còn đúng định mức để tự duyệt).</summary>
+        public bool SplitManual { get; set; }
+    }
+
+    /// <summary>UI-6.51 (D-137 g): một phần chia của dòng cho một NCC.</summary>
+    public class SupplierSplitModel
+    {
+        public Guid SupplierId { get; set; }
+        public string? SupplierName { get; set; }
+        public Guid? PriceId { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public int? LeadTimeDays { get; set; }
+        public bool IsPreferred { get; set; }
+        /// <summary>Tỷ lệ mục tiêu (bảng giá), lũy kế tháng (% số lượng PO không hủy), tỷ lệ lần này.</summary>
+        public decimal TargetPct { get; set; }
+        public decimal? CumPct { get; set; }
+        public decimal Pct { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal? MinQuantity { get; set; }
+        public string? Note { get; set; }
     }
 
     public class SupplierPickCardModel

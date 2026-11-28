@@ -22,5 +22,7 @@ namespace AppDelicare.Services.Interface
         public Task<IResult<int>> ExtendMany(AppDelicare.Model.Model.SupplierPriceExtendRequest request);
         public Task<IResult<byte[]>> ExportQuoteTemplate(Guid supplierId);
         public Task<IResult<AppDelicare.Model.Model.SupplierQuoteImportModel>> ImportQuote(Guid supplierId, System.IO.Stream file, bool apply);
+        /// <summary>UI-6.51 (D-137 g, GAP-PUR-SPLIT): lưu tỷ lệ chia đơn các NCC của một nguyên liệu – tổng các NCC có tỷ lệ = 100.</summary>
+        public Task<IResult<bool>> SaveAllocation(AppDelicare.Model.Request.Custom.SupplierMaterialAllocationRequest request);
     }
 }
