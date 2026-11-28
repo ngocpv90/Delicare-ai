@@ -300,7 +300,7 @@ namespace AppDelicare.Services.Implement
                 })).ToList();
             return Result<UserGroupPreviewModel>.Success(new UserGroupPreviewModel
             {
-                UserGroupId = g.Id, UserGroupName = g.Name, ScreenCount = flat.Count(x => x.LevelShow == 2), ListMenu = BuildTree(flat),
+                UserGroupId = g.Id, UserGroupName = g.Name, ScreenCount = flat.Count(x => x.LevelShow == 2 && !MenuTabs.IsTab(x.MetaLink)), ListMenu = BuildTree(flat),
             }, ConstantHelper.Message.GetAllSuccessfully);
         }
 

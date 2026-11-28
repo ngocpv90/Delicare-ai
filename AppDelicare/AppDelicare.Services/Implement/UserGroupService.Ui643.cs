@@ -169,7 +169,7 @@ namespace AppDelicare.Services.Implement
                         Id = g.Id, Code = g.Code, Name = g.Name, Description = g.Description, GroupBlock = g.GroupBlock,
                         GroupBlockName = g.GroupBlock != null && blocks.TryGetValue(g.GroupBlock, out var b) ? b : g.GroupBlock == null ? "Khác" : g.GroupBlock,
                         Accounts = claims.Where(c => c.UserGroupId == g.Id).Select(c => c.Id).Distinct().Count(),
-                        Screens = roles.Count(r => r.UserGroupId == g.Id && r.LevelShow == 2 && !r.MetaLink!.StartsWith("#/wf-inbox?")),
+                        Screens = roles.Count(r => r.UserGroupId == g.Id && r.LevelShow == 2 && !r.MetaLink!.StartsWith("#/wf-inbox?") && !MenuTabs.IsTab(r.MetaLink)),
                         ApprovalTypes = roles.Count(r => r.UserGroupId == g.Id && r.AllowEdit && r.MetaLink!.StartsWith("#/wf-inbox?type=")), // D-31: duyệt = Truy cập + Sửa
                         LastModified = last,
                     };

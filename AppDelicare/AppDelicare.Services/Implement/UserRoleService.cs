@@ -397,7 +397,7 @@ namespace AppDelicare.Services.Implement
                 {
                     UserGroupId = group.Id,
                     UserGroupName = group.Name,
-                    ScreenCount = flat.Count(x => x.LevelShow == 2),
+                    ScreenCount = flat.Count(x => x.LevelShow == 2 && !MenuTabs.IsTab(x.MetaLink)),
                     ListMenu = BuildTree(flat),
                     ListUser = users,
                 }, ConstantHelper.Message.GetAllSuccessfully);
