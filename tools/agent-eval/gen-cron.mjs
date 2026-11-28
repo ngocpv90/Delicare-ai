@@ -18,7 +18,8 @@ if (gi > 0) {
   if (!only) { console.error('Nhóm không có: ' + process.argv[gi + 1] + ' (có: ' + Object.keys(groups).join(', ') + ')'); process.exit(2); }
   out.push('# Nhóm container: hermes-' + process.argv[gi + 1] + ' (' + only.join(', ') + ')');
 }
-for (const s of spec.items.filter(x => x.enabled && (!only || only.includes(x.agent)))) {
+// AI-25.5 (D-143): chỉ mục mode = "ai" chạy trên Hermes; mục template chạy ở AppDelicare.Job (templateJob) – 0 token.
+for (const s of spec.items.filter(x => x.enabled && (x.mode || 'template') === 'ai' && (!only || only.includes(x.agent)))) {
   const prompt = `[sched:${s.id}] ${s.title}. Dùng công cụ: ${s.tools.join(', ')}. Gắn X-Correlation-Id sched:${s.id}:<thời điểm>. Trả lời theo SOUL của ${s.agent}.`;
   out.push(`hermes cron add --name ${q('delicare-' + s.id)} --schedule ${q(s.cron)} --timezone ${q(spec.timezone)} --grace-minutes 10 --skills ${q('delicare-' + s.agent.toLowerCase())} --prompt ${q(prompt)}`);
 }

@@ -1,9 +1,10 @@
 {
   "version": 1,
   "timezone": "Asia/Ho_Chi_Minh",
-  "note": "AI-6 / AI-7 (D-133): MỘT nguồn lịch cho màn Lịch chạy (ai-schedule) và cron của Hermes (tools/agent-eval/gen-cron.mjs). Lời gọi theo lịch gửi X-Correlation-Id = sched:<id>:<yyyyMMddHHmm> để màn web biết lần chạy gần nhất. Job lõi (AppDelicare.Job) vẫn chạy đúng giờ dù Hermes tắt.",
+  "note": "AI-6 / AI-7 (D-133): MỘT nguồn lịch cho màn Lịch chạy (ai-schedule) và cron của Hermes (tools/agent-eval/gen-cron.mjs). Lời gọi theo lịch gửi X-Correlation-Id = sched:<id>:<yyyyMMddHHmm> để màn web biết lần chạy gần nhất. Job lõi (AppDelicare.Job) vẫn chạy đúng giờ dù Hermes tắt. AI-25.5 (D-143): mode = template (chạy ở AppDelicare.Job, 0 token – templateJob / replacedBy) | ai (Hermes cron – chỉ việc cần suy luận); gen-cron.mjs chỉ sinh mục ai.",
   "items": [
-    { "id": "vivi-events",
+    {
+      "id": "vivi-events",
       "agent": "VIVI",
       "cron": "*/5 * * * *",
       "at": "mỗi 5 phút",
@@ -14,9 +15,13 @@
       ],
       "coreJob": null,
       "wave": 1,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "AgentEventPump",
+      "replacedBy": "Job AgentEventPump mỗi 5 phút: cảnh báo đang mở (tồn, lô, nhiệt độ, phản ánh, ca thiếu, khay…) → tin theo mẫu cho người có quyền Thêm màn liên quan, 1 tin / cảnh báo / ngày"
     },
-    { "id": "wh-morning-stock",
+    {
+      "id": "wh-morning-stock",
       "agent": "WH",
       "cron": "30 5 * * *",
       "at": "05:30",
@@ -28,9 +33,13 @@
       ],
       "coreJob": "LotExpiry",
       "wave": 1,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "BriefingWarehouse",
+      "replacedBy": "Bản tin kho buổi sáng (ban-tin.yaml sang-kho)"
     },
-    { "id": "vivi-morning-brief",
+    {
+      "id": "vivi-morning-brief",
       "agent": "VIVI",
       "cron": "0 7 * * *",
       "at": "07:00",
@@ -44,9 +53,13 @@
       ],
       "coreJob": "MorningBrief",
       "wave": 1,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "BriefingMorningBod",
+      "replacedBy": "Bản tin sáng Ban GĐ (ban-tin.yaml sang-bgd) + ghi thư mục 10"
     },
-    { "id": "qa-morning-check",
+    {
+      "id": "qa-morning-check",
       "agent": "QA",
       "cron": "30 8 * * *",
       "at": "08:30",
@@ -58,9 +71,13 @@
       ],
       "coreJob": null,
       "wave": 1,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "AgentEventPump",
+      "replacedBy": "Cảnh báo nhiệt độ / lô tạm giữ / phản ánh quá hạn gửi ngay khi phát sinh (AgentEventPump) + Hỏi nhanh ATTP trên bot"
     },
-    { "id": "kitchen-progress",
+    {
+      "id": "kitchen-progress",
       "agent": "KITCHEN",
       "cron": "0 10 * * *",
       "at": "10:00",
@@ -71,9 +88,13 @@
       ],
       "coreJob": null,
       "wave": 1,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "BriefingKitchen",
+      "replacedBy": "Bản tin bếp đầu ca + Hỏi nhanh \"Tiến độ bếp\" trên bot"
     },
-    { "id": "vivi-daily-report",
+    {
+      "id": "vivi-daily-report",
       "agent": "VIVI",
       "cron": "0 17 * * *",
       "at": "17:00",
@@ -86,9 +107,13 @@
       ],
       "coreJob": "DailyReport",
       "wave": 1,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "BriefingEveningBod",
+      "replacedBy": "Báo cáo cuối ngày Ban GĐ (ban-tin.yaml chieu-bgd) + ghi thư mục 10"
     },
-    { "id": "know-review",
+    {
+      "id": "know-review",
       "agent": "KNOW",
       "cron": "0 22 * * 1",
       "at": "22:00 thứ Hai",
@@ -99,9 +124,11 @@
       ],
       "coreJob": "KnowledgeExport",
       "wave": 1,
-      "enabled": true
+      "enabled": true,
+      "mode": "ai"
     },
-    { "id": "cskh-remind",
+    {
+      "id": "cskh-remind",
       "agent": "CSKH",
       "cron": "0 19 * * *",
       "at": "19:00",
@@ -109,9 +136,13 @@
       "tools": [],
       "coreJob": "RemindUnconfirmedOrders",
       "wave": 4,
-      "enabled": false
+      "enabled": false,
+      "mode": "template",
+      "templateJob": "RemindUnconfirmedOrders",
+      "replacedBy": "Job lõi nhắc khách chưa chốt"
     },
-    { "id": "sales-locked",
+    {
+      "id": "sales-locked",
       "agent": "SALES",
       "cron": "5 20 * * *",
       "at": "20:05",
@@ -122,9 +153,13 @@
       ],
       "coreJob": "LockOrders",
       "wave": 2,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "BriefingOrderClose",
+      "replacedBy": "Nhắc chốt suất 19:00 (ban-tin.yaml chot-don) + tin lõi sau khóa đơn"
     },
-    { "id": "plan-shortage",
+    {
+      "id": "plan-shortage",
       "agent": "PLAN",
       "cron": "40 20 * * *",
       "at": "20:40",
@@ -136,9 +171,13 @@
       ],
       "coreJob": "Mrp",
       "wave": 3,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "Mrp",
+      "replacedBy": "Tin lõi SHORTAGE_MRP sau MRP 20:30"
     },
-    { "id": "proc-plan",
+    {
+      "id": "proc-plan",
       "agent": "PROC",
       "cron": "30 14 * * *",
       "at": "14:30",
@@ -149,9 +188,13 @@
       ],
       "coreJob": "PurchasePlan",
       "wave": 2,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "PurchasePlan",
+      "replacedBy": "Tin lõi kế hoạch mua 14:00 (tới hạn chưa có đơn / gửi NCC lỗi)"
     },
-    { "id": "qa-food-safety",
+    {
+      "id": "qa-food-safety",
       "agent": "QA",
       "cron": "*/5 * * * *",
       "at": "mỗi 5 phút",
@@ -164,9 +207,13 @@
       ],
       "coreJob": null,
       "wave": 2,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "AgentEventPump",
+      "replacedBy": "Tin sự cố ATTP lõi gửi ngay + cảnh báo nhiệt độ (AgentEventPump); giữ lô / mẻ do QA quyết trên web"
     },
-    { "id": "log-dispatch",
+    {
+      "id": "log-dispatch",
       "agent": "LOG",
       "cron": "0 6 * * *",
       "at": "06:00",
@@ -177,9 +224,13 @@
       ],
       "coreJob": null,
       "wave": 2,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "AgentEventPump",
+      "replacedBy": "Cảnh báo chuyến chưa sẵn sàng / khay sạch thiếu (AgentEventPump) + Hỏi nhanh Giao vận"
     },
-    { "id": "hr-checkin",
+    {
+      "id": "hr-checkin",
       "agent": "HR",
       "cron": "15 7 * * *",
       "at": "07:15",
@@ -190,9 +241,13 @@
       ],
       "coreJob": "MarkAbsent",
       "wave": 2,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "MarkAbsent",
+      "replacedBy": "Job lõi chấm vắng + khối \"Chưa vào ca\" của bản tin bếp + Hỏi nhanh Nhân sự"
     },
-    { "id": "pkg-overdue",
+    {
+      "id": "pkg-overdue",
       "agent": "PKG",
       "cron": "0 16 * * *",
       "at": "16:00",
@@ -203,9 +258,13 @@
       ],
       "coreJob": null,
       "wave": 3,
-      "enabled": true
+      "enabled": true,
+      "mode": "template",
+      "templateJob": "AgentEventPump",
+      "replacedBy": "Cảnh báo khay / hộp (AgentEventPump) + Hỏi nhanh Hộp khay"
     },
-    { "id": "acc-month",
+    {
+      "id": "acc-month",
       "agent": "ACC",
       "cron": "30 8 2 * *",
       "at": "08:30 ngày 2",
@@ -217,7 +276,40 @@
       ],
       "coreJob": null,
       "wave": 3,
-      "enabled": true
+      "enabled": true,
+      "mode": "ai"
+    },
+    {
+      "id": "know-doc-summary",
+      "agent": "KNOW",
+      "cron": "0 21 * * *",
+      "at": "21:00",
+      "title": "Tài liệu mới tải lên trong ngày: đọc (scan 1 lần), ghi bản chữ / tóm tắt vào kho (AI-22.7)",
+      "tools": [
+        "tai_lieu_can_xu_ly",
+        "doc_tai_lieu",
+        "ghi_ban_chu",
+        "ghi_tom_tat"
+      ],
+      "coreJob": null,
+      "wave": 1,
+      "enabled": true,
+      "mode": "ai"
+    },
+    {
+      "id": "know-sop-review",
+      "agent": "KNOW",
+      "cron": "0 22 * * 3",
+      "at": "22:00 thứ Tư",
+      "title": "Rà SOP mâu thuẫn với cấu hình / quy tắc nghiệp vụ → đề xuất sửa (Duyệt SOP)",
+      "tools": [
+        "tim_tri_thuc",
+        "ghi_nhat_ky"
+      ],
+      "coreJob": null,
+      "wave": 1,
+      "enabled": true,
+      "mode": "ai"
     }
   ]
 }

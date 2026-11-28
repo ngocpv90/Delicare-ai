@@ -64,5 +64,11 @@ namespace AppDelicare.Model.Option
 
         /// <summary>AI-25.4: bật bản tin dựng bằng mẫu (ban-tin.yaml – 5 job Briefing*) thay bản tin bot cũ MorningBrief / DailyReport / KnowledgeBrief*; false = quay về bản tin cũ.</summary>
         public bool TemplateBriefings { get; set; } = true;
+
+        /// <summary>AI-25.5 (D-143): cảnh báo mức cao do AgentEventPump gửi (mỗi 5′) thêm 2–3 dòng nhận xét AI (Vivi) – mặc định false (0 token).</summary>
+        public bool EventAiAnalysis { get; set; }
+
+        /// <summary>AI-25.5: chu kỳ AgentEventPump trong AppDelicare.Job (phút, 1–60).</summary>
+        public int EventPumpMinutes { get; set; } = 5;
     }
 }
