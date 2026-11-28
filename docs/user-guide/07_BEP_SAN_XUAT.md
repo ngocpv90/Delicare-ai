@@ -25,6 +25,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Phê duyệt › Duyệt SOP | `wf-inbox?type=kb-sop` | Duyệt | — |
 | Điều hành › Giao việc | `ai-tasks` | S | — |
 | Điều hành › Bản tin bếp đầu ca | `ai-ban-tin-bep` | X | — |
+| Điều hành › Dùng bot Trợ lý | `ai-bot-tro-ly` | X | — |
 | Bán lẻ › Đơn khách lẻ | `sal-retail-order` | X (IX) | — |
 | Thực đơn & Món ăn › Thực đơn tuần | `menu-menu` | X | — |
 | Thực đơn & Món ăn › Công thức chế biến | `menu-recipe` | X | — |

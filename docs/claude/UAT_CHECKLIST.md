@@ -637,6 +637,17 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-23 – Bot Trợ lý + quyền "Dùng bot Trợ lý" (D-142, 29/11/2026) · test: `Agent/AgentConfigAi7Tests.cs`, `Agent/AgentAssistantBotAi23Tests.cs`
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | CEO | Trung tâm Agent › tab Bot Trợ lý | Trạng thái, tên bot + QR, chỉ số hôm nay (câu hỏi, người hỏi, từ chối theo lý do) |
+| 2 | CEO | Tạm dừng bot → hỏi Trợ lý trên Telegram | Bot trả "Bot Trợ lý đang tạm dừng"; chat web vẫn trả lời; bật lại → trả lời bình thường |
+| 3 | Quản trị | Phân quyền › bỏ "Dùng bot Trợ lý" của 1 trưởng bộ phận → người đó hỏi Trợ lý | "Tài khoản chưa được cấp quyền dùng Trợ lý – liên hệ quản trị" (ngay, không khởi động lại) |
+| 4 | Người chưa liên kết | Nhắn bot Trợ lý | "Anh/chị chưa liên kết tài khoản – mở bot Vận hành để liên kết" |
+| 5 | Trưởng bộ phận | Bấm tên tài khoản | Khối Bot Trợ lý: Mở bot + QR (hoặc hướng dẫn liên kết); người không có quyền không thấy khối |
+| 6 | CEO | Nhật ký agent › Kênh = Telegram / Web / Theo lịch | Lọc đúng nguồn câu hỏi |
+
 ## AI-25 – Hỏi nhanh không dùng AI, bản tin theo mẫu, lịch template (D-143, 29/11/2026) · thử: `node tools/agent-eval/run.mjs --quick` · test: `Agent/*Ai25Tests.cs`, `Messaging/MessagingQuickAi25Tests.cs`
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |
@@ -925,7 +936,7 @@ Chuẩn bị (IT): `.env` server có `AGENT_KEY_<MÃ>` của 9 agent đang bật
 
 ## AI-ĐỢT-1 – Trợ lý AI chỉ đọc + Kho tri thức (D-133, AI-1 … AI-8)
 
-Chuẩn bị (IT): API + ToolGateway (`toolgateway`, chỉ mạng nội bộ) + Hermes (profile `hermes`) trên server; khóa `AGENT_KEY_VIVI / WH / KITCHEN / QA / KNOW`, `ANTHROPIC_API_KEY`, token bot Trợ lý ở `.env`; `Agent:AskingGroups` = nhóm đợt 1; DB: `DB/seed/Agent_seed.sql`, `D79_menu_regroup.sql`, `AI6_agent_knowledge_rights.sql` (DryRun trước).
+Chuẩn bị (IT): API + ToolGateway (`toolgateway`, chỉ mạng nội bộ) + Hermes (profile `hermes`) trên server; khóa `AGENT_KEY_VIVI / WH / KITCHEN / QA / KNOW`, `ANTHROPIC_API_KEY`, token bot Trợ lý ở `.env`; quyền "Dùng bot Trợ lý" (`ai-bot-tro-ly`) cho nhóm đợt 1 (seed mặc định Ban GĐ + trưởng bộ phận); DB: `DB/seed/Agent_seed.sql`, `D79_menu_regroup.sql`, `AI6_agent_knowledge_rights.sql` (DryRun trước).
 
 - [ ] `node tools/agent-eval/run.mjs` (5 agent) trên server: **tất cả ĐÚNG** (số khớp màn web cùng quyền).
 - [ ] uat.ceo: Trợ lý AI › Trung tâm agent – 5 / 13 agent đang bật, thẻ không báo "máy chủ chưa có khóa"; Chi tiết WH: công cụ, thư mục 40 / 45 / 80, lịch 05:30.

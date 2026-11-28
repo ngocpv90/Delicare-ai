@@ -15,7 +15,7 @@
   ['ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost'].forEach(id => def(id, id, 'Điều hành'));
 
   const TABS = [['overview', 'Tổng quan', 'ai-agents'], ['chat', 'Chat với agent', null], ['tasks', 'Giao việc', 'ai-tasks'], ['flow', 'Luồng liên phòng', 'ai-flow'],
-    ['schedule', 'Lịch chạy', 'ai-schedule'], ['log', 'Nhật ký agent', 'ai-agent-log'], ['usage', 'Sử dụng & chi phí', 'ai-cost']];
+    ['schedule', 'Lịch chạy', 'ai-schedule'], ['log', 'Nhật ký agent', 'ai-agent-log'], ['usage', 'Sử dụng & chi phí', 'ai-cost'], ['bot', 'Bot Trợ lý', 'ai-agents']]; // AI-23.2: Bot Trợ lý – người xem Tổng quan
   const SUB = {
     overview: '13 agent vận hành bếp ăn · lệnh ghi luôn có người xác nhận ở Phê duyệt',
     chat: 'Agent chỉ trả lời trong phạm vi quyền của anh / chị · đề xuất ghi chờ xác nhận ở Phê duyệt › Lệnh của agent',
@@ -23,10 +23,11 @@
     flow: 'Quy trình QT-SX-01 từ đơn hàng đến báo cáo · trạng thái từng bước tính từ dữ liệu · bước kẹt tự sinh việc cho agent phòng đó',
     schedule: 'Lịch lấy từ app-delicare-agents/schedules.json – cùng một tệp sinh cron cho Hermes',
     log: 'Mọi lời gọi công cụ của agent (kênh HERMES) – ai hỏi, kết quả, thời gian',
+    bot: 'Bot Telegram Trợ lý (Hermes) – ai được hỏi theo quyền mục "Dùng bot Trợ lý" · tạm dừng là từ chối ngay',
     usage: 'Chi phí mô hình theo token Hermes báo mỗi lượt × đơn giá · ngân sách Agent:MonthlyBudget',
   };
   const isOverview = () => { const p = Store.perm('ai-agents'); return p.access !== false && !p.tabsOnly; };
-  const tabOk = ([key, , id]) => key === 'overview' ? isOverview() : !id || Store.perm(id).access !== false;
+  const tabOk = ([key, , id]) => key === 'overview' || key === 'bot' ? isOverview() : !id || Store.perm(id).access !== false;
   const tabsFor = () => TABS.filter(tabOk);
   const go = (tab, extra) => { location.hash = '#/ai-agents?tab=' + tab + (extra ? '&' + Object.entries(extra).filter(([, v]) => v != null && v !== '').map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&') : ''); };
   APP.agentChat = (code, q) => go('chat', { agent: code || 'VIVI', q });
@@ -65,7 +66,7 @@
     const list = tabsFor();
     let tab = p.tab && list.some(t => t[0] === p.tab) ? p.tab : (list.find(t => t[0] !== 'chat') || list[0] || TABS[1])[0]; // không có Tổng quan → tab đầu có quyền (vd Giao việc), Chat sau cùng
     if (p.tab && p.tab !== tab && TABS.some(t => t[0] === p.tab)) UI.toast('Anh / chị chưa có quyền xem tab này', 'warn');
-    ({ overview, chat, tasks, flow, schedule, log, usage })[tab](el, f, p);
+    ({ overview, chat, tasks, flow, schedule, log, usage, bot })[tab](el, f, p);
   });
   // Mục cũ (AI-6 / AI-11 / AI-12) → tab của Trung tâm Agent.
   [['ai-agent-log', 'log'], ['ai-schedule', 'schedule'], ['ai-flow', 'flow'], ['ai-tasks', 'tasks'], ['ai-cost', 'usage']].forEach(([id, tab]) => APP.register(id, (el, f, p) => {
@@ -334,11 +335,12 @@
         <td class="num">${r.ms != null ? U.num(r.ms) : ''}</td><td class="num">${r.rows != null ? U.num(r.rows) : ''}</td><td class="small">${esc(r.error || '')}${r.correlationId && /^sched:/.test(r.correlationId) ? ` <span class="muted">(${esc(r.correlationId.split(':')[1])})</span>` : ''}</td></tr>`; }).join('')}</tbody></table></div>`;
   }
   function log(el, f, p) {
-    const st = { agent: p.agent || '', status: p.status || '', tool: '', from: U.addDays(TODAY(), -6), to: TODAY(), page: 1, rows: [] };
+    const st = { agent: p.agent || '', status: p.status || '', kenh: p.kenh || '', tool: '', from: U.addDays(TODAY(), -6), to: TODAY(), page: 1, rows: [] };
     const b = frame(el, f, 'log');
     b.innerHTML = `<div class="card"><div class="row-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
           <label class="field" style="min-width:140px"><span>Agent</span><select class="input" id="lgA"><option value="">Mọi agent</option>${['VIVI', 'WH', 'KITCHEN', 'QA', 'KNOW', 'SALES', 'PLAN', 'PROC', 'LOG', 'PKG', 'HR', 'ACC', 'CSKH'].map(c => `<option ${c === st.agent ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
           <label class="field" style="min-width:140px"><span>Kết quả</span><select class="input" id="lgS"><option value="">Mọi kết quả</option>${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === st.status ? 'selected' : ''}>${v[0]}</option>`).join('')}</select></label>
+          <label class="field" style="min-width:130px"><span>Kênh</span><select class="input" id="lgK"><option value="">Mọi kênh</option>${[['telegram', 'Telegram'], ['web', 'Web'], ['lich', 'Theo lịch']].map(([k, v]) => `<option value="${k}" ${k === st.kenh ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
           <label class="field"><span>Công cụ</span><input class="input" id="lgT" placeholder="vd get_ton_kho" style="max-width:170px"></label>
           <label class="field"><span>Từ ngày</span><input type="date" class="input" id="lgF" value="${esc(st.from)}"></label>
           <label class="field"><span>Đến ngày</span><input type="date" class="input" id="lgTo" value="${esc(st.to)}"></label>
@@ -346,7 +348,7 @@
         <div id="lgK" class="mt"></div><div class="card mt" id="lgB">${loading}</div>`;
     const load = more => {
       if (!more) { st.page = 1; st.rows = []; }
-      Store.query('Agent/GetActivity', { agent: st.agent, status: st.status, tool: st.tool, from: st.from, to: st.to, page: st.page, pageSize: 50 }).then(x => {
+      Store.query('Agent/GetActivity', { agent: st.agent, status: st.status, kenh: st.kenh, tool: st.tool, from: st.from, to: st.to, page: st.page, pageSize: 50 }).then(x => {
         const box = b.querySelector('#lgB'); if (!box) return;
         if (!x.ok || !x.data) { box.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được nhật ký')}</div>`; return; }
         const d = x.data; st.rows = st.rows.concat(d.listRow || []);
@@ -357,7 +359,7 @@
       });
     };
     b.querySelector('#lgGo').onclick = () => {
-      st.agent = b.querySelector('#lgA').value; st.status = b.querySelector('#lgS').value; st.tool = b.querySelector('#lgT').value.trim();
+      st.agent = b.querySelector('#lgA').value; st.status = b.querySelector('#lgS').value; st.kenh = b.querySelector('#lgK').value; // AI-23.5 st.tool = b.querySelector('#lgT').value.trim();
       st.from = b.querySelector('#lgF').value; st.to = b.querySelector('#lgTo').value; load(false);
     };
     load(false);
@@ -384,6 +386,34 @@
         + `<div class="card">${list.length ? schedTable(list) : `<div class="muted">${esc((x.res && x.res.responseMessage) || 'Chưa có lịch')}</div>`}</div>`;
       b.querySelectorAll('[data-sched]').forEach(cb => cb.onchange = () => Store.act('Agent/SaveSchedule', { form: { id: cb.dataset.sched, enabled: cb.checked } }).then(r => { if (r.ok) UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); APP.refresh(); }));
     });
+  }
+
+  // ================= Bot Trợ lý (AI-23.2, D-142) =================
+  // Trạng thái bot Telegram Trợ lý (Hermes), link + QR (máy chủ vẽ), chỉ số hôm nay; bật / tắt + tên bot – quyền Sửa Trung tâm Agent.
+  // Ai được hỏi = quyền mục "Dùng bot Trợ lý" (ai-bot-tro-ly) ở màn Phân quyền (dưới Trung tâm Agent).
+  function bot(el, f) {
+    const b = frame(el, f, 'bot');
+    const paint = () => Store.query('Agent/GetAssistantBot').then(x => {
+      if (!b.isConnected) return;
+      if (!x.ok || !x.data) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được bot Trợ lý')}</div>`; return; }
+      const d = x.data, on = d.active;
+      const tile = (l, v, n, c) => `<div class="ac-kpi"><div class="l">${esc(l)}</div><div class="v" style="${c ? 'color:' + c : ''}">${esc(v)}</div><div class="n">${esc(n || '')}</div></div>`;
+      b.innerHTML = `<div class="ac-bot">
+        <section class="card ac-bot-main"><div class="row-flex" style="gap:12px;align-items:center;flex-wrap:wrap">${robot('#2F6FC4', on, 52)}<div style="flex:1;min-width:200px"><b style="font-size:16px">${esc(d.botName || 'Delicare Trợ lý')}</b>
+            <div class="small muted">${d.username ? `@${esc(d.username)}` : 'Chưa đặt tên bot Telegram'} · token ${d.tokenConfigured ? 'đã cấu hình' : 'chưa cấu hình ở máy chủ này (giữ ở Hermes)'}</div></div>
+            ${chip(!d.configured ? 'Chưa có cấu hình' : on ? 'Đang bật' : 'Đang tạm dừng', !d.configured ? '' : on ? 'green' : 'orange')}
+            ${d.canEdit && d.configured ? `<label class="ai-switch" title="${on ? 'Tạm dừng' : 'Bật'} bot Trợ lý"><input type="checkbox" id="botOn" ${on ? 'checked' : ''}><span>${on ? 'Bật' : 'Tắt'}</span></label>` : ''}</div>
+          <div class="ac-group-g mt">${tile('Câu hỏi hôm nay', U.num(d.asksToday), `${U.num(d.askersToday)} người hỏi`)}${tile('Bị từ chối hôm nay', U.num(d.deniedNotLinked + d.deniedNoRight + d.deniedOff), `chưa liên kết ${d.deniedNotLinked} · thiếu quyền ${d.deniedNoRight} · bot tắt ${d.deniedOff}`, d.deniedNotLinked + d.deniedNoRight + d.deniedOff ? '#8A5A00' : '')}
+            ${tile('Người được dùng', U.num(d.allowedUsers), 'quyền "Dùng bot Trợ lý"')}${tile('Trả lời gần nhất', d.lastAnswerAt ? hm(d.lastAnswerAt) : '–', d.lastAnswerAt ? U.date(d.lastAnswerAt) : 'hôm nay chưa có')}</div>
+          ${d.canEdit && d.configured ? `<form class="row-flex mt" id="botName" style="gap:8px;align-items:flex-end;flex-wrap:wrap"><label class="field" style="margin:0;min-width:240px"><span>Tên bot Telegram (username)</span><input class="input" name="username" value="${esc(d.username || '')}" placeholder="vd delicare_tro_ly_bot" maxlength="64"></label><button class="btn" type="submit">Lưu tên bot</button></form>` : ''}
+          <div class="notice info mt">${I('help')}<div>Tạm dừng: mọi câu hỏi qua Telegram bị từ chối ngay ("Bot Trợ lý đang tạm dừng"); chat trên web và việc theo lịch vẫn chạy. Ai được hỏi: cấp quyền mục "Dùng bot Trợ lý" ở Quản trị › Phân quyền (dưới Trung tâm Agent) – đổi là có hiệu lực ngay.</div></div></section>
+        <aside class="card ac-bot-qr"><h3>Mở bot</h3>${d.link ? `<div class="ac-qr">${d.qrSvg || ''}</div><a class="btn primary" href="${esc(d.link)}" target="_blank" rel="noopener">Mở ${esc('@' + d.username)}</a><div class="small muted mt">Quét mã bằng điện thoại. Người dùng liên kết tài khoản 1 lần qua bot Vận hành – dùng chung cho Trợ lý.</div>` : '<div class="small muted">Đặt tên bot Telegram để hiện link + mã QR.</div>'}</aside></div>`;
+      const sw = b.querySelector('#botOn');
+      if (sw) sw.onchange = () => { const want = sw.checked; sw.checked = !want; UI.confirm(want ? 'Bật bot Trợ lý?' : 'Tạm dừng bot Trợ lý? Câu hỏi qua Telegram sẽ bị từ chối ngay.', () => Store.act('Agent/SaveAssistantBot', { json: { active: want } }).then(r => { if (r.ok) UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); paint(); }), { danger: !want, ok: want ? 'Bật' : 'Tạm dừng' }); };
+      const fm = b.querySelector('#botName');
+      if (fm) fm.onsubmit = e => { e.preventDefault(); Store.act('Agent/SaveAssistantBot', { json: { username: fm.username.value.trim() } }).then(r => { if (r.ok) { UI.toast('Đã lưu tên bot', 'ok'); paint(); } }); };
+    });
+    paint();
   }
 
   // ================= Sử dụng & chi phí (D-138 g – CEO / COO / FIN-IT) =================

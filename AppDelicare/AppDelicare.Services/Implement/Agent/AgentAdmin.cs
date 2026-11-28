@@ -96,6 +96,8 @@ namespace AppDelicare.Services.Implement.Agent
         public string? Agent { get; set; }
         public string? Status { get; set; }
         public string? Tool { get; set; }
+        /// <summary>AI-23.5 (D-142): kênh người hỏi – telegram (X-On-Behalf-Of số Telegram) · web (vé web:) · lich (không người hỏi – việc theo lịch).</summary>
+        public string? Kenh { get; set; }
         public DateTime? From { get; set; }
         public DateTime? To { get; set; }
         public int Page { get; set; } = 1;
@@ -257,6 +259,19 @@ namespace AppDelicare.Services.Implement.Agent
             if (!string.IsNullOrWhiteSpace(request.Tool))
             {
                 q = q.Where(l => l.OperationCode == request.Tool);
+            }
+            const string Ob = "\"onBehalfOf\":\""; // ErrorMessage JSON của AgentGateway.LogAsync
+            switch ((request.Kenh ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "telegram":
+                    q = q.Where(l => l.ErrorMessage != null && l.ErrorMessage.Contains(Ob) && !l.ErrorMessage.Contains(Ob + "web:") && !l.ErrorMessage.Contains(Ob + "zalo:"));
+                    break;
+                case "web":
+                    q = q.Where(l => l.ErrorMessage != null && l.ErrorMessage.Contains(Ob + "web:"));
+                    break;
+                case "lich":
+                    q = q.Where(l => l.ErrorMessage == null || !l.ErrorMessage.Contains(Ob));
+                    break;
             }
             var counts = await q.GroupBy(l => l.LogStatus).Select(g => new { g.Key, N = g.Count() }).ToListAsync();
             int size = Math.Clamp(request.PageSize, 1, 200), page = Math.Max(1, request.Page);

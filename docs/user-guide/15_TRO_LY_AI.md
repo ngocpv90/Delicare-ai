@@ -11,7 +11,7 @@ Viết theo code AI-1 … AI-21 (D-133, D-138, cập nhật 28/11/2026). Trợ l
 
 - **CEO / COO / FIN-IT**: thấy **Điều hành › Trung tâm Agent** đủ 7 tab, kể cả **chi phí AI**; **bật / tắt agent** (quyền Sửa Trung tâm Agent), bật / tắt việc theo lịch.
 - **Trưởng bộ phận / người xác nhận lệnh agent** (thủ kho, bếp, QA, mua hàng, KD trưởng, giao vận, nhân sự – quyền mục Giao việc): mục **Trung tâm Agent** chỉ có tab **Giao việc** + **Chat với agent**; thấy việc của màn mình được xem.
-- **Ban GĐ + trưởng bộ phận** (theo cấu hình `Agent:AskingGroups`): hỏi Trợ lý qua bot Telegram **Trợ lý** sau khi đã liên kết tài khoản (`20_BOT_TELEGRAM.md`).
+- **Người có quyền "Dùng bot Trợ lý"** (mặc định Ban GĐ + trưởng bộ phận; Quản trị cấp thêm ở Phân quyền › Trung tâm Agent › Dùng bot Trợ lý): hỏi Trợ lý qua bot Telegram **Trợ lý** sau khi đã liên kết tài khoản (`20_BOT_TELEGRAM.md`) – mục 4f.
 - Người chưa liên kết tài khoản nhắn bot Trợ lý: bot **không trả lời số liệu**. Người không có quyền mục nào của Trung tâm Agent: không thấy mục, mở link → "chưa được cấp quyền".
 
 ## 2. Trung tâm Agent – một màn 7 tab (AI-21, D-138)
@@ -107,6 +107,13 @@ Phần lớn câu hỏi hằng ngày (tồn kho, lô cận hạn, tiến độ b
 - **Tab Sử dụng & chi phí** có bảng **Theo nguồn**: Hỏi nhanh (0 đ) · Chat AI · Theo lịch, kèm **ước tiết kiệm** = số lượt hỏi nhanh × bình quân 1 lượt Chat AI của tháng.
 - Cấu hình (IT): `Agent:BriefingAiComment` (thêm 2–3 dòng nhận xét AI cuối bản tin – mặc định tắt), `Agent:EventAiAnalysis` (nhận xét AI cho cảnh báo mức cao – mặc định tắt), `Agent:TemplateBriefings` (tắt = quay về bản tin bot cũ), `Agent:EventPumpMinutes` (5), `Messaging:WebUrl` (địa chỉ web cho nút 🌐 Mở trên web của bot). Câu hỏi nhanh viết ở `app-delicare-agents/<MÃ>/quick.yaml`, bản tin ở `app-delicare-agents/ban-tin.yaml` (cú pháp: `app-delicare-agents/QUICK_FORMAT.md`).
 
+## 4f. Bot Trợ lý (AI-23, D-142)
+
+- **Mở bot:** bấm tên tài khoản (góc phải) › khối **Bot Trợ lý** › **Mở bot** hoặc quét mã QR. Chưa liên kết Telegram → bấm **Liên kết Telegram** (liên kết 1 lần qua bot Vận hành, dùng chung cho Vận hành, Điều hành, Trợ lý). Không có quyền → không thấy khối này.
+- **Ai được dùng:** người có quyền Xem mục **"Dùng bot Trợ lý"** – Quản trị cấp ở **Phân quyền** (mục nằm dưới Trung tâm Agent), đổi là có hiệu lực ngay, không cần khởi động lại. Không có quyền → bot trả "Tài khoản chưa được cấp quyền dùng Trợ lý – liên hệ quản trị".
+- **Tab Bot Trợ lý** (`ai-agents?tab=bot`, người xem Tổng quan – CEO, COO, FIN-IT): trạng thái bật / tạm dừng, tên bot + link + mã QR, câu hỏi hôm nay / người hỏi, số câu bị từ chối (chưa liên kết · thiếu quyền · bot tắt), số người được dùng, lần trả lời gần nhất. Người có quyền Sửa Trung tâm Agent: **bật / tạm dừng** (tạm dừng → mọi câu hỏi qua Telegram bị từ chối ngay; chat web và việc theo lịch vẫn chạy) và sửa **tên bot Telegram**. Token bot chỉ hiện "đã / chưa cấu hình".
+- **Nhật ký agent** có bộ lọc **Kênh**: Telegram / Web / Theo lịch.
+
 ## 5. Đọc nhật ký agent
 
 - Lọc theo agent, kết quả, công cụ, khoảng ngày → **Lọc**; **Xem thêm** để tải trang sau.
@@ -124,7 +131,7 @@ Phần lớn câu hỏi hằng ngày (tồn kho, lô cận hạn, tiến độ b
 
 | Hiện tượng | Nguyên nhân | Cách xử lý |
 |---|---|---|
-| Bot Trợ lý không trả lời số liệu | Tài khoản Telegram chưa liên kết / không thuộc nhóm được hỏi đợt này | Liên kết như bot Vận hành; hỏi IT danh sách nhóm `Agent:AskingGroups` |
+| Bot Trợ lý không trả lời số liệu | "chưa liên kết tài khoản" / "chưa được cấp quyền dùng Trợ lý" / "đang tạm dừng" | Liên kết như bot Vận hành; xin Quản trị cấp quyền "Dùng bot Trợ lý"; người có quyền Sửa Trung tâm Agent bật lại ở tab Bot Trợ lý |
 | Agent nói "không có quyền xem màn …" | Bạn hoặc agent chưa được cấp màn đó | Xin quyền Xem màn tương ứng |
 | Lịch chạy "chưa chạy" | Hermes chưa chạy / chưa nạp lịch | IT chạy `tools/agent-eval/gen-cron.mjs --group <nhóm>` trong từng container (app-delicare-agents/README.md) |
 | Chat web báo "chưa kết nối máy chủ Hermes" | Chưa đặt `Agent:HermesApiUrl` | IT đặt URL API server Hermes (Docker đặt sẵn `http://hermes-vivi:8642/v1`) – trong lúc chờ vẫn hỏi được qua bot Trợ lý |

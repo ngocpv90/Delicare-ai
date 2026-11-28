@@ -1060,6 +1060,15 @@ tr.bb-late td{background:#FFF5F4}
 .ac-q-card .spread { gap: 8px; } .ac-q-card b { text-align: right; }
 .ac-q-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .ac-qin { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 8px 0; } .ac-qin .input { flex: 1; min-width: 160px; }
+/* AI-23.2 / 23.3: Bot Trợ lý – tab + khối tài khoản */
+.ac-bot { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+.ac-bot-main, .ac-bot-qr { padding: 16px; } .ac-bot .ac-kpi .n { white-space: normal; overflow: visible; text-overflow: clip; }
+.ac-bot .ac-group-g { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.ac-bot-qr { display: grid; gap: 10px; justify-items: center; text-align: center; }
+.ac-qr svg { width: 200px; height: 200px; display: block; }
+.acc-bot { border: 1px solid #E4E9DC; border-radius: 12px; padding: 12px; display: grid; gap: 8px; justify-items: start; }
+.acc-bot .ac-qr svg { width: 150px; height: 150px; }
+@media (max-width: 900px) { .ac-bot { grid-template-columns: 1fr; } }
 .ac-src { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; } .ac-src span { font-size: 11px; color: #4F6B1F; background: #F4F8EC; border: 1px solid #DCE6CF; border-radius: 999px; padding: 2px 8px; }
 .ac-empty { padding: 20px 4px; }
 .ac-input { display: flex; gap: 8px; align-items: flex-end; } .ac-input textarea { flex: 1; resize: none; min-height: 42px; max-height: 160px; }

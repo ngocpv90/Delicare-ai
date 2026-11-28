@@ -64,8 +64,17 @@ namespace AppDelicare.Services.Implement.Agent
         public int Status { get; init; } = 200;
         public string? Message { get; init; }
         public object? Data { get; init; }
+        /// <summary>AI-23.4 (D-142): mã từ chối người hỏi – CHUA_LIEN_KET / KHONG_CO_QUYEN_TRO_LY / BOT_TRO_LY_TAT (Hermes trả đúng câu theo SOUL).</summary>
+        public string? Code { get; init; }
         public static AgentCallResult Ok(object? data) => new() { Status = 200, Data = data };
-        public static AgentCallResult Fail(int status, string message) => new() { Status = status, Message = message };
+        public static AgentCallResult Fail(int status, string message, string? code = null) => new() { Status = status, Message = message, Code = code };
+
+        public const string NotLinked = "CHUA_LIEN_KET";
+        public const string NoAssistantRight = "KHONG_CO_QUYEN_TRO_LY";
+        public const string AssistantOff = "BOT_TRO_LY_TAT";
+        /// <summary>AI-23.1: mục quyền "Dùng bot Trợ lý" – người hỏi qua Telegram / web phải có quyền Xem.</summary>
+        public const string AssistantScreen = "ai-bot-tro-ly";
+        public const string AssistantBot = "TRO_LY";
     }
 
     /// <summary>Kết quả kiểm danh tính agent (AI-2): agent hợp lệ hay mã lỗi + câu báo.</summary>
@@ -251,16 +260,23 @@ namespace AppDelicare.Services.Implement.Agent
                 {
                     // AI-7 (D-133, AI_AGENT_REVIEW §9): người hỏi chưa liên kết / bị chặn → KHÔNG dùng công cụ dữ liệu (không trả dữ liệu theo quyền agent).
                     Log.Warning("[AgentGateway] {Agent}: người hỏi {External} chưa liên kết DELI-CARE – từ chối", code, ext);
-                    return new Auth(AgentCallResult.Fail(403, ext.StartsWith(AgentWebTicket.Prefix, StringComparison.Ordinal) ? "Phiên chat trên web hết hạn / không hợp lệ – mở lại khung chat" : "Tài khoản Telegram chưa liên kết DELI-CARE – Trợ lý chỉ trả lời người đã liên kết"), null, channel.Id);
+                    return new Auth(AgentCallResult.Fail(403, ext.StartsWith(AgentWebTicket.Prefix, StringComparison.Ordinal) ? "Phiên chat trên web hết hạn / không hợp lệ – mở lại khung chat" : "Anh/chị chưa liên kết tài khoản – mở bot Vận hành để liên kết", AgentCallResult.NotLinked), null, channel.Id);
                 }
-                // AI-7: đợt triển khai giới hạn nhóm được hỏi (Agent:AskingGroups – mã UserGroup, cách nhau dấu phẩy; trống = mọi người đã liên kết).
-                var groups = (o.AskingGroups ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (groups.Length > 0 && !await (from uc in db.UserClaim.AsNoTracking()
-                                                  join g in db.UserGroup.AsNoTracking() on uc.UserGroupId equals g.Id
-                                                  where uc.UserId == asking && !uc.IsDeleted && !g.IsDeleted && groups.Contains(g.Code)
-                                                  select uc.Id).AnyAsync())
+                // AI-23.1 (D-142): bot Trợ lý tắt trên tab Bot Trợ lý → từ chối mọi câu hỏi qua Telegram (chat web + việc theo lịch không bị ảnh hưởng). Chưa có cấu hình bot → coi như bật.
+                if (web == null)
                 {
-                    return new Auth(AgentCallResult.Fail(403, "Trợ lý AI đợt này chỉ dành cho Ban Giám đốc và trưởng bộ phận"), null, channel.Id);
+                    string assistant = botCode ?? AgentCallResult.AssistantBot;
+                    var tro = await db.BotConfiguration.AsNoTracking().Where(b => b.BotCode == assistant && !b.IsDeleted)
+                        .Select(b => new { b.BotStatus, Channel = db.IntegrationChannel.Where(c => c.Id == b.IntegrationChannelId).Select(c => c.ChannelStatus).FirstOrDefault() }).FirstOrDefaultAsync();
+                    if (tro != null && (tro.BotStatus != "Active" || (tro.Channel != null && tro.Channel != "Active")))
+                    {
+                        return new Auth(AgentCallResult.Fail(403, "Bot Trợ lý đang tạm dừng", AgentCallResult.AssistantOff), null, channel.Id);
+                    }
+                }
+                // AI-23.1 (D-142, thay Agent:AskingGroups – D-31): người hỏi phải có quyền Xem mục "Dùng bot Trợ lý" (ma trận quyền, đổi là có hiệu lực).
+                if (!_permissions.IsAllowed(await _permissions.GetAsync(asking.Value), AgentCallResult.AssistantScreen, PermissionAction.View))
+                {
+                    return new Auth(AgentCallResult.Fail(403, "Tài khoản chưa được cấp quyền dùng Trợ lý – liên hệ quản trị", AgentCallResult.NoAssistantRight), null, channel.Id);
                 }
             }
             return new Auth(null, new AgentIdentity(code, agentUser.Value, asking, customer), channel.Id);
@@ -394,7 +410,7 @@ namespace AppDelicare.Services.Implement.Agent
                     RequestAt = started, ResponseAt = clock.Now, HttpStatus = result.Status,
                     LogStatus = result.Status == 200 ? "Succeeded" : result.Status is 401 or 403 or 429 or 503 ? "Denied" : "Failed",
                     ErrorCode = Trim(result.Status == 200 ? "AGENT:" + code : $"{result.Status}:AGENT:{code}", 100),
-                    ErrorMessage = Trim(JsonSerializer.Serialize(new { ms, rows, user = auth.Identity?.AskingUserId, onBehalfOf = request.OnBehalfOf, error = result.Message }, ReadableJson), 2000),
+                    ErrorMessage = Trim(JsonSerializer.Serialize(new { ms, rows, user = auth.Identity?.AskingUserId, onBehalfOf = request.OnBehalfOf, error = result.Message, code = result.Code }, ReadableJson), 2000), // AI-23: code = mã từ chối người hỏi
                     PayloadHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(args))),
                     CreatedDate = clock.Now, CreatedBy = actorId, IsDeleted = false,
                 });

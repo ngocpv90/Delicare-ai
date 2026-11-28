@@ -62,3 +62,28 @@ cases:
     args: { id: KHONG-CO-TAI-LIEU }
     expect:
       status: 400
+  # AI-23.4 (D-142): người hỏi qua Telegram bị từ chối – ToolGateway trả mã, Vivi trả đúng câu theo SOUL.
+  - id: vivi-chua-lien-ket
+    question: (Telegram, tài khoản chưa liên kết) Tồn kho hôm nay?
+    tool: bao_cao_dieu_hanh
+    args: {}
+    onBehalfOf: "900000001"
+    expect:
+      status: 403
+      code: CHUA_LIEN_KET
+  - id: vivi-khong-quyen-tro-ly
+    question: (Telegram, đã liên kết nhưng chưa có quyền "Dùng bot Trợ lý") Hôm nay vận hành thế nào?
+    tool: bao_cao_dieu_hanh
+    args: {}
+    onBehalfOfEnv: EVAL_TG_NO_RIGHT
+    expect:
+      status: 403
+      code: KHONG_CO_QUYEN_TRO_LY
+  - id: vivi-bot-tam-dung
+    question: (Telegram, bot Trợ lý đang tạm dừng trên tab Bot Trợ lý) Hôm nay vận hành thế nào?
+    tool: bao_cao_dieu_hanh
+    args: {}
+    onBehalfOfEnv: EVAL_TG_BOT_OFF
+    expect:
+      status: 403
+      code: BOT_TRO_LY_TAT

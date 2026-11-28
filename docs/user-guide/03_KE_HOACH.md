@@ -24,6 +24,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Điều hành › Chỉ số kinh doanh | `kpi-daily` | X |
 | Điều hành › Giá vốn & lãi gộp | `cost-meal` | X (IX) |
 | Điều hành › Bản tin kho buổi sáng | `ai-ban-tin-kho` | X |
+| Điều hành › Dùng bot Trợ lý | `ai-bot-tro-ly` | X |
 | Kinh doanh › Khách hàng | `crm-customer` | X |
 | Kinh doanh › Đăng ký suất tuần | `crm-order-week` | X |
 | Kinh doanh › Đơn hàng theo ngày | `crm-order` | X |

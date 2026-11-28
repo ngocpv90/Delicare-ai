@@ -248,7 +248,7 @@
 
   // UI-6: trang chi tiết <screen>-detail dùng quyền màn gốc – thêm qua Store.permAlias (modules/detail-page.js).
   const DASH_TABS = ['kpi-daily', 'cost-meal', 'dash-pl']; // UI-6.52 / RPT-1: mục quyền các tab của Bảng điều hành
-  const BRIEF_TABS = ['ai-ban-tin-sang', 'ai-ban-tin-chieu', 'ai-ban-tin-kho', 'ai-ban-tin-bep', 'ai-ban-tin-kd'];
+  const BRIEF_TABS = ['ai-bot-tro-ly', 'ai-ban-tin-sang', 'ai-ban-tin-chieu', 'ai-ban-tin-kho', 'ai-ban-tin-bep', 'ai-ban-tin-kd'];
   const AGENT_TABS = ['ai-tasks', 'ai-flow', 'ai-agent-log', 'ai-schedule', 'ai-cost']; // AI-21: mục quyền các tab của Trung tâm Agent
   // MENU-TAB (anh 2026-11-28): mục quyền là TAB của 1 màn (không phải menu) – màn quản trị (phân quyền, xem trước menu, cây menu) hiện lồng dưới màn cha.
   // Khớp máy chủ MenuTabs.ParentOf (đếm số màn, tìm kiếm toàn cục).

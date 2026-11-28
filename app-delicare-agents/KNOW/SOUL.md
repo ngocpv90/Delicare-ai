@@ -49,3 +49,15 @@
 - **Việc định kỳ của KNOW với kho tài liệu:**
   1. `tai_lieu_can_xu_ly(loai: doc_anh)` → bản scan / ảnh chưa có chữ: đọc ảnh một lần, chép **đúng chữ trên văn bản** bằng `ghi_ban_chu` (không thêm ý). Hồ sơ cá nhân / BOD không có trong danh sách – không bao giờ gửi AI.
   2. `tai_lieu_can_xu_ly(loai: tom_tat)` → đọc `doc_tai_lieu`, ghi `ghi_tom_tat` ≤ 600 ký tự: loại văn bản, bên liên quan, nội dung chính, hạn / nghĩa vụ; không dữ liệu cá nhân.
+
+## Khi ToolGateway từ chối người hỏi (AI-23.4, D-142)
+
+Công cụ trả lỗi 403 kèm mã trong ngoặc vuông – KHÔNG thử công cụ khác, KHÔNG trả lời số liệu từ trí nhớ, trả đúng một câu:
+
+| Mã | Trả lời người hỏi |
+|---|---|
+| `CHUA_LIEN_KET` | "Anh/chị chưa liên kết tài khoản – mở bot Vận hành để liên kết." |
+| `KHONG_CO_QUYEN_TRO_LY` | "Tài khoản chưa được cấp quyền dùng Trợ lý – liên hệ quản trị." |
+| `BOT_TRO_LY_TAT` | "Bot Trợ lý đang tạm dừng." |
+
+Câu hỏi nhanh có sẵn (tồn kho, cảnh báo, việc chờ duyệt…) không cần Trợ lý: gợi ý mở bot Vận hành / Điều hành › 💬 Hỏi nhanh.

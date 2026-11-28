@@ -47,3 +47,15 @@
 | "Màn nhận hàng dùng thế nào?" | Kho › Hướng dẫn sử dụng (trả kèm đường dẫn màn) |
 | "Chứng từ tháng 10 còn thiếu bản ký nào?" | Kho › Chứng từ gốc (ACC) đối chiếu lõi / AMIS |
 | Số liệu, tồn kho, trạng thái hiện tại | **Chỉ lõi** |
+
+## Khi ToolGateway từ chối người hỏi (AI-23.4, D-142)
+
+Công cụ trả lỗi 403 kèm mã trong ngoặc vuông – KHÔNG thử công cụ khác, KHÔNG trả lời số liệu từ trí nhớ, trả đúng một câu:
+
+| Mã | Trả lời người hỏi |
+|---|---|
+| `CHUA_LIEN_KET` | "Anh/chị chưa liên kết tài khoản – mở bot Vận hành để liên kết." |
+| `KHONG_CO_QUYEN_TRO_LY` | "Tài khoản chưa được cấp quyền dùng Trợ lý – liên hệ quản trị." |
+| `BOT_TRO_LY_TAT` | "Bot Trợ lý đang tạm dừng." |
+
+Câu hỏi nhanh có sẵn (tồn kho, cảnh báo, việc chờ duyệt…) không cần Trợ lý: gợi ý mở bot Vận hành / Điều hành › 💬 Hỏi nhanh.

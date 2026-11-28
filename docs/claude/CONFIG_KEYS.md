@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **294 khóa** trong 14 section.
+Tổng: **293 khóa** trong 14 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -37,7 +37,6 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Agent:RateLimitPerMinute` | int | 60 | Số lời gọi tối đa / phút / agent (vượt → 429). 0 = không giới hạn. | – |
 | `Agent:MaxRows` | int | 50 | Số dòng tối đa một công cụ đọc trả về (AI-3). | – |
 | `Agent:AskingBotCode` | string? | – | Mã bot Telegram nơi người hỏi liên kết (tra X-On-Behalf-Of); trống = mọi kênh Telegram. | – |
-| `Agent:AskingGroups` | string? | – | AI-7: mã nhóm (UserGroup.Code, cách nhau dấu phẩy) được hỏi Trợ lý qua bot; trống = mọi người đã liên kết. Người hỏi chưa liên kết luôn bị từ chối. | – |
 | `Agent:ProposalTtlMinutes` | int | 15 | AI-9: hạn xác nhận đề xuất ghi của agent (phút) – quá hạn đề xuất bị hủy, agent đề xuất lại. | – |
 | `Agent:HermesWebhookUrl` | string? | – | AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt. | – |
 | `Agent:WebhookTimeoutSeconds` | int | 3 | Thời hạn chờ webhook Hermes (giây) – quá hạn thì bỏ qua, nghiệp vụ vẫn chạy. | – |

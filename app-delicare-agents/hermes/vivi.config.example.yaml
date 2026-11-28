@@ -32,7 +32,7 @@ mcp_servers:
     tools: { prompts: false, resources: false }
 
 # Bot Trợ lý (Telegram) qua gateway của Hermes: token ở biến môi trường. Ai được hỏi do DELI-CARE quyết
-# (UserExternalIdentity đã liên kết + Agent:AskingGroups của API – đợt 1 Ban GĐ + trưởng bộ phận), không liệt kê người trong tệp này.
+# (UserExternalIdentity đã liên kết + quyền "Dùng bot Trợ lý" ai-bot-tro-ly trên ma trận quyền – AI-23), không liệt kê người trong tệp này.
 platforms:
   telegram:
     enabled: true

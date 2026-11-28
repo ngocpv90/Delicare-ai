@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AppDelicare.Model.Entity;
@@ -99,7 +100,7 @@ namespace AppDelicare.Tests.Agent
         }
 
         [Fact]
-        public async Task Unlinked_asker_is_refused_and_asking_groups_limit_wave_one()
+        public async Task Unlinked_asker_no_assistant_right_and_assistant_off_are_refused_with_codes()
         {
             using var f = new InMemoryApiFactory();
             f.Settings["AGENT_KEY_TWH"] = AgentGatewayAi2Tests.WhKey;
@@ -117,17 +118,30 @@ namespace AppDelicare.Tests.Agent
             stranger.Message.Should().Contain("chưa liên kết");
             (await Call("777001")).Status.Should().Be(200);
 
-            using var g = new InMemoryApiFactory();
-            g.Settings["AGENT_KEY_TWH"] = AgentGatewayAi2Tests.WhKey;
-            g.Settings["Agent:AskingGroups"] = "CEO,COO";
-            await AgentGatewayAi2Tests.SeedAsync(g);
-            using var scope2 = g.Services.CreateScope();
-            var r = await scope2.ServiceProvider.GetRequiredService<IAgentGatewayService>().CallAsync(new AgentCallRequest
+            stranger.Code.Should().Be(AgentCallResult.NotLinked);
+
+            // AI-23.1 (D-142): thay Agent:AskingGroups – bỏ quyền "Dùng bot Trợ lý" trên ma trận → từ chối ngay, mã KHONG_CO_QUYEN_TRO_LY.
+            await f.SeedAsync(async db =>
             {
-                AgentCode = "WH", AgentKey = AgentGatewayAi2Tests.WhKey, OnBehalfOf = "777001", Tool = "get_ton_kho", Arguments = JsonSerializer.SerializeToElement(new { }),
+                var bot = await db.ObjectMenu.FirstAsync(m => m.MetaLink == "#/ai-bot-tro-ly");
+                foreach (var role in db.UserRole.Where(x => x.ObjectMenuId == bot.Id))
+                {
+                    role.AllowAccess = false;
+                }
             });
-            r.Status.Should().Be(403, "người hỏi không thuộc nhóm CEO / COO");
-            r.Message.Should().Contain("Ban Giám đốc");
+            using (var scope = f.Services.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<AppDelicare.Services.Interface.IPermissionService>().InvalidateAll(); // như màn Phân quyền sau khi lưu
+            }
+            var noRight = await Call("777001");
+            noRight.Status.Should().Be(403);
+            noRight.Code.Should().Be(AgentCallResult.NoAssistantRight);
+
+            // Tắt bot Trợ lý (BotConfiguration TRO_LY) → mọi câu Telegram bị từ chối, mã BOT_TRO_LY_TAT.
+            await f.SeedAsync(async db => (await db.BotConfiguration.FirstAsync(b => b.BotCode == "TRO_LY")).BotStatus = "Inactive");
+            var off = await Call("777001");
+            off.Code.Should().Be(AgentCallResult.AssistantOff);
+            off.Message.Should().Contain("tạm dừng");
         }
     }
 }

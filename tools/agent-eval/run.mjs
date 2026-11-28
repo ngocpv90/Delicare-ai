@@ -72,11 +72,15 @@ for (const code of agents) {
   for (const c of spec.cases) {
     const errs = [];
     if (!tools.includes(c.tool)) errs.push(`công cụ ${c.tool} không thuộc ${code}`);
-    const res = await fetch(`${GW}/tools/${c.tool}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Agent-Code': code, 'X-Agent-Key': key, 'X-Correlation-Id': `eval:${c.id}` }, body: JSON.stringify(c.args || {}) }).catch(e => ({ status: 0, json: async () => ({ message: e.message }) }));
+    // AI-23.4: câu thử người hỏi Telegram – onBehalfOf (giá trị) hoặc onBehalfOfEnv (tên biến môi trường; thiếu → bỏ qua câu).
+    const asker = c.onBehalfOf || (c.onBehalfOfEnv ? process.env[c.onBehalfOfEnv] : null);
+    if (c.onBehalfOfEnv && !asker) { rows.push([code, c.id, c.tool, 'BỎ QUA', `thiếu biến môi trường ${c.onBehalfOfEnv}`]); skip++; continue; }
+    const res = await fetch(`${GW}/tools/${c.tool}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Agent-Code': code, 'X-Agent-Key': key, 'X-Correlation-Id': `eval:${c.id}`, ...(asker ? { 'X-On-Behalf-Of': String(asker) } : {}) }, body: JSON.stringify(c.args || {}) }).catch(e => ({ status: 0, json: async () => ({ message: e.message }) }));
     const body = await res.json().catch(() => ({}));
     const text = JSON.stringify(body);
     const e = c.expect || {};
     if (e.status !== undefined && res.status !== e.status) errs.push(`HTTP ${res.status} ≠ ${e.status}${body.message ? ' (' + body.message + ')' : ''}`);
+    if (e.code !== undefined && body.code !== e.code) errs.push(`mã ${body.code} ≠ ${e.code}`);
     for (const h of e.has || []) if (get(body.data, h) === undefined) errs.push(`thiếu ${h}`);
     if (e.contains && !text.includes(e.contains)) errs.push(`không có «${e.contains}»`);
     if (e.notContains && text.includes(e.notContains)) errs.push(`có «${e.notContains}»`);

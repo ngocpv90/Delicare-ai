@@ -77,6 +77,7 @@ INSERT INTO @P VALUES
     (N'#/ai-ban-tin-kho', 2, NULL, 0, -1, N'', N'#/group/01', 114, N'Bản tin kho buổi sáng', N'AI', NULL),
     (N'#/ai-ban-tin-bep', 2, NULL, 0, -1, N'', N'#/group/01', 115, N'Bản tin bếp đầu ca', N'AI', NULL),
     (N'#/ai-ban-tin-kd', 2, NULL, 0, -1, N'', N'#/group/01', 116, N'Nhắc chốt suất', N'AI', NULL),
+    (N'#/ai-bot-tro-ly', 2, NULL, 0, -1, N'', N'#/group/01', 117, N'Dùng bot Trợ lý', N'AI', NULL),
     (N'#/group/02', 1, NULL, 200, 200, N'Kinh doanh & Đơn hàng', NULL, 200, N'Kinh doanh', N'sales', NULL),
     (N'#/crm-customer', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 201, N'', N'', NULL),
     (N'#/crm-contract', 2, N'#/group/02', 201, 299, N'', N'#/group/02', 202, N'', N'', NULL),

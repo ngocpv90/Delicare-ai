@@ -58,6 +58,7 @@ INSERT INTO @T VALUES
     (N'#/ai-ban-tin-kho', 2, N'#/group/01', 114, N'Bản tin kho buổi sáng', N'AI', 1),
     (N'#/ai-ban-tin-bep', 2, N'#/group/01', 115, N'Bản tin bếp đầu ca', N'AI', 1),
     (N'#/ai-ban-tin-kd', 2, N'#/group/01', 116, N'Nhắc chốt suất', N'AI', 1),
+    (N'#/ai-bot-tro-ly', 2, N'#/group/01', 117, N'Dùng bot Trợ lý', N'AI', 1),
     (N'#/group/02', 1, NULL, 200, N'Kinh doanh', N'sales', 1),
     (N'#/crm-customer', 2, N'#/group/02', 201, N'Khách hàng', N'', 1),
     (N'#/crm-contract', 2, N'#/group/02', 202, N'Hợp đồng', N'', 1),

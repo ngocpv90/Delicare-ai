@@ -48,7 +48,7 @@ namespace AppDelicare.ToolGateway
                     var (error, tools) = await gateway.ListToolsAsync(GatewayHttp.Request(ctx.Services!, null, default));
                     if (error.Status != 200)
                     {
-                        throw new ModelContextProtocol.McpException(error.Message ?? "Từ chối");
+                        throw new ModelContextProtocol.McpException((error.Code is { } ec ? $"[{ec}] " : string.Empty) + (error.Message ?? "Từ chối")); // AI-23.4: mã từ chối người hỏi
                     }
                     return new ListToolsResult
                     {
@@ -64,7 +64,7 @@ namespace AppDelicare.ToolGateway
                     return new CallToolResult
                     {
                         IsError = result.Status != 200,
-                        Content = [new TextContentBlock { Text = result.Status == 200 ? AgentToolRegistry.Serialize(result.Data) : $"[{result.Status}] {result.Message}" }],
+                        Content = [new TextContentBlock { Text = result.Status == 200 ? AgentToolRegistry.Serialize(result.Data) : $"[{result.Status}{(result.Code is { } rc ? " " + rc : string.Empty)}] {result.Message}" }],
                     };
                 });
 
@@ -100,12 +100,12 @@ namespace AppDelicare.ToolGateway
                     }
                 }
                 var result = await gateway.CallAsync(GatewayHttp.Request(http.RequestServices, name, args));
-                return Results.Json(new { status = result.Status, message = result.Message, data = result.Data }, statusCode: result.Status);
+                return Results.Json(new { status = result.Status, code = result.Code, message = result.Message, data = result.Data }, statusCode: result.Status);
             });
             app.MapGet("/tools", async (HttpContext http, IAgentGatewayService gateway) =>
             {
                 var (error, tools) = await gateway.ListToolsAsync(GatewayHttp.Request(http.RequestServices, null, default));
-                return error.Status != 200 ? Results.Json(new { status = error.Status, message = error.Message }, statusCode: error.Status)
+                return error.Status != 200 ? Results.Json(new { status = error.Status, code = error.Code, message = error.Message }, statusCode: error.Status)
                     : Results.Json(tools.Select(t => new { t.Name, t.Description, t.ScreenId, inputSchema = JsonDocument.Parse(t.InputSchemaJson).RootElement }));
             });
             app.Run();

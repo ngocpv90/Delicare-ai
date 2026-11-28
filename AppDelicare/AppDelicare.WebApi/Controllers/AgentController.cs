@@ -11,8 +11,9 @@ namespace AppDelicare.WebApi.Controllers
     /// AI-6 (D-133) – Trợ lý AI: Trung tâm agent (<c>ai-agents</c>), Nhật ký agent (<c>ai-agent-log</c>), Lịch chạy (<c>ai-schedule</c>).
     /// Bật / tắt agent = Sửa Trung tâm agent (CEO / COO / FIN-IT) – đổi BotConfiguration.BotStatus, ToolGateway kiểm mỗi lời gọi nên có hiệu lực ngay.
     /// </summary>
-    public class AgentController(IAgentAdminService service, IAgentFlowService flows, AppDelicare.Services.Implement.Knowledge.IKnowledgeService knowledge, IAgentCostService cost, IAgentChatService chat, IAgentCenterService center, AppDelicare.Services.Implement.Agent.IAgentQuickService quick) : BaseController
+    public class AgentController(IAgentAdminService service, IAgentFlowService flows, AppDelicare.Services.Implement.Knowledge.IKnowledgeService knowledge, IAgentCostService cost, IAgentChatService chat, IAgentCenterService center, AppDelicare.Services.Implement.Agent.IAgentQuickService quick, AppDelicare.Services.Implement.Agent.IAgentAssistantBotService assistant) : BaseController
     {
+        private readonly AppDelicare.Services.Implement.Agent.IAgentAssistantBotService _assistant = assistant;
         private readonly IAgentCenterService _center = center;
         private readonly AppDelicare.Services.Implement.Agent.IAgentQuickService _quick = quick;
         private readonly IAgentChatService _chat = chat;
@@ -45,6 +46,21 @@ namespace AppDelicare.WebApi.Controllers
         [HttpPost("SaveIsActive")]
         [Security.Permission("ai-agents", PermissionAction.Edit)]
         public Task<IActionResult> SaveIsActive([FromForm] string? code, [FromForm] bool active) => Run(nameof(SaveIsActive), () => _service.SaveIsActive(code, active));
+
+        /// <summary>AI-23.2 (D-142): tab Bot Trợ lý – trạng thái, link + QR, chỉ số hôm nay (Xem Trung tâm Agent).</summary>
+        [HttpGet("GetAssistantBot")]
+        [Security.Permission("ai-agents", PermissionAction.View)]
+        public Task<IActionResult> GetAssistantBot() => Run(nameof(GetAssistantBot), _assistant.GetBot);
+
+        /// <summary>AI-23.2: bật / tắt bot Trợ lý, sửa tên bot (Sửa Trung tâm Agent).</summary>
+        [HttpPost("SaveAssistantBot")]
+        [Security.Permission("ai-agents", PermissionAction.Edit)]
+        public Task<IActionResult> SaveAssistantBot([FromBody] AppDelicare.Services.Implement.Agent.AssistantBotSaveRequest request) => Run(nameof(SaveAssistantBot), () => _assistant.SaveBot(request ?? new()));
+
+        /// <summary>AI-23.3: khối Bot Trợ lý trên trang tài khoản – ai đăng nhập cũng gọi được (không có quyền → Allowed = false).</summary>
+        [HttpGet("GetMyAssistant")]
+        [Security.SkipPermission]
+        public Task<IActionResult> GetMyAssistant() => Run(nameof(GetMyAssistant), _assistant.GetMine);
 
         [HttpGet("GetActivity")]
         [Security.Permission("ai-agent-log", PermissionAction.View, OrScreens = ["ai-agents"])]

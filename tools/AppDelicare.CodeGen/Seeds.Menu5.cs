@@ -68,7 +68,7 @@ public static partial class Seeds
             "wf-inbox?type=ai-agent-cmd", // AI-9 (D-133): lệnh ghi của agent (ghi 2 pha)
             "wf-inbox?type=kb-sop", // AI-12 (D-133): duyệt SOP / hướng dẫn / quyết định của kho tri thức
         ]),
-        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal", "dash-pl", "ai-agents", "ai-agent-log", "ai-flow", "ai-tasks", "ai-schedule", "ai-cost", "ai-ban-tin-sang", "ai-ban-tin-chieu", "ai-ban-tin-kho", "ai-ban-tin-bep", "ai-ban-tin-kd"]), // AI-25.4 (D-143): 5 mục quyền nhận bản tin (ẩn khỏi sidebar – tab quyền của Trung tâm Agent) // AI-21 (D-138 a, b): Trung tâm Agent dưới Phê duyệt; 5 mục tab ẩn khỏi sidebar (FE), giữ dòng quyền IsActive = 1 // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
+        new("#/group/01", "Điều hành", ["Tổng quan điều hành"], 100, "kpi", ["dash-exec", "kpi-daily", "kpi-monthly", "cost-meal", "dash-pl", "ai-agents", "ai-agent-log", "ai-flow", "ai-tasks", "ai-schedule", "ai-cost", "ai-ban-tin-sang", "ai-ban-tin-chieu", "ai-ban-tin-kho", "ai-ban-tin-bep", "ai-ban-tin-kd", "ai-bot-tro-ly"]), // AI-23.1 (D-142): Dùng bot Trợ lý (mục quyền ẩn) · AI-25.4 (D-143): 5 mục quyền nhận bản tin (ẩn khỏi sidebar – tab quyền của Trung tâm Agent) // AI-21 (D-138 a, b): Trung tâm Agent dưới Phê duyệt; 5 mục tab ẩn khỏi sidebar (FE), giữ dòng quyền IsActive = 1 // UI-6.27 (D-108) Giá vốn & lãi gộp; UI-6.28 (D-109): kpi-monthly ẩn (gộp vào Chỉ số kinh doanh), Phê duyệt cuối nhóm
         new("#/group/02", "Kinh doanh", ["Kinh doanh & Đơn hàng"], 200, "sales",
             ["crm-customer", "crm-contract", "crm-price-policy", "crm-order-week", "crm-order", "crm-forecast", "crm-reconciliation", "log-complaint", "crm-location", "crm-contact"]),
         // ACC-1 (D-131 b – anh chốt 2026-11-26): nhóm "Kế toán" sau Kinh doanh – Bảng kê thanh toán CHUYỂN từ Kinh doanh (giữ screen-id crm-billing, không mất quyền).
@@ -174,6 +174,7 @@ public static partial class Seeds
         ["ai-tasks"] = ("Giao việc", "AI"), // AI-12 (D-133); AI-21 (D-138 b): tab Giao việc của Trung tâm Agent
         ["dash-pl"] = ("Kết quả kinh doanh", "RPT"), // RPT-1.1 (D-140 a): tab Kết quả kinh doanh của Bảng điều hành – mục quyền ẩn
         // AI-25.4 (D-143): mục quyền nhận bản tin dựng bằng mẫu (ban-tin.yaml muc_quyen) – ẩn khỏi sidebar.
+        ["ai-bot-tro-ly"] = ("Dùng bot Trợ lý", "AI"), // AI-23.1 (D-142): người hỏi Trợ lý qua Telegram / web phải có quyền Xem (thay Agent:AskingGroups)
         ["ai-ban-tin-sang"] = ("Bản tin sáng – Ban GĐ", "AI"),
         ["ai-ban-tin-chieu"] = ("Báo cáo cuối ngày – Ban GĐ", "AI"),
         ["ai-ban-tin-kho"] = ("Bản tin kho buổi sáng", "AI"),
@@ -422,6 +423,11 @@ public static partial class Seeds
         G("OPS-KIT", ViewR, ["ai-ban-tin-bep"]);
         G("SAL-SALES", ViewR, ["ai-ban-tin-kd"]);
         G("SAL-HEAD", ViewR, ["ai-ban-tin-kd"]);
+        // AI-23.1 (D-142, D-133 i): Dùng bot Trợ lý – mặc định Ban GĐ + trưởng bộ phận.
+        foreach (string role in new[] { "CEO", "CEO-PMO", "COO", "FIN-IT", "SAL-HEAD", "OPS-SCM-HEAD", "OPS-PLAN", "OPS-KIT", "OPS-LOG", "QA", "FIN-ACC", "FIN-HR" })
+        {
+            G(role, ViewR, ["ai-bot-tro-ly"]);
+        }
         // AI-12 (D-133): Việc agent theo dõi (thư mục 98) – Ban GĐ + người xác nhận lệnh agent xem và đánh dấu Xong / giao lại (thấy việc theo quyền thư mục kho).
         foreach (string role in new[] { "CEO", "COO", "FIN-IT", "OPS-WH", "OPS-KIT", "QA", "OPS-SCM", "OPS-SCM-HEAD", "SAL-HEAD", "OPS-LOG", "FIN-HR" })
         {
