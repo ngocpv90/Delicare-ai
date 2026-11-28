@@ -82,7 +82,7 @@ namespace AppDelicare.Services.Implement.Agent
         public static JsonSerializerOptions WebJson => Web;
 
         /// <summary>Danh bạ công cụ (AI-1: ping; AI-3 thêm công cụ đọc).</summary>
-        public static IReadOnlyList<AgentToolDef> All { get; } = [.. Build(), .. ReadTools(), .. OpsReadTools(), .. AlertTools(), .. KnowledgeTools(), .. CommandTools()];
+        public static IReadOnlyList<AgentToolDef> All { get; } = [.. Build(), .. ReadTools(), .. OpsReadTools(), .. AlertTools(), .. CostTools(), .. KnowledgeTools(), .. CommandTools()];
 
         // ---- tham số công cụ (JSON Schema đơn giản) ----
         public static string? Str(JsonElement a, string k) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String && v.GetString() is { Length: > 0 } s ? s.Trim() : null;
@@ -209,6 +209,14 @@ namespace AppDelicare.Services.Implement.Agent
             {
                 string ext = request.OnBehalfOf.Trim();
                 string? botCode = string.IsNullOrWhiteSpace(o.AskingBotCode) ? null : o.AskingBotCode.Trim();
+                // AI-14 (D-133): chat trên web – vé "web:<user>:<hạn>:<HMAC>" do API cấp (AgentWebTicket); sai chữ ký / hết hạn → coi như chưa liên kết.
+                var configuration = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>(services);
+                Guid? web = ext.StartsWith(AgentWebTicket.Prefix, StringComparison.Ordinal) ? AgentWebTicket.Verify(configuration, ext, DateTime.UtcNow) : null;
+                if (web is { } wu && await db.User.AsNoTracking().AnyAsync(u => u.Id == wu && !u.IsDeleted && u.IsActive))
+                {
+                    asking = wu;
+                }
+                else if (!ext.StartsWith(AgentWebTicket.Prefix, StringComparison.Ordinal))
                 asking = await (from x in db.UserExternalIdentity.AsNoTracking()
                                 join c in db.IntegrationChannel.AsNoTracking() on x.IntegrationChannelId equals c.Id
                                 where !x.IsDeleted && x.ExternalUserId == ext && x.UserId != null && x.IdentityStatus == "Active" && c.ProviderCode == "TELEGRAM"
@@ -218,7 +226,7 @@ namespace AppDelicare.Services.Implement.Agent
                 {
                     // AI-7 (D-133, AI_AGENT_REVIEW §9): người hỏi chưa liên kết / bị chặn → KHÔNG dùng công cụ dữ liệu (không trả dữ liệu theo quyền agent).
                     Log.Warning("[AgentGateway] {Agent}: người hỏi {External} chưa liên kết DELI-CARE – từ chối", code, ext);
-                    return new Auth(AgentCallResult.Fail(403, "Tài khoản Telegram chưa liên kết DELI-CARE – Trợ lý chỉ trả lời người đã liên kết"), null, channel.Id);
+                    return new Auth(AgentCallResult.Fail(403, ext.StartsWith(AgentWebTicket.Prefix, StringComparison.Ordinal) ? "Phiên chat trên web hết hạn / không hợp lệ – mở lại khung chat" : "Tài khoản Telegram chưa liên kết DELI-CARE – Trợ lý chỉ trả lời người đã liên kết"), null, channel.Id);
                 }
                 // AI-7: đợt triển khai giới hạn nhóm được hỏi (Agent:AskingGroups – mã UserGroup, cách nhau dấu phẩy; trống = mọi người đã liên kết).
                 var groups = (o.AskingGroups ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

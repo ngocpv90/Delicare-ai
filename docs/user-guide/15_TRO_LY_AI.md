@@ -1,11 +1,12 @@
 # 15 – Trợ lý AI (agent)
 
-Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent; **đợt 1 bật 5 agent chỉ đọc**: VIVI (điều phối), WH (kho), KITCHEN (bếp), QA (ATTP), KNOW (thủ thư tri thức). Agent trả lời bằng số liệu lấy thẳng từ DELI-CARE (cùng cách tính với màn hình) và kho tri thức; **đợt 1 agent không ghi gì vào nghiệp vụ** (chỉ ghi nhật ký vào kho tri thức 96 / 97 / 98).
+Viết theo code AI-1 … AI-15 (D-133, cập nhật 28/11/2026). Trợ lý AI gồm 13 agent; **đợt 1 bật 5 agent chỉ đọc**: VIVI (điều phối), WH (kho), KITCHEN (bếp), QA (ATTP), KNOW (thủ thư tri thức). Agent trả lời bằng số liệu lấy thẳng từ DELI-CARE (cùng cách tính với màn hình) và kho tri thức; **đợt 1 agent không ghi gì vào nghiệp vụ** (chỉ ghi nhật ký vào kho tri thức 96 / 97 / 98).
 
 ## 1. Bạn là ai
 
 - **CEO / COO / FIN-IT**: xem nhóm menu **Trợ lý AI**; **bật / tắt agent** (quyền Sửa Trung tâm agent).
 - **Ban GĐ + trưởng bộ phận** (theo cấu hình `Agent:AskingGroups`): hỏi Trợ lý qua bot Telegram **Trợ lý** sau khi đã liên kết tài khoản (như bot Vận hành – `20_BOT_TELEGRAM.md`).
+- **Mọi người đăng nhập web** (AI-14): nút **Trò chuyện** trên thẻ agent đang bật ở Trung tâm agent – agent chỉ trả lời số liệu bạn được xem.
 - Người chưa liên kết tài khoản nhắn bot Trợ lý: bot **không trả lời số liệu**.
 
 ## 2. Màn hình được dùng
@@ -53,6 +54,13 @@ Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent;
 
 - **Việc agent theo dõi** (AI-12): xem ở Trợ lý AI › Việc agent theo dõi – chi tiết ở 16_KHO_TRI_THUC.md.
 
+## 4c. Chi phí Trợ lý AI và chat trên web (AI-13, AI-14)
+
+- **Thẻ Chi phí Trợ lý AI tháng** (đầu màn Trung tâm agent): Đã dùng / ngân sách, Hôm nay, Ước cả tháng (theo bình quân ngày), Token vào / ra, cột chi phí từng ngày, chi phí theo agent. Mỗi lượt trả lời Hermes báo token + chi phí (USD quy VND theo `Agent:UsdToVnd`); cùng một lượt báo 2 lần chỉ tính 1.
+- **Ngân sách** `Agent:MonthlyBudget` (VND / tháng, IT đặt). Chạm **`Agent:CostAlertPct` % (mặc định 80 %)** và **100 %** → bot Điều hành gửi 1 tin "💰 Chi phí Trợ lý AI" tới người có quyền Thêm Trung tâm agent (CEO, FIN-IT) – mỗi ngưỡng mỗi tháng 1 lần. Chưa đặt ngân sách → thẻ ghi "Chưa đặt ngân sách", không cảnh báo.
+- **Chat trên web:** bấm **Trò chuyện** → ngăn bên phải (không che hết trang), chọn agent ở hàng tab, gõ câu hỏi (Enter gửi, Shift+Enter xuống dòng). Lịch sử hiển thị giữ trong phiên trình duyệt. Agent dùng **quyền của bạn ∩ quyền agent** như bot; đề xuất ghi vẫn chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.
+- Máy chủ Hermes chạy 3 container (AI-15): **hermes-vivi** (VIVI, KNOW – bot Trợ lý), **hermes-van-hanh** (KITCHEN, QA, LOG, PKG, WH), **hermes-van-phong** (SALES, PLAN, PROC, HR, ACC, CSKH). Một nhóm lỗi không làm dừng nhóm khác; IT xem `agents/README.md`.
+
 ## 5. Đọc nhật ký agent
 
 - Lọc theo agent, kết quả, công cụ, khoảng ngày → **Lọc**; **Xem thêm** để tải trang sau.
@@ -72,4 +80,8 @@ Viết theo code AI-1 … AI-8 (D-133, 27/11/2026). Trợ lý AI gồm 13 agent;
 |---|---|---|
 | Bot Trợ lý không trả lời số liệu | Tài khoản Telegram chưa liên kết / không thuộc nhóm được hỏi đợt này | Liên kết như bot Vận hành; hỏi IT danh sách nhóm `Agent:AskingGroups` |
 | Agent nói "không có quyền xem màn …" | Bạn hoặc agent chưa được cấp màn đó | Xin quyền Xem màn tương ứng |
-| Lịch chạy "chưa chạy" | Hermes chưa chạy / chưa nạp lịch | IT chạy `tools/agent-eval/gen-cron.mjs` (agents/README.md) |
+| Lịch chạy "chưa chạy" | Hermes chưa chạy / chưa nạp lịch | IT chạy `tools/agent-eval/gen-cron.mjs --group <nhóm>` trong từng container (agents/README.md) |
+| Chat web báo "chưa kết nối máy chủ Hermes" | Chưa đặt `Agent:HermesApiUrl` | IT đặt URL API server Hermes (Docker đặt sẵn `http://hermes-vivi:8642/v1`) – trong lúc chờ vẫn hỏi được qua bot Trợ lý |
+| Chat web báo "đang bận / không phản hồi" | Container Hermes của agent đó dừng / quá `Agent:ChatTimeoutSeconds` | Thử lại sau ít phút; IT xem `docker compose logs hermes-<nhóm>` |
+| Agent trả lời "Phiên chat trên web hết hạn" | Vé người hỏi quá 10 phút (câu trả lời dài, gọi nhiều công cụ) | Đóng ngăn chat, mở lại rồi hỏi lại |
+| Không có tin cảnh báo chi phí | Chưa đặt `Agent:MonthlyBudget` hoặc người nhận chưa liên kết bot Điều hành | IT đặt ngân sách; CEO / FIN-IT liên kết bot |

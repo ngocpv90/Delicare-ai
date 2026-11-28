@@ -1,4 +1,5 @@
 # Công cụ của agent LOG – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
+bao_chi_phi
 canh_bao
 chuyen_giao_ngay
 doc_ghi_chu

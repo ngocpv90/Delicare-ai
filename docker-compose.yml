@@ -12,6 +12,23 @@
 #   - DB đã có bảng mà có migration MỚI đang chờ → DỪNG và in danh sách; đặt DB_AUTO_MIGRATE=1 để tự chạy (backup trước).
 # Tắt đồng bộ: DB_AUTO_SYNC=0 trong .env. Chạy riêng:  docker compose run --rm db-sync
 # Bộ đầy đủ có SQL Server riêng trong Docker: deploy/docker/docker-compose.staging.yml; production (HTTPS): docker-compose.production.yml.
+# AI-15 (D-133): mẫu chung cho 3 container Hermes (YAML anchor, compose bỏ qua khóa x-*).
+x-hermes: &hermes
+  profiles: ["hermes"]
+  image: nousresearch/hermes-agent:latest
+  command: ["gateway", "run"]
+  depends_on:
+    - toolgateway
+  expose:
+    - "8642"                                       # API server Hermes – chỉ mạng nội bộ (api gọi chat web)
+  restart: unless-stopped
+x-hermes-env: &hermes-env
+  TZ: Asia/Ho_Chi_Minh
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  HERMES_MODEL_DEFAULT: ${HERMES_MODEL_DEFAULT:-claude-sonnet-5-5}
+  HERMES_MODEL_SCHEDULED: ${HERMES_MODEL_SCHEDULED:-claude-haiku-5-5}
+  API_SERVER_KEY: ${HERMES_API_KEY:-}             # khóa API server Hermes – api gửi Bearer cùng giá trị
+
 services:
   api:
     build:
@@ -33,12 +50,34 @@ services:
       Clients__MESSAGING__KeyHash: ${MESSAGING_CLIENT_KEY_HASH:-}
       Messaging__LinkSigningKey: ${MESSAGING_LINK_SIGNING_KEY:-}
       Agent__SchedulesFile: /app/agents/schedules.json
-      # AI-6: Trung tâm agent báo "máy chủ có khóa agent" – cùng biến với toolgateway (trống = chưa cấp).
+      # AI-6 / AI-15: Trung tâm agent báo "máy chủ có khóa agent" – cùng biến với toolgateway (trống = chưa cấp). Đủ 13 agent; agent chưa bật thì để trống.
       AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
-      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
       AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
       AGENT_KEY_QA: ${AGENT_KEY_QA:-}
-      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
+      AGENT_KEY_LOG: ${AGENT_KEY_LOG:-}
+      AGENT_KEY_PKG: ${AGENT_KEY_PKG:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_SALES: ${AGENT_KEY_SALES:-}
+      AGENT_KEY_PLAN: ${AGENT_KEY_PLAN:-}
+      AGENT_KEY_PROC: ${AGENT_KEY_PROC:-}
+      AGENT_KEY_HR: ${AGENT_KEY_HR:-}
+      AGENT_KEY_ACC: ${AGENT_KEY_ACC:-}
+      AGENT_KEY_CSKH: ${AGENT_KEY_CSKH:-}
+      # AI-14 / AI-15 (D-133): chat web – API gọi API server của container Hermes chứa agent (mạng Docker, cổng 8642). Khóa chung HERMES_API_KEY (= API_SERVER_KEY của Hermes).
+      Agent__HermesApiUrl: ${HERMES_API_URL:-http://hermes-vivi:8642/v1}
+      Agent__HermesApiUrlByAgent__KITCHEN: http://hermes-van-hanh:8642/v1
+      Agent__HermesApiUrlByAgent__QA: http://hermes-van-hanh:8642/v1
+      Agent__HermesApiUrlByAgent__LOG: http://hermes-van-hanh:8642/v1
+      Agent__HermesApiUrlByAgent__PKG: http://hermes-van-hanh:8642/v1
+      Agent__HermesApiUrlByAgent__WH: http://hermes-van-hanh:8642/v1
+      Agent__HermesApiUrlByAgent__SALES: http://hermes-van-phong:8642/v1
+      Agent__HermesApiUrlByAgent__PLAN: http://hermes-van-phong:8642/v1
+      Agent__HermesApiUrlByAgent__PROC: http://hermes-van-phong:8642/v1
+      Agent__HermesApiUrlByAgent__HR: http://hermes-van-phong:8642/v1
+      Agent__HermesApiUrlByAgent__ACC: http://hermes-van-phong:8642/v1
+      Agent__HermesApiUrlByAgent__CSKH: http://hermes-van-phong:8642/v1
+      HERMES_API_KEY: ${HERMES_API_KEY:-}
     volumes:
       - api-import:/app/wwwroot/Import            # ảnh đại diện / tệp nhập Excel
       - api-docs:/app/App_Data/DocumentFiles      # tệp đính kèm (DocumentFile)
@@ -145,12 +184,20 @@ services:
       ConnectionStrings__MainConnectionString: "Server=${DB_SERVER:?Đặt DB_SERVER trong .env};Database=${DB_NAME:?Đặt DB_NAME trong .env};User Id=${DB_USER:?Đặt DB_USER trong .env};Password=${DB_PASSWORD:?Đặt DB_PASSWORD trong .env};Encrypt=${DB_ENCRYPT:-False};TrustServerCertificate=True;MultipleActiveResultSets=true;"
       DocumentStorage__RootPath: /app/App_Data/DocumentFiles
       Knowledge__VaultPath: /app/App_Data/Knowledge
-      # AI-2 / AI-7 (D-133): khóa từng agent – tên biến ghi ở BotConfiguration.SecretReference; giá trị chỉ ở .env của server.
+      # AI-2 / AI-7 / AI-15 (D-133): khóa từng agent (đủ 13) – tên biến ghi ở BotConfiguration.SecretReference; giá trị chỉ ở .env của server.
       AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
-      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
       AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
       AGENT_KEY_QA: ${AGENT_KEY_QA:-}
-      AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
+      AGENT_KEY_LOG: ${AGENT_KEY_LOG:-}
+      AGENT_KEY_PKG: ${AGENT_KEY_PKG:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+      AGENT_KEY_SALES: ${AGENT_KEY_SALES:-}
+      AGENT_KEY_PLAN: ${AGENT_KEY_PLAN:-}
+      AGENT_KEY_PROC: ${AGENT_KEY_PROC:-}
+      AGENT_KEY_HR: ${AGENT_KEY_HR:-}
+      AGENT_KEY_ACC: ${AGENT_KEY_ACC:-}
+      AGENT_KEY_CSKH: ${AGENT_KEY_CSKH:-}
     volumes:
       - api-docs:/app/App_Data/DocumentFiles
       - knowledge:/app/App_Data/Knowledge
@@ -158,39 +205,66 @@ services:
       - "8080"
     restart: unless-stopped
 
-  # Hermes Agent (Nous Research) – bot Trợ lý + các agent. CHỈ bật khi gọi profile "hermes" (lệnh "up" thường không đụng tới):
-  #   1) Cấu hình 1 lần (chọn mô hình, nhập khóa API, token bot Trợ lý – lưu trong volume hermes-data, KHÔNG nằm trong repo / .env):
-  #        docker compose --profile hermes run --rm hermes setup
-  #   2) Chạy nền:   docker compose --profile hermes up -d hermes        Xem log:   docker compose logs -f hermes
-  # Không chuỗi kết nối DB (D-62): Hermes chỉ gọi api / Tool Gateway qua mạng Docker (http://api:8080).
-  # Dùng volume có tên (không gắn thư mục máy): Docker Desktop trên Windows gắn thư mục làm hỏng SQLite của Hermes.
-  # ĐÚNG 1 container hermes trên 1 volume dữ liệu.
-  hermes:
-    profiles: ["hermes"]
-    image: nousresearch/hermes-agent:latest
-    container_name: delicare-hermes
-    command: ["gateway", "run"]
-    depends_on:
-      - toolgateway
+  # AI-15 (D-133): Hermes Agent (Nous Research) tách 3 container theo nhóm – lỗi / quá tải một nhóm không kéo đổ nhóm khác, mỗi container chỉ giữ khóa agent của mình:
+  #   hermes-vivi      : VIVI, KNOW                          – bot Trợ lý (Telegram) + chat web mặc định
+  #   hermes-van-hanh  : KITCHEN, QA, LOG, PKG, WH          – việc theo lịch vận hành
+  #   hermes-van-phong : SALES, PLAN, PROC, HR, ACC, CSKH   – việc theo lịch văn phòng
+  # CHỈ bật khi gọi profile "hermes" (lệnh "up" thường không đụng tới):
+  #   1) Cấu hình 1 lần MỖI container (mô hình, khóa – lưu trong volume riêng, KHÔNG nằm trong repo / .env):
+  #        docker compose --profile hermes run --rm hermes-vivi setup        (tương tự hermes-van-hanh, hermes-van-phong)
+  #      config.yaml chép từ agents/hermes/<nhóm>.config.example.yaml; lịch: node tools/agent-eval/gen-cron.mjs --group <nhóm>
+  #   2) Chạy nền:   docker compose --profile hermes up -d        Xem log:   docker compose logs -f hermes-vivi
+  # Không chuỗi kết nối DB (D-62): Hermes chỉ gọi Tool Gateway qua mạng Docker. API server Hermes (8642) chỉ mạng nội bộ – api gọi để chat web (AI-14).
+  # Dùng volume có tên (không gắn thư mục máy): Docker Desktop trên Windows gắn thư mục làm hỏng SQLite của Hermes. MỖI container ĐÚNG 1 volume, không dùng chung.
+  # Nâng cấp từ 1 container (trước AI-15): hermes-vivi giữ volume cũ hermes-data → lịch sử bot Trợ lý còn nguyên; 2 container mới cấu hình từ đầu.
+  hermes-vivi:
+    <<: *hermes
+    container_name: delicare-hermes-vivi
     environment:
-      TZ: Asia/Ho_Chi_Minh
-      # AI-7 (D-133): config.yaml theo agents/hermes.config.example.yaml – mọi khóa đọc từ biến môi trường (.env của server, không commit).
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      HERMES_MODEL_DEFAULT: ${HERMES_MODEL_DEFAULT:-claude-sonnet-5-5}
-      HERMES_MODEL_SCHEDULED: ${HERMES_MODEL_SCHEDULED:-claude-haiku-5-5}
+      <<: *hermes-env
+      HERMES_GROUP: vivi                       # agents/hermes/vivi.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group vivi
       TELEGRAM_BOT_TOKEN_TRO_LY: ${TELEGRAM_BOT_TOKEN_TRO_LY:-}
       AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
-      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
-      AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
-      AGENT_KEY_QA: ${AGENT_KEY_QA:-}
       AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
     volumes:
-      - hermes-data:/opt/data                     # .env, config.yaml, SOUL.md, skills/, sessions/
-      - ./agents:/opt/delicare-agents:ro          # AI-7: SOUL / tools / eval / schedules / hermes.config.example.yaml (chỉ đọc)
-    restart: unless-stopped
+      - hermes-data:/opt/data                     # volume cũ (trước AI-15) – .env, config.yaml, SOUL, skills, sessions
+      - ./agents:/opt/delicare-agents:ro
+
+  hermes-van-hanh:
+    <<: *hermes
+    container_name: delicare-hermes-van-hanh
+    environment:
+      <<: *hermes-env
+      HERMES_GROUP: van-hanh                       # agents/hermes/van-hanh.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-hanh
+      AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
+      AGENT_KEY_QA: ${AGENT_KEY_QA:-}
+      AGENT_KEY_LOG: ${AGENT_KEY_LOG:-}
+      AGENT_KEY_PKG: ${AGENT_KEY_PKG:-}
+      AGENT_KEY_WH: ${AGENT_KEY_WH:-}
+    volumes:
+      - hermes-van-hanh-data:/opt/data                     # dữ liệu riêng nhóm vận hành
+      - ./agents:/opt/delicare-agents:ro
+
+  hermes-van-phong:
+    <<: *hermes
+    container_name: delicare-hermes-van-phong
+    environment:
+      <<: *hermes-env
+      HERMES_GROUP: van-phong                       # agents/hermes/van-phong.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-phong
+      AGENT_KEY_SALES: ${AGENT_KEY_SALES:-}
+      AGENT_KEY_PLAN: ${AGENT_KEY_PLAN:-}
+      AGENT_KEY_PROC: ${AGENT_KEY_PROC:-}
+      AGENT_KEY_HR: ${AGENT_KEY_HR:-}
+      AGENT_KEY_ACC: ${AGENT_KEY_ACC:-}
+      AGENT_KEY_CSKH: ${AGENT_KEY_CSKH:-}
+    volumes:
+      - hermes-van-phong-data:/opt/data                     # dữ liệu riêng nhóm văn phòng
+      - ./agents:/opt/delicare-agents:ro
 
 volumes:
   api-import:
   api-docs:
-  hermes-data:
+  hermes-data:        # hermes-vivi (giữ tên cũ)
+  hermes-van-hanh-data:
+  hermes-van-phong-data:
   knowledge:          # AI-1 (D-133): kho tri thức – api / job / toolgateway

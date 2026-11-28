@@ -82,6 +82,8 @@ namespace AppDelicare.Services.Implement.Messaging
         /// <summary>UI-6.51 (D-137): kế hoạch mua – tới hạn đặt chưa có đơn mua / quá hạn; gửi NCC lỗi; NCC chưa xác nhận sát giờ giao; ngày dùng nguyên liệu thay thế.</summary>
         /// <summary>AI-11 (D-133): cảnh báo chủ động của agent (nhận xét + phương án) – người có quyền Thêm màn liên quan.</summary>
         public const string AgentAlert = "AGENT_ALERT";
+        /// <summary>AI-13 (D-133): chi phí Trợ lý AI chạm ngưỡng % ngân sách tháng – CEO / COO / FIN-IT.</summary>
+        public const string AgentCostAlert = "AGENT_COST_ALERT";
         /// <summary>AI-12 (D-133): ghi chú kho tri thức quá hạn rà soát – chủ thư mục.</summary>
         public const string KnowledgeReviewDue = "KNOWLEDGE_REVIEW_DUE";
         public const string PurchaseDueNoOrder = "PURCHASE_DUE_NO_ORDER";
@@ -110,6 +112,7 @@ namespace AppDelicare.Services.Implement.Messaging
             new(SupplierIssueOverdue, D, Normal, "Sự cố nhà cung cấp quá hạn xử lý – QA, mua hàng"),
             new(RetailOrderNew, D, Normal, "Đơn khách lẻ mới đặt trên trang web – nhân viên bán lẻ (quyền Thêm màn Đơn khách lẻ)"),
             new(KnowledgeReviewDue, D, Digest, "Kho tri thức: ghi chú quá hạn rà soát (thứ Hai) – chủ thư mục"),
+            new(AgentCostAlert, X, Urgent, "Chi phí Trợ lý AI chạm ngưỡng % ngân sách tháng (Agent:MonthlyBudget) – CEO, COO, FIN-IT"),
             new(AgentAlert, D, Normal, "Trợ lý AI cảnh báo chủ động (nhận xét + phương án) – người phụ trách màn liên quan; mỗi sự kiện 1 tin"),
             new(PurchaseDueNoOrder, D, Normal, "Kế hoạch mua: nguyên liệu tới hạn / quá hạn đặt chưa có đơn mua sau lần chạy 14:00 – Mua hàng"),
             new(PurchaseSendFailed, D, Normal, "Đơn mua chưa gửi được cho NCC (không kênh / lỗi) – Mua hàng gửi tay"),

@@ -1,4 +1,5 @@
 # Công cụ của agent KITCHEN – SINH TỪ AgentToolRegistry (AgentConfigAi7Tests, UPDATE_AGENT_TOOLS=1). Không sửa tay.
+bao_chi_phi
 canh_bao
 doc_ghi_chu
 ds_cho_duyet

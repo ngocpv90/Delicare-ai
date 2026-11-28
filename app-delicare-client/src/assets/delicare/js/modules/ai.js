@@ -20,16 +20,74 @@
   const TODAY = () => U.day(U.iso(new Date()));
 
   // ================= Trung tâm agent =================
+  // AI-13 (D-133): chi phí Trợ lý AI tháng – Hermes báo mỗi lượt (bao_chi_phi); ngân sách Agent:MonthlyBudget, cảnh báo CostAlertPct % tới CEO / FIN-IT.
+  const amt = v => Math.abs(v || 0) >= 1e6 ? U.num((v || 0) / 1e6, 2) + '\u00a0tr' : U.num(Math.round(v || 0));
+  const money = v => (Math.abs(v || 0) >= 1e6 ? U.num((v || 0) / 1e6, 2) + '\u00a0tr' : U.num(Math.round(v || 0))) + '\u00a0đ';
+  function costCard(box) {
+    if (!box) return;
+    Store.query('Agent/GetCost').then(x => {
+      if (!box.isConnected) return;
+      if (!x.ok || !x.data) { box.innerHTML = ''; return; }
+      const d = x.data, pct = d.pct, max = Math.max(1, ...d.listDay.map(z => z.costVnd));
+      const color = pct == null ? 'blue' : pct >= 100 ? 'red' : pct >= d.alertPct ? 'orange' : 'green';
+      box.innerHTML = `<div class="card panel"><div class="spread"><div><b>Chi phí Trợ lý AI tháng ${esc(d.month.slice(5))}/${esc(d.month.slice(0, 4))}</b><div class="small muted">Hermes báo token / chi phí mỗi lượt trả lời · quy đổi VND</div></div>${pct == null ? chip('Chưa đặt ngân sách (Agent:MonthlyBudget)') : chip(U.num(pct, 1) + '% ngân sách', color)}</div>
+        ${UI.kpis([UI.kpi('Đã dùng (đ)', amt(d.totalVnd), d.budget ? 'ngân sách ' + money(d.budget) : 'chưa đặt ngân sách', 'chart', color), UI.kpi('Hôm nay (đ)', amt(d.todayVnd), U.num(d.turns) + ' lượt cả tháng', 'clock', 'blue'), UI.kpi('Ước cả tháng (đ)', amt(d.forecastVnd), 'theo bình quân ngày', 'trend', d.budget && d.forecastVnd > d.budget ? 'red' : 'blue'), UI.kpi('Token', U.num((d.tokensIn + d.tokensOut) / 1000, 1) + 'k', 'vào ' + U.num(d.tokensIn / 1000, 1) + 'k · ra ' + U.num(d.tokensOut / 1000, 1) + 'k', 'layers', 'blue')])}
+        ${d.budget ? `<div class="track mt" style="height:8px"><div class="fill ${color === 'green' ? '' : color}" style="width:${Math.min(100, pct)}%"></div></div>` : ''}
+        <div class="row-flex mt" style="align-items:flex-end;gap:2px;height:44px" title="Chi phí theo ngày">${d.listDay.map(z => `<div title="${esc(U.date(z.date))}: ${esc(money(z.costVnd))}" style="flex:1;background:#91AF42;opacity:.85;height:${Math.max(2, Math.round(z.costVnd / max * 40))}px;border-radius:2px"></div>`).join('')}</div>
+        ${d.listAgent.length ? `<div class="small mt">${d.listAgent.map(a => icon(a.agent, 16) + ' ' + esc(a.agent) + ' ' + esc(money(a.costVnd)) + ` (${a.turns} lượt)`).join(' · ')}</div>` : '<div class="small muted mt">Chưa có lượt nào báo chi phí trong tháng.</div>'}</div>`;
+    });
+  }
+
+  // ================= AI-14 (D-133): chat với agent trên web – ngăn bên phải nổi đè (không làm hẹp trang), cao bằng màn hình, tin nhắn cuộn bên trong, ô nhập ở đáy.
+  // Lịch sử hiển thị giữ trong phiên trình duyệt; Hermes dùng chung lịch sử với bot Trợ lý theo người dùng (userKey). Hermes tắt → thông báo tiếng Việt.
+  const CHAT_KEY = 'dc-agent-chat';
+  const chatStore = () => { try { return JSON.parse(sessionStorage.getItem(CHAT_KEY) || '{}'); } catch (e) { return {}; } };
+  const chatSave = h => { try { sessionStorage.setItem(CHAT_KEY, JSON.stringify(h)); } catch (e) { /* đầy bộ nhớ – bỏ qua */ } };
+  APP.agentChat = (code, agents) => {
+    let cur = code || 'VIVI';
+    const list = agents && agents.length ? agents : [{ code: cur, name: cur }];
+    document.querySelectorAll('.ai-chat').forEach(x => x.remove());
+    const box = document.createElement('aside');
+    box.className = 'ai-chat'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Trò chuyện với Trợ lý AI');
+    document.body.appendChild(box);
+    const draw = () => {
+      const h = chatStore()[cur] || [];
+      box.innerHTML = `<div class="ai-chat-head"><b>Trợ lý AI</b><button class="btn-close" data-x aria-label="Đóng"></button></div>
+        <div class="ai-chat-tabs">${list.map(a => `<button class="ai-chat-tab ${a.code === cur ? 'on' : ''}" data-ag="${esc(a.code)}">${icon(a.code, 18)} ${esc(a.code)}</button>`).join('')}</div>
+        <div class="ai-chat-msgs" id="acMsgs">${h.length ? h.map(m => `<div class="ai-msg ${m.role}">${m.role === 'assistant' ? md(m.content, []) : esc(m.content)}</div>`).join('') : `<div class="muted small">Hỏi ${esc(cur)} về số liệu bạn được xem. Đề xuất ghi (nếu có) chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.</div>`}</div>
+        <form class="ai-chat-input" id="acForm"><textarea class="input" id="acText" rows="2" maxlength="2000" placeholder="Nhập câu hỏi… (Enter gửi, Shift+Enter xuống dòng)"></textarea><button class="btn primary" type="submit">Gửi</button></form>`;
+      const msgs = box.querySelector('#acMsgs'); msgs.scrollTop = msgs.scrollHeight;
+      box.querySelector('[data-x]').onclick = () => box.remove();
+      box.querySelectorAll('[data-ag]').forEach(b => b.onclick = () => { cur = b.dataset.ag; draw(); });
+      const ta = box.querySelector('#acText'); ta.focus();
+      ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); box.querySelector('#acForm').requestSubmit(); } };
+      box.querySelector('#acForm').onsubmit = e => {
+        e.preventDefault();
+        const text = ta.value.trim(); if (!text) return;
+        const all = chatStore(), hist = all[cur] || [];
+        hist.push({ role: 'user', content: text }); all[cur] = hist.slice(-40); chatSave(all); draw();
+        const wait = document.createElement('div'); wait.className = 'ai-msg assistant muted'; wait.textContent = 'Đang trả lời…'; box.querySelector('#acMsgs').appendChild(wait);
+        Store.act('Agent/Chat', { json: { agent: cur, message: text, history: hist.slice(-21, -1) }, quiet: true }).then(r => {
+          const a2 = chatStore(), h2 = a2[cur] || [];
+          h2.push({ role: 'assistant', content: r.ok ? (r.data || {}).reply || '' : '⚠ ' + (r.message || 'Trợ lý không phản hồi') });
+          a2[cur] = h2.slice(-40); chatSave(a2); if (box.isConnected) draw();
+        });
+      };
+    };
+    draw();
+  };
+
   APP.register('ai-agents', (el, f, p) => {
     if (p && p.code) return detail(el, f, p.code);
     el.innerHTML = APP.header(f || FN['ai-agents'], '', { noNote: true }) + nav('ai-agents')
-      + `<div class="notice info mb">${I('help')}<div><b>Đợt 1 – chỉ đọc.</b> Agent trả lời bằng số liệu lõi (công cụ đọc) và kho tri thức; chưa tạo được đề xuất ghi. Tắt một agent → cổng công cụ từ chối ngay từ lời gọi sau.</div></div>`
-      + `<div id="aiKpi">${loading}</div><div id="aiGrid" class="ai-grid mt"></div>`;
+      + `<div class="notice info mb">${I('help')}<div><b>Đợt 2.</b> Agent trả lời bằng số liệu lõi và kho tri thức, đề xuất ghi chờ người có quyền xác nhận (Phê duyệt › Lệnh của agent), cảnh báo chủ động tới người phụ trách. Tắt một agent → cổng công cụ từ chối ngay từ lời gọi sau.</div></div>`
+      + `<div id="aiKpi">${loading}</div><div id="aiCost" class="mt"></div><div id="aiGrid" class="ai-grid mt"></div>`;
+    costCard(el.querySelector('#aiCost'));
     const canEdit = Store.perm('ai-agents').edit !== false;
     const paint = list => {
-      const on = list.filter(a => a.active), calls = U.sum(list.map(a => a.callsToday)), denied = U.sum(list.map(a => a.deniedToday)), failed = U.sum(list.map(a => a.failedToday));
+      const on = list.filter(a => a.active), calls = U.sum(list, 'callsToday'), denied = U.sum(list, 'deniedToday'), failed = U.sum(list, 'failedToday');
       el.querySelector('#aiKpi').innerHTML = UI.kpis([
-        UI.kpi('Agent đang bật', `${on.length} / ${list.length}`, `${list.filter(a => a.wave > 1).length} agent chờ đợt 2–4`, 'check', on.length ? 'green' : 'orange'),
+        UI.kpi('Agent đang bật', `${on.length} / ${list.length}`, `${list.length - on.length} agent chưa bật`, 'check', on.length ? 'green' : 'orange'),
         UI.kpi('Lời gọi hôm nay', U.num(calls), 'mọi công cụ, mọi agent', 'chart', 'blue', '#/ai-agent-log'),
         UI.kpi('Bị từ chối quyền', U.num(denied), 'agent ∩ người hỏi không đủ quyền / tắt / vượt giới hạn', 'shield', denied ? 'orange' : 'green', '#/ai-agent-log?status=Denied'),
         UI.kpi('Lỗi', U.num(failed), 'lỗi khi chạy công cụ', 'alert', failed ? 'red' : 'green', '#/ai-agent-log?status=Failed'),
@@ -39,8 +97,9 @@
             <div class="muted small">${esc(a.code)} · đợt ${a.wave} · phục vụ ${esc(a.serves)}</div></div></div>
           <p class="small mt">${esc(a.purpose)}</p>
           <div class="muted small">${U.num(a.listTool.length)} công cụ · hôm nay ${U.num(a.callsToday)} lời gọi${a.deniedToday ? ` · ${U.num(a.deniedToday)} bị từ chối` : ''}${a.lastCallAt ? ` · gần nhất ${esc(U.time(a.lastCallAt))}` : ''}${a.active && !a.hasKey ? ' · <span class="txt-orange">máy chủ chưa có khóa agent</span>' : ''}</div>
-          <div class="spread mt"><a class="btn sm" href="#/ai-agents?code=${esc(a.code)}">Chi tiết</a>${canEdit && a.status ? `<label class="ai-switch" title="${a.active ? 'Tắt' : 'Bật'} agent"><input type="checkbox" data-code="${esc(a.code)}" ${a.active ? 'checked' : ''}><span>${a.active ? 'Bật' : 'Tắt'}</span></label>` : ''}</div>
+          <div class="spread mt"><span class="row-flex" style="gap:6px"><a class="btn sm" href="#/ai-agents?code=${esc(a.code)}">Chi tiết</a>${a.active ? `<button class="btn sm primary" data-chat="${esc(a.code)}">Trò chuyện</button>` : ''}</span>${canEdit && a.status ? `<label class="ai-switch" title="${a.active ? 'Tắt' : 'Bật'} agent"><input type="checkbox" data-code="${esc(a.code)}" ${a.active ? 'checked' : ''}><span>${a.active ? 'Bật' : 'Tắt'}</span></label>` : ''}</div>
         </div>`).join('');
+      el.querySelectorAll('[data-chat]').forEach(b => b.onclick = () => APP.agentChat(b.dataset.chat, list.filter(x => x.active)));
       el.querySelectorAll('.ai-switch input').forEach(cb => cb.onchange = () => toggle(cb.dataset.code, cb.checked, load));
     };
     const load = () => Store.query('Agent/GetAll').then(x => {

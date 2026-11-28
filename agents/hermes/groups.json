@@ -1,0 +1,24 @@
+{
+  "note": "AI-15 (D-133): agent → container Hermes. Đồng bộ với docker-compose.yml (test AgentDeployAi15Tests).",
+  "groups": {
+    "vivi": [
+      "VIVI",
+      "KNOW"
+    ],
+    "van-hanh": [
+      "KITCHEN",
+      "QA",
+      "LOG",
+      "PKG",
+      "WH"
+    ],
+    "van-phong": [
+      "SALES",
+      "PLAN",
+      "PROC",
+      "HR",
+      "ACC",
+      "CSKH"
+    ]
+  }
+}

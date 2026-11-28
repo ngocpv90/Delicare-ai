@@ -627,6 +627,22 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 - [ ] Kế toán › Chứng từ kế toán: mỗi phiếu nhập từ form gộp = 1 chứng từ nhập mua gắn 1 đơn mua.
 - [ ] Điện thoại 390: thẻ NCC → form dạng thẻ, nút to.
 
+## AI-ĐỢT-2 – Lệnh ghi, cảnh báo, chi phí, chat web, 3 container Hermes (D-133, AI-9 … AI-15)
+
+Chuẩn bị (IT): `.env` server có `AGENT_KEY_<MÃ>` của 9 agent đang bật (VIVI, WH, KITCHEN, QA, KNOW, SALES, PROC, LOG, HR), `HERMES_API_KEY`, `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN_TRO_LY`; `Agent:MonthlyBudget`; `docker compose --profile hermes up -d` → 3 container `hermes-vivi / hermes-van-hanh / hermes-van-phong` (config từ `agents/hermes/<nhóm>.config.example.yaml`, lịch `gen-cron.mjs --group <nhóm>`).
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | IT | `docker compose ps` | 3 container Hermes Up; mỗi container chỉ có khóa agent của nhóm (`docker compose exec hermes-van-hanh env \| grep AGENT_KEY` → 5 khóa) |
+| 2 | IT | Dừng `hermes-van-phong` → hỏi bot Trợ lý (VIVI) + chờ lịch 10:00 KITCHEN | VIVI vẫn trả lời, KITCHEN vẫn chạy; chat web với SALES báo "đang bận / không phản hồi" |
+| 3 | uat.ceo | Trung tâm agent → thẻ Chi phí | Số khớp hóa đơn Anthropic cùng kỳ (± tỷ giá `Agent:UsdToVnd`); chi phí theo agent; ước cả tháng |
+| 4 | IT | Tạm đặt `Agent:MonthlyBudget` thấp hơn số đã dùng | CEO / FIN-IT (đã liên kết bot Điều hành) nhận 1 tin "💰 Chi phí Trợ lý AI" mức ≥ 80 % và 1 tin mức 100 %; không lặp lại trong tháng |
+| 5 | uat.coo | Trung tâm agent → Trò chuyện (VIVI) "hôm nay vận hành thế nào" | Ngăn chat bên phải; số khớp Bảng điều hành; Nhật ký agent có lời gọi với người hỏi = uat.coo |
+| 6 | Thủ kho (uat.ops-wh) | Trò chuyện VIVI hỏi bảng điều hành / lương | Agent báo không có quyền (theo quyền người hỏi, không theo quyền agent) |
+| 7 | uat.sal-head | Trò chuyện SALES "tăng đơn … lên 120 suất" | Trả đề xuất + hạn 15 phút; đơn CHƯA đổi tới khi duyệt ở Lệnh của agent |
+| 8 | IT | Để ngăn chat mở > 10 phút rồi hỏi | Agent báo "Phiên chat trên web hết hạn" khi gọi công cụ; mở lại ngăn → hỏi được |
+| 9 | Anh (cửa đợt 2) | Sau ≥ 2 tuần: `DB/scripts/AI15_gate_wave2_report.sql` (-v Tu= Den=) | (1) tỷ lệ duyệt không sửa từng agent ≥ ngưỡng anh đặt; (2) **0 dòng** ghi không qua duyệt; (3) chi phí trong ngân sách – **cửa qua đợt 2** |
+
 ## AI-12 – Kho tri thức: soạn / duyệt SOP, việc agent theo dõi (D-133)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

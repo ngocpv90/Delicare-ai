@@ -7,7 +7,7 @@
 > - Lịch job: `Jobs:<Mã job>` (`Enabled`, `At` "HH:mm" giờ VN) – xem màn **Job tự động** (`adm-job`).
 > - Bí mật (chuỗi kết nối, token bot, khóa API) **không** ghi ở đây – xem `docs/claude/SECRETS_TODO.md`.
 
-Tổng: **262 khóa** trong 13 section.
+Tổng: **269 khóa** trong 13 section.
 
 ## Cờ "đường lùi" của đợt UI-6 – bỏ cờ sau UAT (UI-6.49 (4), D-127 d)
 
@@ -41,6 +41,13 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `Agent:ProposalTtlMinutes` | int | 15 | AI-9: hạn xác nhận đề xuất ghi của agent (phút) – quá hạn đề xuất bị hủy, agent đề xuất lại. | – |
 | `Agent:HermesWebhookUrl` | string? | – | AI-4: webhook API server Hermes nhận sự kiện gấp; trống = tắt. | – |
 | `Agent:SchedulesFile` | string | "agents/schedules.json" | AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục agents). | – |
+| `Agent:MonthlyBudget` | decimal? | – | AI-13 (D-133 PROPOSED – anh điền): ngân sách chi phí AI / tháng (VND); trống / 0 = không cảnh báo ngân sách. | D-133 |
+| `Agent:UsdToVnd` | decimal | 25500m | AI-13: tỷ giá quy đổi chi phí Hermes báo bằng USD sang VND. | – |
+| `Agent:CostAlertPct` | decimal | 80m | AI-13: ngưỡng % ngân sách tháng gửi cảnh báo CEO / FIN-IT (một lần / tháng; tới 100% gửi thêm một lần). | – |
+| `Agent:HermesApiUrl` | string? | – | AI-14: API server Hermes kiểu OpenAI cho chat trên web, gồm /v1 (vd http://hermes-vivi:8642/v1); trống = chat tắt, màn báo tiếng Việt. | – |
+| `Agent:HermesApiUrlByAgent` | Dictionary<string, string> | new(StringComparer.OrdinalIgnoreCase) | AI-15: agent ở container Hermes khác → URL riêng theo mã (vd KITCHEN → http://hermes-van-hanh:8642/v1). Không có mục → HermesApiUrl. | – |
+| `Agent:HermesApiKeyEnv` | string | "HERMES_API_KEY" | AI-14: TÊN biến môi trường giữ khóa gọi API Hermes (không ghi khóa ở đây). | – |
+| `Agent:ChatTimeoutSeconds` | int | 60 | AI-14: thời gian chờ Hermes trả lời 1 câu chat (giây). | – |
 
 ## BusinessRules
 
