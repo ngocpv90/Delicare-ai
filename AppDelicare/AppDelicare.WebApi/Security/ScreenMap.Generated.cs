@@ -89,6 +89,7 @@ namespace AppDelicare.WebApi.Security
             ["OrganizationUnit"] = "adm-orgunit",
             ["OutboundMessage"] = "int-outbound",
             ["PackagingLedger"] = "log-packaging-ledger",
+            ["PackagingType"] = "log-packaging-type",
             ["PackingOrder"] = "log-packing-order",
             ["PackingResult"] = "log-packing-result",
             ["Patient"] = "dbx-explorer",

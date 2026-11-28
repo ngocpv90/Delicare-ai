@@ -158,7 +158,7 @@ namespace AppDelicare.Services.Implement
                 {
                     continue;
                 }
-                decimal fee = _rules.ContainerLossFee.GetValueOrDefault(b.PackagingType);
+                decimal fee = PackagingTypeCatalog.LossFee(_unitOfWork.DbContext, _rules, b.PackagingType); // PKG-FEE: phí / cái theo danh mục Loại hộp / khay
                 model.ListContainerFee.Add(new BillingContainerFeeModel
                 {
                     PackagingType = b.PackagingType, PeriodOutQuantity = b.PeriodOutQuantity, PeriodLossQuantity = b.PeriodLossQuantity, ThresholdPct = b.LossThresholdPct,

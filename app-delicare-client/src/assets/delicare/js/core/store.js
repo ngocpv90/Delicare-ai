@@ -463,7 +463,8 @@
     permAlias(alias, screen) { PERM_ALIAS[alias] = screen; },
     perm(screen) {
       // Màn con không có mục menu riêng → dùng quyền của màn cha (UI-2: crm-customer-360 = quyền crm-customer).
-      screen = PERM_ALIAS[screen] || screen;
+      // PKG-FEE: bí danh nhiều tầng – trang chi tiết của màn con ẩn (scm-lot-detail → scm-lot → scm-inv-balance; prod-order-detail → prod-order → prod-plan).
+      for (let i = 0; i < 5 && PERM_ALIAS[screen]; i++) screen = PERM_ALIAS[screen];
       if (HOST && mode === 'api') {
         const hp = HOST.perm(screen);
         // MENU-5 (D-79): Hộp phê duyệt chung (#/wf-inbox) chỉ CEO / CEO-PMO / COO / FIN-IT được Xem; người có quyền Duyệt một mục "Phê duyệt › …"

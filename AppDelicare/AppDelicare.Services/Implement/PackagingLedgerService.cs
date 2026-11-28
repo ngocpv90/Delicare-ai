@@ -245,7 +245,7 @@ namespace AppDelicare.Services.Implement
                 // Lỗi UAT 2026-11-21: loại khay / hộp lấy từ danh mục ReferenceLists:PackagingType; loại cũ ngoài danh mục chỉ nhận khi khách đã có trong sổ (đối ứng tồn cũ).
                 string? legacyType = await db.PackagingLedger.AsNoTracking()
                     .Where(l => !l.IsDeleted && l.CustomerId == request.CustomerId && l.PackagingType == packaging).Select(l => l.PackagingType).FirstOrDefaultAsync();
-                var (packagingCode, packagingError) = ReferenceCatalogs.CheckColumn(_referenceLists, "PackagingLedger.PackagingType", packaging, legacyType);
+                var (packagingCode, packagingError) = ReferenceCatalogs.CheckColumn(PackagingTypeCatalog.Merge(_unitOfWork.DbContext, _referenceLists), "PackagingLedger.PackagingType", packaging, legacyType);
                 if (packagingError != null)
                 {
                     return Fail(packagingError);

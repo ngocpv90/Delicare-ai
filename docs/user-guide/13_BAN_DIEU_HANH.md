@@ -55,6 +55,7 @@ Xem mọi màn nghiệp vụ; bảng dưới chỉ liệt kê mục có quyền 
 | Sản xuất › Hao hụt | `prod-waste` | X | X | X | X (IX) |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | X | X | X | X (IX) |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | X | X | X | X (IX) |
+| Đóng gói & Giao hàng › Loại hộp / khay | `log-packaging-type` | X | X | X | Sửa (IX) |
 | Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | X | X | X | X (IX) |
 | Nhân sự › Chấm công | `hr-attendance` | X | X | X | X (IX) |
 | Tri thức › 10 Ban GĐ | `knowledge?folder=10` | S | X | S | — |

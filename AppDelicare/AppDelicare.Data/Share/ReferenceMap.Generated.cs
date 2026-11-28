@@ -152,6 +152,7 @@ namespace AppDelicare.Data.Share
             ["OrganizationUnit"] = "OrganizationUnit",
             ["OutboundMessage"] = "OutboundMessage",
             ["PackagingLedger"] = "PackagingLedger",
+            ["PackagingType"] = "PackagingType",
             ["PackingOrder"] = "PackingOrder",
             ["PackingResult"] = "PackingResult",
             ["Patient"] = "Patient",

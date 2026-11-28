@@ -185,7 +185,7 @@ Mọi cờ dưới đây **mặc định = hành vi mới** ở mọi bản apps
 | `BusinessRules:MenuCycleWeeks` | int | 4 | UI-6.11 (D-89 b): chu kỳ thực đơn (tuần) – tự lập nháp tuần N = nhân bản tuần N − chu kỳ. | UI-6.11 |
 | `BusinessRules:MenuNoRepeatDays` | int | 14 | UI-6.11 (D-89 d): gợi ý món ưu tiên món chưa dùng trong số ngày này. | UI-6.11 |
 | `BusinessRules:BillingMonthNoticeDay` | int | 1 | UI-6.9: ngày trong tháng bot báo bảng kê tháng trước (1 = ngày 1). | UI-6.9 |
-| `BusinessRules:ContainerLossFee` | Dictionary<string, decimal> | new(StringComparer.OrdinalIgnoreCase) | BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay (PROPOSED – trống = 0, chưa tính). | BIZ-3.2 |
+| `BusinessRules:ContainerLossFee` | Dictionary<string, decimal> | new(StringComparer.OrdinalIgnoreCase) | BIZ-3.2: phí / khay thất thoát vượt ngưỡng theo loại khay – CŨ: từ PKG-FEE phí đặt ở danh mục Loại hộp / khay (bảng PackagingType); mục này chỉ dùng cho loại không có trong danh mục. | BIZ-3.2 |
 | `BusinessRules:GoodsReceiptOverReceivePct` | decimal | 10m | T15 (anh chốt 2026-11-16): được nhận vượt số đặt tối đa bao nhiêu % mỗi dòng PO (GAP-PUR-04). | T15 |
 | `BusinessRules:ReceivingTemp` | Dictionary<string, ReceivingTempRule> | – | T15.1 (anh chốt 2026-11-16, thay ReceivingTempMaxC của T15): nhiệt độ nhận hàng theo Ingredient.StorageType, 3 vùng – ≤ AcceptMax: nhận; ≤ ConditionalMax: nhận có điều kiện (bắt buộc lý do, lô "ưu tiên dùng trước", sự… | T15.1 |
 | `BusinessRules:SupplierIssueDueDays` | int | 2 | T15: hạn xử lý sự cố NCC (SupplierIssue.DueAt) = lúc ghi sổ + số ngày này – PROPOSED (spec 9.1: +2 ngày). | T15 |

@@ -17,8 +17,7 @@ namespace AppDelicare.Services.Implement
     {
         private static readonly string[] OrderConfirmed = [OrderStatus.Confirmed, OrderStatus.Locked, OrderStatus.InProduction];
 
-        private string TypeLabel(string? code)
-            => _referenceLists.Lists.TryGetValue("PackagingType", out var l) && l.FirstOrDefault(x => string.Equals(x.Code, code, StringComparison.OrdinalIgnoreCase)) is { } i ? i.Label : code ?? string.Empty;
+        private string TypeLabel(string? code) => PackagingTypeCatalog.Label(_unitOfWork.DbContext, _referenceLists, code); // PKG-FEE: tên loại từ danh mục Loại hộp / khay
 
         /// <summary>Hóa chất gợi ý = lần ghi bước khử khuẩn gần nhất (ưu tiên mẻ cùng loại bao bì).</summary>
         public async Task<string?> SuggestedChemicalAsync(string? packagingType)

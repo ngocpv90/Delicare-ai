@@ -87,7 +87,7 @@ public static partial class Seeds
         new("#/group/07", "Đóng gói & Giao hàng", ["Đóng gói & Giao nhận"], 700, "logistics",
         [
             "log-packing-order", "log-packing-result", "log-delivery-order", "log-route", "log-loading", "log-execution", "log-gps", "log-pod",
-            "log-container-return", "log-return-inspection", "log-packaging-ledger", "log-packaging-norm",
+            "log-container-return", "log-return-inspection", "log-packaging-ledger", "log-packaging-type", "log-packaging-norm",
         ]),
         // #/wf-inbox (Hộp phê duyệt cũ) giữ dòng – là quyền của API duyệt (xem chi tiết mọi yêu cầu); FE bỏ khỏi sidebar khi có "Tất cả yêu cầu duyệt".
         new("#/group/08", "Nhân sự", ["Nhân sự & Phê duyệt"], 800, "hr", ["adm-employee", "hr-shift-assign", "hr-attendance", "hr-leave", "hr-swap", "wf-inbox"]),
@@ -168,6 +168,7 @@ public static partial class Seeds
         ["acc-amis-recon"] = ("Đối chiếu với AMIS", "ACC"),
         ["acc-period"] = ("Khóa kỳ", "ACC"),
         ["scm-supplier-return"] = ("Trả hàng NCC", "ACC"),
+        ["log-packaging-type"] = ("Loại hộp / khay", "ACC"), // PKG-FEE (anh duyệt 2026-11-28): danh mục loại hộp / khay + phí thất thoát / cái
         ["log-packaging-norm"] = ("Định mức bao bì", "ACC"), // ACC-6 (D-131 j): Đóng gói & Giao hàng › Định mức bao bì // ACC-5 (D-131 i): Kho › Trả hàng NCC
         ["wf-inbox?type=prod-batch"] = ("Mẻ nấu", "P5"),
         ["wf-inbox?type=scm-lot"] = ("Giữ / thả lô", "P4"),
@@ -285,7 +286,8 @@ public static partial class Seeds
         G("OPS-SCM", ViewR, L("scm-gr scm-inv-balance scm-lot scm-inv-txn scm-issue scm-warehouse qc-supplier-issue qc-inspection prod-plan menu-recipe menu-menu"));
 
         G("OPS-WH", OwnR, L("scm-warehouse scm-zone scm-location scm-inv-policy"));
-        G("OPS-WH", EditR.Or(ix), L("scm-gr scm-issue scm-reservation scm-inv-txn scm-stockcount scm-lot"));
+        G("OPS-WH", EditR.Or(ix), L("scm-gr scm-issue scm-reservation scm-inv-txn scm-stockcount"));
+        G("OPS-WH", ViewR.Or(ix), ["scm-lot"]); // PKG-FEE (anh chốt 2026-11-28): thủ kho Xem + Xuất màn Lô hàng & hạn dùng – giữ / thả lô vẫn là QA
         // ACC-5 (D-131 i): Thủ kho lập + ghi sổ phiếu trả NCC (Thêm + Sửa, In + Xuất); Mua hàng xác nhận NCC (Xem + Sửa).
         G("OPS-WH", EditR.Or(ix), ["scm-supplier-return"]);
         // ACC-6 (D-131 j): Định mức bao bì – Kế hoạch sửa + gửi duyệt (như công thức); Bếp, Kho, Mua hàng, Giao vận xem; Kế toán Xem (IX).
@@ -309,6 +311,10 @@ public static partial class Seeds
         G("OPS-KIT", ViewR, L("prod-plan prod-order prod-output prod-line prod-workstation menu-dish menu-recipe menu-menu scm-issue scm-inv-balance qc-checklist hr-shift hr-shift-assign hr-attendance hr-leave hr-swap"));
 
         G("OPS-LOG", OwnR, ["log-vehicle"]);
+        // PKG-FEE: Loại hộp / khay – Giao vận quản lý danh mục; Kế toán sửa phí; điểm phát / bếp / KD xem.
+        G("OPS-LOG", EditR, ["log-packaging-type"]);
+        G("OPS-POS", ViewR, ["log-packaging-type"]);
+        G("OPS-KIT", ViewR, ["log-packaging-type"]);
         G("OPS-LOG", ViewR, ["log-packaging-norm"]); // ACC-6
         G("OPS-LOG", EditR, L("log-delivery-order log-route log-loading log-execution log-pod log-container-return"));
         // UI-6.16 / UI-6.44 (D-125 a): mục Điểm giao ẩn → OPS-LOG được Xem ở màn cha Khách hàng (không mất lối vào điểm giao).
@@ -320,7 +326,7 @@ public static partial class Seeds
         G("OPS-MNT", EditR, L("prod-line prod-workstation"));
         G("OPS-MNT", ViewR, L("qc-temperature prod-batch"));
 
-        string[] salesView = L("crm-reconciliation menu-dish menu-menu menu-assignment log-complaint log-delivery-order log-execution log-pod log-packaging-ledger");
+        string[] salesView = L("crm-reconciliation menu-dish menu-menu menu-assignment log-complaint log-delivery-order log-execution log-pod log-packaging-ledger log-packaging-type");
         G("SAL-SALES", EditR, L("crm-customer crm-location crm-price-policy crm-contract crm-forecast crm-order crm-order-week menu-change-request"));
         G("SAL-SALES", ViewR, salesView);
         G("SAL-SALES", ix, ["crm-billing"]);
@@ -340,6 +346,7 @@ public static partial class Seeds
         G("SAL-CS", ViewR, L("crm-customer crm-location crm-order menu-menu menu-dish log-execution log-pod crm-reconciliation"));
 
         G("FIN-ACC", ix, [.. L("crm-customer crm-contract crm-price-policy crm-order crm-reconciliation crm-billing scm-po scm-gr scm-issue scm-inv-balance scm-inv-txn scm-lot scm-stockcount scm-consumption-var cost-standard cost-actual cost-meal prod-waste log-packaging-ledger log-pod hr-attendance scm-supplier-return log-packaging-norm"), .. Kpi]);
+        G("FIN-ACC", new Right(true, false, true, false, false, true, false), ["log-packaging-type"]); // PKG-FEE: Kế toán sửa phí thất thoát / cái (không thêm / xóa loại)
         G("FIN-ACC", ViewR, L("scm-supplier scm-supplier-material"));
         // UI-6.8 (D-86, anh duyệt 2026-11-24): Kế toán chốt đối soát còn lại (dòng khớp tự chốt 24 giờ) → Thêm + Sửa màn Đối soát.
         G("FIN-ACC", EditR, L("crm-reconciliation"));

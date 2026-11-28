@@ -162,6 +162,8 @@ namespace AppDelicare.Data.Repositories
         public IOutboundMessageRepository OutboundMessageRepository => _OutboundMessageRepository ??= new OutboundMessageRepository(this);
         private IPackagingLedgerRepository? _PackagingLedgerRepository;
         public IPackagingLedgerRepository PackagingLedgerRepository => _PackagingLedgerRepository ??= new PackagingLedgerRepository(this);
+        private IPackagingTypeRepository? _PackagingTypeRepository;
+        public IPackagingTypeRepository PackagingTypeRepository => _PackagingTypeRepository ??= new PackagingTypeRepository(this);
         private IPackingOrderRepository? _PackingOrderRepository;
         public IPackingOrderRepository PackingOrderRepository => _PackingOrderRepository ??= new PackingOrderRepository(this);
         private IPackingResultRepository? _PackingResultRepository;

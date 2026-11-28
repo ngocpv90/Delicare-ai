@@ -50,6 +50,7 @@ public static partial class Seeds
         ["RetailOrder"] = "sal-retail-order",
         ["RetailOrderLine"] = "sal-retail-order",
         ["RetailCustomer"] = "sal-retail-order",
+        ["PackagingType"] = "log-packaging-type", // PKG-FEE (anh duyệt 2026-11-28): danh mục loại hộp / khay + phí thất thoát
     };
 
     /// <summary>D-31: nhóm menu "Phê duyệt" và mục "Duyệt …" của từng màn hình có loại AP. Quyền duyệt = UserRole.AllowEdit trên mục đó.</summary>

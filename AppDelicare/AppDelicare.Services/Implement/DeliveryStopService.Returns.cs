@@ -20,9 +20,7 @@ namespace AppDelicare.Services.Implement
     /// </summary>
     public partial class DeliveryStopService
     {
-        private string TypeLabel(string? code)
-            => _services.GetRequiredService<IOptions<ReferenceListsOptions>>().Value.Lists.TryGetValue("PackagingType", out var l)
-               && l.FirstOrDefault(x => string.Equals(x.Code, code, StringComparison.OrdinalIgnoreCase)) is { } i ? i.Label : code ?? string.Empty;
+        private string TypeLabel(string? code) => PackagingTypeCatalog.Label(_unitOfWork.DbContext, _services.GetRequiredService<IOptions<ReferenceListsOptions>>().Value, code); // PKG-FEE
 
         /// <summary>Trong giao dịch bàn giao đang mở; trả lỗi (tiếng Việt) → không ghi gì.</summary>
         private async Task<string?> ApplyReturnsAsync(DatabaseContext db, DeliveryOrder current, ActorInfo actor, DateTime now, List<DeliveryReturnItem> items, List<string> warnings)

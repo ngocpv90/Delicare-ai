@@ -36,6 +36,7 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Đóng gói & Giao hàng › Điều phối giao hàng | `log-route` | — | S |
 | Đóng gói & Giao hàng › Theo dõi giao hàng | `log-execution` | — | S |
 | Đóng gói & Giao hàng › Khay hộp theo khách | `log-packaging-ledger` | — | S |
+| Đóng gói & Giao hàng › Loại hộp / khay | `log-packaging-type` | X | S |
 | Đóng gói & Giao hàng › Định mức bao bì | `log-packaging-norm` | X | X |
 | Nhân sự › Phân ca | `hr-shift-assign` | X | — |
 | Nhân sự › Chấm công | `hr-attendance` | X | — |
@@ -108,3 +109,10 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 - Thiếu vật tư bao bì → tin bot Mua hàng có nút **🛒 Tạo đề nghị mua** (lập đề nghị mua nháp phần thiếu của ca, bấm lại không lập trùng).
 - Món bao bì (BB-…) không hiện ở danh mục món / chọn món thực đơn – chỉ sửa ở màn Định mức bao bì.
 - Cơm suất (bán lẻ) chưa tự lập phiếu (ca không cho biết cơm suất) – kho lập tay.
+
+## Loại hộp / khay và phí thất thoát (PKG-FEE, 28/11/2026)
+
+- **Đóng gói & Giao hàng › Loại hộp / khay**: danh mục loại hộp / khay (Khay inox, Hộp giữ nhiệt, Thùng giữ nhiệt…) dùng khi giao, thu hồi, ghi thất thoát ở Sổ hộp khay.
+- Mỗi loại có **phí thất thoát / cái** (đ). Bảng kê thanh toán tính phí cho phần hộp thất thoát **vượt ngưỡng** của khách (số giao × ngưỡng %) × phí của loại. Loại "chưa đặt" phí → bảng kê không tính tiền.
+- Ai làm gì: **Giao vận** thêm / sửa / ngừng dùng loại; **Kế toán** sửa phí (không thêm / xóa); điểm phát, bếp, kinh doanh chỉ xem.
+- Loại đã có giao dịch ở Sổ hộp khay: **không đổi mã, không xóa** – bấm **Ngừng dùng** (không chọn được cho giao dịch mới, số liệu cũ vẫn đúng tên và phí).

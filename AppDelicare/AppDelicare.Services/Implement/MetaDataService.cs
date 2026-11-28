@@ -10,8 +10,8 @@ using System.Net;
 
 namespace AppDelicare.Services.Implement
 {
-    /// <summary>T45B.5: trạng thái (StatusCatalog sinh từ STATUS_CATALOG.md) và danh mục tham chiếu (appsettings ReferenceLists). Không đọc DB.</summary>
-    public class MetaDataService(IOptions<ReferenceListsOptions> referenceLists) : IMetaDataService
+    /// <summary>T45B.5: trạng thái (StatusCatalog sinh từ STATUS_CATALOG.md) và danh mục tham chiếu (appsettings ReferenceLists). PKG-FEE: riêng loại hộp / khay đọc bảng PackagingType.</summary>
+    public class MetaDataService(IOptions<ReferenceListsOptions> referenceLists, AppDelicare.Data.Interface.IUnitOfWork unitOfWork) : IMetaDataService
     {
         private readonly ReferenceListsOptions _referenceLists = referenceLists.Value;
 
@@ -48,7 +48,8 @@ namespace AppDelicare.Services.Implement
         {
             try
             {
-                var list = _referenceLists.Lists
+                // PKG-FEE: loại hộp / khay đọc từ danh mục Loại hộp / khay (bảng PackagingType) khi đã có dữ liệu.
+                var list = PackagingTypeCatalog.Merge(unitOfWork.DbContext, _referenceLists).Lists
                     .Where(x => string.IsNullOrWhiteSpace(name) || x.Key.Equals(name, StringComparison.OrdinalIgnoreCase))
                     .OrderBy(x => x.Key)
                     .Select(x => new ReferenceListModel
