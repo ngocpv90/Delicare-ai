@@ -1,0 +1,75 @@
+# Câu hỏi nhanh của agent PLAN – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: PLAN
+questions:
+  - id: plan-7-ngay
+    hoi: "Kế hoạch sản xuất 7 ngày tới"
+    tool: ke_hoach_ngay
+    hien_thi:
+      kieu: bang
+      tieu_de: "Kế hoạch 7 ngày tới"
+      tom_tat: "{dem.trang_thai=Đã duyệt}/{so_dong} ngày đã duyệt · {dem.bi_giu=true} ngày bị giữ lại"
+      cot: ["Ngày", "Suất", "Trạng thái", "Bị giữ lại vì", "Thiếu nguyên liệu"]
+    mo_man: "#/prod-plan"
+    phan_tich: "Ngày nào rủi ro và việc cần làm trước giờ chốt."
+    kenh: ["web", "VH"]
+  - id: plan-bi-giu
+    hoi: "Ngày nào kế hoạch bị giữ lại?"
+    tool: ke_hoach_ngay
+    loc: "Bị giữ lại = có"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Kế hoạch bị giữ lại"
+      tom_tat: "{so_dong} ngày bị giữ lại"
+      cot: ["Ngày", "Lý do", "Thiếu nguyên liệu", "Việc cần làm"]
+      rong: "Không có ngày nào bị giữ lại."
+    mo_man: "#/prod-plan"
+    phan_tich: "Gợi ý món thay / NCC thay để gỡ."
+    kenh: ["web", "VH"]
+  - id: plan-thuc-don
+    hoi: "Thực đơn tuần này"
+    tool: thuc_don_tuan
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Thực đơn tuần {tuan}"
+      tom_tat: "{so_dong} món · FC% trung bình {tb.fc}"
+      cot: ["Ngày", "Buổi", "Lựa chọn", "Món"]
+    mo_man: "#/menu-menu"
+    kenh: ["web"]
+  - id: plan-thuc-don-sau
+    hoi: "Thực đơn tuần sau"
+    tool: thuc_don_tuan
+    args: { tuan: "{ngay+7}" }
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Thực đơn tuần sau"
+      tom_tat: "{so_dong} món"
+      cot: ["Ngày", "Buổi", "Lựa chọn", "Món"]
+      rong: "Chưa lập thực đơn tuần sau."
+    mo_man: "#/menu-menu"
+    kenh: ["web"]
+  - id: plan-thieu-nl
+    hoi: "7 ngày tới thiếu nguyên liệu gì?"
+    tool: du_bao_thieu_hut
+    hien_thi:
+      kieu: bang
+      tieu_de: "Nguyên liệu thiếu 7 ngày tới"
+      tom_tat: "{so_dong} nguyên liệu thiếu"
+      cot: ["Nguyên liệu", "Ngày cần", "Thiếu", "Phải đặt trước"]
+      rong: "Đủ nguyên liệu."
+    mo_man: "#/scm-requirement"
+    kenh: ["web", "VH"]
+  - id: plan-lai-gop
+    hoi: "Món / khách nào lãi gộp thấp?"
+    tool: gia_von_lai_gop
+    hien_thi:
+      kieu: bang
+      tieu_de: "Lãi gộp thấp nhất"
+      tom_tat: "Lãi gộp chung {tong.lai_gop_pct}%"
+      cot: ["Khách / loại suất", "Giá vốn / suất", "Lãi gộp %"]
+      sap_xep: "Lãi gộp % tăng dần"
+    mo_man: "#/dash-exec?tab=margin"
+    phan_tich: "Gợi ý đổi món rẻ hơn mà giữ chất lượng."
+    kenh: ["web"]

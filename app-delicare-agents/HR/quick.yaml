@@ -1,0 +1,64 @@
+# Câu hỏi nhanh của agent HR – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: HR
+questions:
+  - id: hr-chua-vao
+    hoi: "Ai chưa vào ca?"
+    tool: cham_cong_ngay
+    loc: "Trạng thái = Chưa vào ca"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chưa vào ca hôm nay"
+      tom_tat: "{so_dong} người chưa vào ca"
+      cot: ["Nhân viên", "Tổ", "Ca", "Giờ vào ca", "Điện thoại"]
+      sap_xep: "Giờ vào ca tăng dần"
+      rong: "Mọi người đã vào ca."
+    mo_man: "#/hr-attendance"
+    phan_tich: "Ca nào thiếu người và gợi ý người thay cùng tổ."
+    kenh: ["web", "VH"]
+  - id: hr-cham-cong
+    hoi: "Chấm công hôm nay"
+    tool: cham_cong_ngay
+    hien_thi:
+      kieu: the
+      tieu_de: "Chấm công hôm nay"
+      tom_tat: "{dem.trang_thai=Đã vào} đã vào · {dem.trang_thai=Chưa vào ca} chưa vào · {dem.di_muon=true} đi muộn · {dem.trang_thai=Vắng} vắng"
+      cot: ["Ca", "Định biên", "Đã vào", "Chưa vào", "Đi muộn", "Vắng"]
+    mo_man: "#/hr-attendance"
+    kenh: ["web", "VH"]
+  - id: hr-di-muon
+    hoi: "Ai đi muộn hôm nay?"
+    tool: cham_cong_ngay
+    loc: "Đi muộn = có"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đi muộn hôm nay"
+      tom_tat: "{so_dong} người"
+      cot: ["Nhân viên", "Tổ", "Ca", "Giờ vào", "Muộn (phút)"]
+      rong: "Không ai đi muộn."
+    mo_man: "#/hr-attendance"
+    kenh: ["web", "VH"]
+  - id: hr-hom-qua
+    hoi: "Chấm công hôm qua"
+    tool: cham_cong_ngay
+    args: { ngay: "hom_qua" }
+    hien_thi:
+      kieu: the
+      tieu_de: "Chấm công hôm qua"
+      tom_tat: "{dem.trang_thai=Vắng} vắng · {dem.di_muon=true} đi muộn · {dem.ve_som=true} về sớm"
+      cot: ["Ca", "Đã vào", "Vắng", "Đi muộn", "Về sớm"]
+    mo_man: "#/hr-attendance"
+    kenh: ["web"]
+  - id: hr-cho-duyet
+    hoi: "Đơn nghỉ / đổi ca chờ duyệt"
+    tool: ds_cho_duyet
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chờ anh / chị duyệt"
+      tom_tat: "{so_dong} yêu cầu"
+      cot: ["Loại", "Nhân viên", "Ngày", "Hạn"]
+      rong: "Không có đơn chờ duyệt."
+    mo_man: "#/wf-inbox"
+    kenh: ["web", "DH"]

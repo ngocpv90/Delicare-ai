@@ -50,7 +50,7 @@
     const shifts = Store.rows('Shift');
     const branch = Store.ctx.branch ? Store.label('OrganizationUnit', Store.ctx.branch) : 'Toàn công ty';
     el.innerHTML = APP.header(Object.assign({}, f, { name: 'Bảng điều hành', grp: 'Điều hành' }), `<a class="btn" href="#/flow-e2e">${I('flow')} 9 luồng nghiệp vụ</a>`, { noNote: true, title: 'Bảng điều hành', sub: 'Theo dõi toàn bộ hoạt động bếp trung tâm, kho, QC, giao nhận, chỉ số kinh doanh và giá vốn theo ngày / ca / đơn vị.' })
-      + `<div class="card dx-bar">${APP.dateBar(date)}
+      + `<div class="card dx-bar" data-help="dash-filter">${APP.dateBar(date)}
           <label class="dx-f ${t[3] ? '' : 'off'}"><span>Ca</span><select class="select" id="dxShift" ${t[3] ? '' : 'disabled'}><option value="">Tất cả ca</option>${shifts.map(s => `<option value="${s.Id}" ${s.Id === DX.shift ? 'selected' : ''}>${esc(s.Name)}</option>`).join('')}</select>${t[3] ? '' : '<span class="small muted">Không chia theo ca</span>'}</label>
           <span class="dx-f"><span>Chi nhánh</span><b class="small" title="Đổi ở ô Đơn vị làm việc trên thanh trên cùng">${esc(branch)}</b></span></div>
         <nav class="ac-tabs" aria-label="Bảng điều hành">${list.map(x => `<a class="ac-tab ${x === t ? 'on' : ''}" href="${href(x[0], date, DX.shift)}" ${x === t ? 'aria-current="page"' : ''}>${esc(x[1])}</a>`).join('')}</nav><div id="dxBody"></div>`;

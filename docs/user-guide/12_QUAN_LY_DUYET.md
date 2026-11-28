@@ -1,3 +1,8 @@
+---
+screens: [wf-inbox]
+roles: []
+updated: 2026-11-28
+---
 # 12 – Quản lý duyệt (màn Phê duyệt tổng – D-81)
 
 ## 1. Bạn là ai

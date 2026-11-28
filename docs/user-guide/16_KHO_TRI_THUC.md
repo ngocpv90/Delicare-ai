@@ -1,3 +1,8 @@
+---
+screens: [knowledge]
+roles: []
+updated: 2026-11-28
+---
 # 16 – Kho tri thức
 
 Viết theo code AI-5 / AI-6 (D-133, 27/11/2026). Kho chứa **tri thức**: cách làm (SOP), quy định, hướng dẫn, bài học, quyết định, bản chụp báo cáo có ngày. **Số liệu hiện tại luôn xem trên màn nghiệp vụ** – ghi chú tự sinh chỉ là bản chụp lúc xuất. Kho là thư mục markdown chuẩn Obsidian trên máy chủ; web, agent (KNOW) và Obsidian dùng chung.
@@ -100,3 +105,22 @@ Kho lưu cả **tài liệu doanh nghiệp** (công văn, biên bản họp, h�
 - **Lưu trữ** (thay cho xóa – quyền **Xóa** của vùng): tài liệu không bị xóa, không còn trong kết quả tìm.
 - **Nhật ký truy cập**: mỗi lần xem / tải tài liệu ở **hợp đồng, chứng từ gốc, hồ sơ cá nhân, BOD** được ghi lại (ai, lúc nào, xem hay tải); người có quyền Sửa vùng bấm **Nhật ký truy cập** để xem.
 - **Hết hạn lưu giữ**: thứ Hai hằng tuần hệ thống nhắc chủ vùng danh sách tài liệu đã quá hạn lưu giữ – **không tự xóa**, chủ vùng quyết định chuyển Lưu trữ.
+
+## Dùng màn Kho tài liệu & tri thức – `knowledge`
+
+Tìm, đọc, tải lên tài liệu theo vùng được cấp quyền (AI-22, D-141).
+
+1. **Tìm trong kho** – gõ từ khóa (gõ không dấu được) rồi Enter; kết quả chỉ gồm tài liệu anh/chị được xem, kể cả tên tài liệu. {target: kn-search}
+2. **Chọn vùng** – bấm tên vùng ở cột trái (vd *60 › Chứng từ gốc*) để xem danh sách; vùng con như *20 › Hợp đồng khách hàng* có quyền riêng. {target: kn-tree}
+3. **Tải tài liệu lên** – trong vùng có quyền Sửa: bấm **Tải tài liệu lên**, chọn tệp PDF / Word / Excel / ảnh ≤ 20 MB, điền phiếu mô tả. {target: kn-upload}
+4. **Mở tài liệu** – xem phiếu mô tả và nội dung; **Tải file gốc** (quyền Xuất), **Lưu trữ** (quyền Xóa), **Nhật ký truy cập** (quyền Sửa).
+
+> Số liệu hiện tại (tồn kho, đơn hàng, công nợ) luôn xem trên màn nghiệp vụ – kho chỉ giữ bản gốc và tri thức.
+
+## Câu hỏi thường gặp
+
+- **Không thấy vùng Hợp đồng / Chứng từ / Hồ sơ cá nhân?** – Đây là vùng hạn chế, chỉ nhóm được cấp mới thấy. Nhờ quản trị cấp quyền ở Quản trị › Nhóm quyền › Phân quyền, nhóm "Tri thức".
+- **Bấm Tải file gốc báo cần quyền Xuất?** – Anh/chị được xem nhưng chưa được tải bản gốc của vùng này; nhờ quản trị cấp mức "Xem, in & xuất".
+- **Xóa nhầm tài liệu?** – Kho không xóa: tài liệu chỉ chuyển Lưu trữ, tệp gốc còn nguyên. Mở tài liệu từ lịch sử hoặc nhờ chủ vùng khôi phục trạng thái.
+- **Tải lên báo "Nội dung tệp không đúng định dạng"?** – Tệp bị đổi đuôi (vd ảnh đặt tên .pdf). Lưu lại đúng định dạng rồi tải lên.
+- **Agent có đọc được hồ sơ cá nhân không?** – Chỉ agent Nhân sự, và chỉ khi người hỏi có quyền vùng Hồ sơ cá nhân. BOD không agent nào đọc.

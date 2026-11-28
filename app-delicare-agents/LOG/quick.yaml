@@ -1,0 +1,65 @@
+# Câu hỏi nhanh của agent LOG – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: LOG
+questions:
+  - id: log-hom-nay
+    hoi: "Giao hàng hôm nay"
+    tool: chuyen_giao_ngay
+    hien_thi:
+      kieu: the
+      tieu_de: "Điều phối giao hôm nay"
+      tom_tat: "{so_dong} chuyến · {dem.trang_thai=Đã giao} đã giao · {dem.tre=true} trễ · {tong.don_chua_xep} đơn chưa xếp chuyến"
+      cot: ["Chuyến", "Xe", "Tài xế", "Điểm giao", "Giờ hẹn", "Trạng thái"]
+      sap_xep: "Trễ trước, giờ hẹn tăng dần"
+    mo_man: "#/log-route"
+    phan_tich: "Chuyến nào có nguy cơ trễ, đổi xe / tài xế thế nào."
+    kenh: ["web", "VH"]
+  - id: log-ngay-mai
+    hoi: "Chuyến giao ngày mai"
+    tool: chuyen_giao_ngay
+    args: { ngay: "ngay_mai" }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chuyến giao ngày mai"
+      tom_tat: "{so_dong} chuyến · {tong.don_chua_xep} đơn chưa xếp"
+      cot: ["Chuyến", "Xe", "Tài xế", "Điểm giao", "Giờ hẹn"]
+    mo_man: "#/log-route"
+    kenh: ["web", "VH"]
+  - id: log-chua-xep
+    hoi: "Đơn nào chưa xếp chuyến?"
+    tool: chuyen_giao_ngay
+    loc: "Đơn chưa xếp chuyến"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đơn chưa xếp chuyến"
+      tom_tat: "{so_dong} đơn"
+      cot: ["Khách", "Điểm giao", "Suất", "Giờ hẹn"]
+      rong: "Mọi đơn đã xếp chuyến."
+    mo_man: "#/log-route"
+    kenh: ["web", "VH"]
+  - id: log-tre
+    hoi: "Chuyến nào đang trễ?"
+    tool: chuyen_giao_ngay
+    loc: "Trễ = có"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chuyến đang trễ"
+      tom_tat: "{so_dong} chuyến trễ"
+      cot: ["Chuyến", "Tài xế", "Điểm giao", "Giờ hẹn", "Trễ (phút)"]
+      rong: "Không có chuyến trễ."
+    mo_man: "#/log-track"
+    kenh: ["web", "VH"]
+  - id: log-khay
+    hoi: "Khay hộp chưa thu hồi"
+    tool: hop_khay
+    loc: "Chưa thu hồi > 0"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Khay hộp chưa thu hồi"
+      tom_tat: "{tong.chua_thu} khay hộp tại {so_dong} khách"
+      cot: ["Khách", "Đã giao", "Đã thu", "Còn", "Quá hạn (ngày)"]
+      rong: "Đã thu hồi đủ."
+    mo_man: "#/log-container"
+    kenh: ["web", "VH"]

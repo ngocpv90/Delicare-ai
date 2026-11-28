@@ -1,3 +1,8 @@
+---
+screens: [hr-my, dash-exec, kpi-daily, cost-meal, ai-tasks, crm-customer, crm-contract, crm-order-week, crm-order, crm-forecast, crm-reconciliation, log-complaint, crm-billing, sal-retail-order, sal-retail-product, menu-menu, menu-dish, log-route, log-execution, log-packaging-ledger, log-packaging-type, knowledge, knowledge?folder=20, knowledge?folder=30, knowledge?folder=55, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=15, knowledge?folder=20-hd, knowledge?folder=80-hdsd, crm-contact, crm-location]
+roles: [SAL-SALES, SAL-CON, SAL-HEAD, SAL-CS]
+updated: 2026-11-28
+---
 # 02 – Kinh doanh, hợp đồng, đơn hàng
 
 ## 1. Bạn là ai

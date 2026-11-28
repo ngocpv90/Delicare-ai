@@ -1,3 +1,8 @@
+---
+screens: [hr-my, dash-exec, kpi-daily, cost-meal, crm-customer, crm-order-week, crm-order, crm-forecast, sal-retail-order, menu-menu, menu-recipe, menu-dish, scm-requirement, scm-pr, scm-ingredient, scm-inv-balance, prod-plan, prod-batch, prod-waste, qc-inspection, qc-checklist-result, qc-temperature, qc-cleaning, qc-supplier-issue, qc-checklist, log-packaging-norm, prod-line, knowledge, knowledge?folder=30, knowledge?folder=40, knowledge?folder=50, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=80-hdsd, cost-standard, cost-actual]
+roles: [OPS-PLAN]
+updated: 2026-11-28
+---
 # 03 – Kế hoạch vận hành & Cost (món, công thức, thực đơn, kế hoạch sản xuất, giá thành)
 
 ## 1. Bạn là ai

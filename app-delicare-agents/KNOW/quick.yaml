@@ -1,0 +1,32 @@
+# Câu hỏi nhanh của agent KNOW – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: KNOW
+questions:
+  - id: know-tim-sop
+    hoi: "Tìm quy trình (nhập từ khóa)"
+    tool: tim_tri_thuc
+    nhap: { cau_hoi: "Từ khóa, vd: nhận hàng lạnh" }
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Kết quả cho \"{args.cau_hoi}\""
+      tom_tat: "{so_dong} ghi chú phù hợp"
+      cot: ["Tiêu đề", "Thư mục", "Hiệu lực từ", "Đoạn trích"]
+      rong: "Kho chưa có ghi chú cho \"{args.cau_hoi}\"."
+    mo_man: "#/knowledge"
+    phan_tich: "Tóm tắt các bước theo SOP hiệu lực."
+    kenh: ["web", "VH"]
+  - id: know-hdsd
+    hoi: "Cách dùng màn… (nhập tên màn)"
+    tool: tim_tri_thuc
+    args: { thu_muc: "80" }
+    nhap: { cau_hoi: "Tên màn hoặc việc cần làm" }
+    hien_thi:
+      kieu: danh_sach
+      tieu_de: "Hướng dẫn: \"{args.cau_hoi}\""
+      tom_tat: "{so_dong} mục hướng dẫn"
+      cot: ["Mục", "Màn", "Cập nhật", "Đoạn trích"]
+      rong: "Chưa có hướng dẫn cho \"{args.cau_hoi}\"."
+    mo_man: "#/knowledge?folder=80"
+    kenh: ["web", "VH"]

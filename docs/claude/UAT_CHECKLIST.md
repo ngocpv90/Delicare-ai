@@ -637,6 +637,17 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-22.3 – Nút "?" + thư viện Hướng dẫn sử dụng (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Thủ kho (uat.ops-wh) | Kho › Nhận hàng & kiểm tra → bấm **?** | Ngăn phải "Nhận hàng & kiểm tra", có các bước + câu hỏi thường gặp |
+| 2 | IT (uat.fin-it) | Đơn vị tính → **?** → bước 1 **Chỉ cho tôi** | Nút "Thử quy đổi" được tô viền |
+| 3 | CEO | Bảng điều hành → **?** → **Chỉ cho tôi** (bước 1, 2) | Tô thanh lọc ngày, dải 8 thẻ |
+| 4 | Mọi tài khoản | **?** → **Hỏi Vivi** khi trợ lý tắt | Báo tiếng Việt, 2 tab kia vẫn dùng |
+| 5 | QA (uat.qa) | Kho tri thức › 80 › Hướng dẫn sử dụng | Thư viện: Màn tôi dùng / Tất cả, tìm không dấu, Có gì mới |
+| 6 | Điện thoại 390px | Bấm **?** | Tấm trượt từ dưới |
+
 ## AI-22.2 – Tải tài liệu gốc / tải xuống / lưu trữ (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

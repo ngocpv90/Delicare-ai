@@ -39,7 +39,7 @@
     const series = (d.chart && d.chart.meals7d) || [];
     const alerts = (d.alerts || []).map(a => ({ c: a.severity === 'HIGH' ? 'red' : a.severity === 'LOW' ? 'blue' : 'orange', t: a.title, s: a.detail, go: String(a.route || '').replace(/^#\//, '') }));
     el.innerHTML = head + `
-    <div class="kpis">
+    <div class="kpis" data-help="dash-cards">
       ${UI.kpi('Suất ăn kế hoạch', U.num(k.plannedMeals || 0), `${okOrders} đơn`, 'utensils', 'green', 'crm-order')}
       ${UI.kpi('Đơn hàng trong ngày', U.num(od.total || 0), (od.listStatus || []).map(s => s.count + ' ' + esc(String(s.statusName || s.status).toLowerCase())).join(' · ') || 'Chưa có đơn', 'clipboard', 'orange', 'crm-order')}
       ${UI.kpi('Tiến độ sản xuất', pp.percent === null || pp.percent === undefined ? '–' : U.pct(pp.percent, 0), `${U.num(pp.donePortions || 0)} / ${U.num(pp.plannedPortions || 0)} phần`, 'factory', 'blue', 'prod-batch')}

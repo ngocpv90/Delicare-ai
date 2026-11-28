@@ -1,3 +1,8 @@
+---
+screens: []
+roles: []
+updated: 2026-11-28
+---
 # 20 – Dùng bot Telegram (bot Vận hành, bot Điều hành)
 
 ## 1. Hai bot

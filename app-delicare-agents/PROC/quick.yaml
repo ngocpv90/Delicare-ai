@@ -1,0 +1,76 @@
+# Câu hỏi nhanh của agent PROC – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: PROC
+questions:
+  - id: proc-dat-hom-nay
+    hoi: "Hôm nay phải đặt hàng gì?"
+    tool: ke_hoach_mua
+    loc: "Nhóm = Phải đặt hôm nay hoặc Quá hạn"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Phải đặt hôm nay"
+      tom_tat: "{so_dong} nguyên liệu – {dem.nhom=Quá hạn} đã quá hạn đặt"
+      cot: ["Nguyên liệu", "Ngày cần", "Số lượng", "NCC gợi ý", "Trạng thái"]
+      sap_xep: "Quá hạn trước, ngày cần tăng dần"
+      rong: "Hôm nay không có nguyên liệu phải đặt."
+    mo_man: "#/scm-requirement"
+    kenh: ["web", "VH"]
+  - id: proc-ke-hoach
+    hoi: "Kế hoạch mua 7 ngày"
+    tool: ke_hoach_mua
+    hien_thi:
+      kieu: the
+      tieu_de: "Kế hoạch mua 7 ngày"
+      tom_tat: "{tong.phai_dat} phải đặt · {tong.qua_han} quá hạn · {tong.cho_duyet} chờ duyệt · {tong.chua_gui} chưa gửi NCC"
+      cot: ["Nguyên liệu", "Ngày cần", "Số lượng", "NCC", "Trạng thái"]
+    mo_man: "#/scm-requirement"
+    phan_tich: "Gom đơn theo NCC để giảm số lần giao."
+    kenh: ["web", "VH"]
+  - id: proc-chua-gui
+    hoi: "Đơn mua nào chưa gửi NCC?"
+    tool: ke_hoach_mua
+    loc: "Trạng thái = Chưa gửi NCC"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Đơn mua chưa gửi NCC"
+      tom_tat: "{so_dong} dòng chưa gửi"
+      cot: ["Đơn mua", "NCC", "Nguyên liệu", "Ngày cần"]
+      rong: "Mọi đơn mua đã gửi NCC."
+    mo_man: "#/scm-po"
+    kenh: ["web", "VH"]
+  - id: proc-thieu-nl
+    hoi: "7 ngày tới thiếu nguyên liệu gì?"
+    tool: du_bao_thieu_hut
+    hien_thi:
+      kieu: bang
+      tieu_de: "Nguyên liệu thiếu 7 ngày tới"
+      tom_tat: "{so_dong} nguyên liệu thiếu"
+      cot: ["Nguyên liệu", "Ngày cần", "Thiếu", "Phải đặt trước"]
+      rong: "Đủ nguyên liệu."
+    mo_man: "#/scm-requirement"
+    kenh: ["web", "VH"]
+  - id: proc-duoi-toi-thieu
+    hoi: "Mặt hàng nào dưới tồn tối thiểu?"
+    tool: get_ton_kho
+    args: { duoi_toi_thieu: true }
+    hien_thi:
+      kieu: bang
+      tieu_de: "Dưới tồn tối thiểu"
+      tom_tat: "{so_dong} mặt hàng"
+      cot: ["Nguyên liệu", "Tồn", "Tối thiểu", "Đơn vị"]
+      rong: "Không có mặt hàng dưới tối thiểu."
+    mo_man: "#/scm-inv-balance"
+    kenh: ["web", "VH"]
+  - id: proc-cho-duyet
+    hoi: "Đơn mua chờ duyệt"
+    tool: ds_cho_duyet
+    hien_thi:
+      kieu: bang
+      tieu_de: "Chờ anh / chị duyệt"
+      tom_tat: "{so_dong} yêu cầu"
+      cot: ["Loại", "Số chứng từ", "Giá trị", "Hạn"]
+      rong: "Không có yêu cầu chờ duyệt."
+    mo_man: "#/wf-inbox"
+    kenh: ["web", "DH"]

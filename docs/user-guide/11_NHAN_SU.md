@@ -1,3 +1,8 @@
+---
+screens: [hr-my, ai-tasks, adm-employee, hr-shift-assign, hr-attendance, hr-leave, adm-orgunit, adm-position, hr-shift, knowledge, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=15, knowledge?folder=70-hs, knowledge?folder=80-hdsd, int-identity]
+roles: [FIN-HR]
+updated: 2026-11-28
+---
 # 11 – Nhân sự: phân ca, chấm công, nghỉ phép, đổi ca
 
 ## 1. Bạn là ai

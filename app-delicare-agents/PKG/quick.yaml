@@ -1,0 +1,52 @@
+# Câu hỏi nhanh của agent PKG – D-143 (anh chốt 2026-11-28). Chạy KHÔNG qua AI (0 token): máy chủ gọi đúng công cụ + trình bày theo mẫu.
+# Định dạng: xem app-delicare-agents/QUICK_FORMAT.md. "cot" = nhãn cột hiển thị (tiếng Việt) – Claude Code ánh xạ sang trường thật của kết quả công cụ;
+# "loc" = lọc trên kết quả (không gọi lại công cụ); "nhap" = ô người dùng nhập trước khi chạy; "kenh" = nơi hiện nút (web luôn có; VH / DH = bot Telegram; ZALO = khách).
+# Hiện cho người hỏi khi có quyền Xem màn của công cụ (ScreenId) – như mọi lần gọi khác.
+agent: PKG
+questions:
+  - id: pkg-khay
+    hoi: "Khay hộp đang ở khách"
+    tool: hop_khay
+    hien_thi:
+      kieu: bang
+      tieu_de: "Khay hộp theo khách"
+      tom_tat: "{tong.chua_thu} khay hộp chưa thu · {dem.vuot_nguong=true} khách vượt ngưỡng thất thoát"
+      cot: ["Khách", "Đã giao", "Đã thu", "Còn", "Thất thoát %"]
+      sap_xep: "Thất thoát % giảm dần"
+    mo_man: "#/log-container"
+    phan_tich: "Khách nào nên nhắc / tính phí thất thoát theo hợp đồng."
+    kenh: ["web", "VH"]
+  - id: pkg-qua-han
+    hoi: "Khay hộp quá hạn thu hồi"
+    tool: hop_khay
+    loc: "Quá hạn = có"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Quá hạn thu hồi"
+      tom_tat: "{so_dong} khách quá hạn"
+      cot: ["Khách", "Còn", "Quá hạn (ngày)"]
+      rong: "Không có khay hộp quá hạn."
+    mo_man: "#/log-container"
+    kenh: ["web", "VH"]
+  - id: pkg-ve-sinh
+    hoi: "Lô vệ sinh hôm nay"
+    tool: lo_ve_sinh
+    hien_thi:
+      kieu: bang
+      tieu_de: "Lô vệ sinh"
+      tom_tat: "{dem.trang_thai=Hoàn thành}/{so_dong} lô xong"
+      cot: ["Lô", "Bước hiện tại", "Bắt đầu", "Kết quả"]
+    mo_man: "#/qc-clean"
+    kenh: ["web", "VH"]
+  - id: pkg-canh-bao
+    hoi: "Cảnh báo khay hộp & vệ sinh"
+    tool: canh_bao
+    loc: "Loại thuộc Khay hộp / Vệ sinh"
+    hien_thi:
+      kieu: bang
+      tieu_de: "Cảnh báo"
+      tom_tat: "{so_dong} cảnh báo"
+      cot: ["Mức", "Nội dung", "Từ lúc"]
+      rong: "Không có cảnh báo."
+    mo_man: "#/log-container"
+    kenh: ["web", "VH"]

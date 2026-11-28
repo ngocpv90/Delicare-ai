@@ -96,6 +96,18 @@ namespace AppDelicare.WebApi.Controllers
             }
         }
 
+        /// <summary>AI-22.3 (D-141 l): hướng dẫn của 1 màn cho nút "?" – các bước (kèm data-help cho "Chỉ cho tôi"), ghi chú, câu hỏi thường gặp. HDSD công khai nội bộ.</summary>
+        [HttpGet("GetHelp")]
+        public Task<IActionResult> GetHelp([FromQuery] string? screen) => Run(nameof(GetHelp), () => _service.GetHelp(screen));
+
+        /// <summary>AI-22.3: mục lục thư viện Hướng dẫn sử dụng (màn áp dụng, vai trò, ngày cập nhật).</summary>
+        [HttpGet("GetGuides")]
+        public Task<IActionResult> GetGuides() => Run(nameof(GetGuides), _service.GetGuides);
+
+        /// <summary>AI-22.3: "Hướng dẫn có giúp được không?" Có / Chưa (+ góp ý) – KNOW tổng hợp mục cần sửa.</summary>
+        [HttpPost("HelpFeedback")]
+        public Task<IActionResult> HelpFeedback([FromBody] KnowledgeHelpFeedbackRequest request) => Run(nameof(HelpFeedback), () => _service.HelpFeedback(request ?? new KnowledgeHelpFeedbackRequest()));
+
         /// <summary>AI-22.2: chuyển Lưu trữ (thay xóa) – quyền Xóa vùng.</summary>
         [HttpPost("Archive")]
         public Task<IActionResult> Archive([FromBody] KnowledgePathRequest request) => Run(nameof(Archive), () => _service.Archive(request ?? new KnowledgePathRequest()));

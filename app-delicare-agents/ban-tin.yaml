@@ -1,0 +1,51 @@
+# Bản tin tự động dựng bằng MẪU từ câu hỏi nhanh – KHÔNG qua AI (D-143, anh chốt 2026-11-28).
+# AppDelicare.Job chạy đúng giờ → chạy lần lượt các câu nhanh (bằng quyền của từng người nhận) → ghép thành 1 tin → OutboundMessage (bot DH / VH) + ghi kho thư mục 10.
+# Người nhận = người có quyền Xem mục ObjectMenu của bản tin (ẩn khỏi sidebar, cấp trên ma trận quyền cũ) và đã liên kết Telegram. Không liệt kê người / nhóm trong tệp này.
+# Mỗi khối chỉ in câu "tom_tat" + tối đa "dong" dòng đầu; khối không có dòng nào in câu "rong" (tin tốt) hoặc bỏ nếu "an_khi_rong: true".
+# Nhận xét AI (2–3 dòng cuối tin) chỉ khi cấu hình Agent:BriefingAiComment = true (mặc định false → 0 token).
+ban_tin:
+  - id: sang-bgd
+    ten: Bản tin sáng – Ban GĐ
+    gio: "07:00"
+    muc_quyen: ai-ban-tin-sang
+    kenh: DH
+    khoi:
+      - { cau: vivi-tinh-hinh, dong: 0 }
+      - { cau: vivi-don-mai, dong: 0 }
+      - { cau: vivi-canh-bao, dong: 3, an_khi_rong: false }
+      - { cau: vivi-thieu-nl, dong: 3, an_khi_rong: true }
+      - { cau: vivi-cho-duyet, dong: 3, an_khi_rong: true }
+  - id: chieu-bgd
+    ten: Báo cáo cuối ngày – Ban GĐ
+    gio: "17:00"
+    muc_quyen: ai-ban-tin-chieu
+    kenh: DH
+    khoi:
+      - { cau: vivi-tinh-hinh, dong: 0 }
+      - { cau: vivi-su-co, dong: 5, an_khi_rong: false }
+      - { cau: sales-chua-chot, dong: 5, an_khi_rong: true }
+      - { cau: vivi-cho-duyet, dong: 3, an_khi_rong: true }
+  - id: sang-kho
+    ten: Bản tin kho buổi sáng
+    gio: "05:30"
+    muc_quyen: ai-ban-tin-kho
+    kenh: VH
+    khoi:
+      - { cau: wh-duoi-toi-thieu, dong: 5, an_khi_rong: false }
+      - { cau: wh-can-han-3, dong: 5, an_khi_rong: false }
+      - { cau: wh-thieu-mai, dong: 5, an_khi_rong: true }
+  - id: sang-bep
+    ten: Bản tin bếp đầu ca
+    gio: "05:45"
+    muc_quyen: ai-ban-tin-bep
+    kenh: VH
+    khoi:
+      - { cau: kit-hom-nay, dong: 10 }
+      - { cau: hr-chua-vao, dong: 5, an_khi_rong: true }
+  - id: chot-don
+    ten: Nhắc chốt suất (trước giờ chốt)
+    gio: "19:00"
+    muc_quyen: ai-ban-tin-kd
+    kenh: VH
+    khoi:
+      - { cau: sales-chua-chot, dong: 10, an_khi_rong: true }

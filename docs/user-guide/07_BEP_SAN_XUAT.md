@@ -1,3 +1,8 @@
+---
+screens: [hr-my, ai-tasks, sal-retail-order, menu-menu, menu-recipe, menu-dish, scm-issue, scm-inv-balance, prod-plan, prod-batch, prod-waste, qc-checklist-result, qc-temperature, qc-cleaning, qc-checklist, log-packing-order, log-packaging-type, log-packaging-norm, hr-shift-assign, hr-attendance, hr-leave, hr-shift, prod-line, knowledge, knowledge?folder=30, knowledge?folder=45, knowledge?folder=50, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=15, knowledge?folder=80-hdsd]
+roles: [OPS-KIT, OPS-MNT]
+updated: 2026-11-28
+---
 # 07 – Bếp trung tâm / sản xuất
 
 ## 1. Bạn là ai

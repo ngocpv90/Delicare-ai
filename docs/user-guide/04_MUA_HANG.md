@@ -1,3 +1,8 @@
+---
+screens: [hr-my, dash-exec, kpi-daily, ai-tasks, menu-menu, menu-recipe, scm-requirement, scm-pr, scm-po, scm-supplier, scm-supplier-material, scm-ingredient, scm-gr, scm-supplier-return, scm-issue, scm-inv-balance, scm-stockcount, prod-plan, qc-inspection, qc-supplier-issue, log-packaging-norm, scm-uom, scm-warehouse, knowledge, knowledge?folder=30, knowledge?folder=40, knowledge?folder=60, knowledge?folder=70, knowledge?folder=80, knowledge?folder=99, knowledge?folder=15, knowledge?folder=40-hd, knowledge?folder=80-hdsd, scm-uom-conversion]
+roles: [OPS-SCM, OPS-SCM-HEAD]
+updated: 2026-11-28
+---
 # 04 – Mua hàng (nhu cầu nguyên liệu, đề nghị mua, đơn mua, nhà cung cấp)
 
 ## 1. Bạn là ai

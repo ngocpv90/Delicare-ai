@@ -119,6 +119,7 @@ Dừng: `docker compose ... down`. Thêm `-v` nếu muốn xóa luôn dữ liệ
 - Project `AppDelicare.ToolGateway` (ASP.NET Core 8): **MCP `/mcp`** (Streamable HTTP, SDK `ModelContextProtocol.AspNetCore` 2.4.0, không phiên), **REST `POST /tools/{name}`** (cùng bộ công cụ), `GET /tools`, `GET /health`. Chỉ gọi method Service – không truy cập CSDL riêng; cần cùng chuỗi kết nối như api (Service dùng DB).
 - Docker: service `toolgateway` trong `docker-compose.yml` – **chỉ `expose: 8080`, không publish cổng** (Hermes gọi `http://toolgateway:8080/mcp` trong mạng Docker). Image: `docker build -f AppDelicare.ToolGateway/Dockerfile AppDelicare`.
 - Volume `knowledge` (kho tri thức, `Knowledge__VaultPath=/app/App_Data/Knowledge`) gắn vào `api`, `job`, `toolgateway`; **sao lưu cùng DB** như `api-docs`. Bản staging / production thêm service + volume này khi bật đợt AI trên server.
+- AI-22.3 (D-141 l): Hướng dẫn sử dụng – gắn thêm `../../docs/user-guide:/app/user-guide:ro` + biến `Knowledge__UserGuidePath=/app/user-guide` cho `api` và `job`; job `UserGuideExport` (05:30) nhập vào Kho tài liệu › 80 › Hướng dẫn sử dụng sau mỗi lần phát hành (chạy lại không nhân bản). Trống biến → máy dev tự tìm `docs/user-guide`.
 - Máy dev: `dotnet run --project AppDelicare/AppDelicare.ToolGateway --launch-profile http` → http://localhost:5130 (chuỗi kết nối từ user-secrets chung với WebApi). Khóa agent (AI-2): biến môi trường tên ghi ở `BotConfiguration.SecretReference` (vd `AGENT_KEY_WH`) – không commit.
 
 ### Cảm biến nhiệt độ IoT (BE3.2)
