@@ -1,0 +1,68 @@
+# AI-15 (D-133) – MẪU cấu hình container hermes-van-phong (agent: SALES, PLAN, PROC, HR, ACC, CSKH). Cùng nội dung agents/hermes.config.example.yaml, chỉ khác mcp_servers / platforms / api_server.
+# Chép vào HERMES_HOME (~/.hermes/config.yaml hoặc volume hermes-van-phong-data:/opt/data/config.yaml của container hermes-van-phong) rồi chỉnh. KHÔNG ghi khóa thật vào tệp này:
+# mọi khóa đọc từ biến môi trường (${TÊN}) – đặt ở .env của server / docker compose, không commit.
+model:
+  provider: anthropic
+  default: ${HERMES_MODEL_DEFAULT:-claude-sonnet-5-5}     # VIVI + phân tích
+  api_key: ${ANTHROPIC_API_KEY}
+auxiliary:
+  compression:
+    model: ${HERMES_MODEL_SCHEDULED:-claude-haiku-5-5}   # việc theo lịch / nén ngữ cảnh
+
+agent:
+  # D-133: Hermes KHÔNG có terminal / file / code / browser / web – chỉ MCP trỏ ToolGateway.
+  disabled_toolsets: [terminal, file, code_execution, browser, computer_use, delegation, cronjob, web, search, x_search, image_gen, video_gen, tts, kanban, catalog, connections]
+skills:
+  write_approval: true
+
+# Mỗi agent MỘT mục MCP + khóa riêng (ToolGateway biết agent nào gọi, kiểm quyền agent ∩ người hỏi).
+# Hermes gắn thêm X-On-Behalf-Of = Telegram user id (bot Trợ lý) hoặc vé web:… (chat web AI-14, nhận ở trường onBehalfOf của POST /chat) – người chưa liên kết DELI-CARE bị ToolGateway từ chối.
+mcp_servers:
+  delicare-sales:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: SALES, X-Agent-Key: "${AGENT_KEY_SALES}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-plan:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: PLAN, X-Agent-Key: "${AGENT_KEY_PLAN}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-proc:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: PROC, X-Agent-Key: "${AGENT_KEY_PROC}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-hr:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: HR, X-Agent-Key: "${AGENT_KEY_HR}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-acc:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: ACC, X-Agent-Key: "${AGENT_KEY_ACC}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-cskh:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: CSKH, X-Agent-Key: "${AGENT_KEY_CSKH}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+
+# Container này KHÔNG chạy bot Telegram (bot Trợ lý ở hermes-vivi) – chỉ việc theo lịch + chat web.
+platforms: {}
+
+# API server (chat web AI-14): cổng 8642, khóa API_SERVER_KEY (biến môi trường của container).
+api_server:                     # tên khóa theo tài liệu Hermes bản đang chạy – kiểm lại khi cài thật (cửa đợt 2)
+  enabled: true
+  port: 8642
+  key: ${API_SERVER_KEY}
+# Kỹ năng: agents/<MÃ>/SOUL.md → skills/delicare-<mã>/SKILL.md cho SALES, PLAN, PROC, HR, ACC, CSKH.
+# Lịch: node tools/agent-eval/gen-cron.mjs --group van-phong (từ agents/schedules.json, chỉ agent của nhóm) – hạn chót nghiệp vụ vẫn do job lõi AppDelicare.Job.
+timezone: Asia/Ho_Chi_Minh

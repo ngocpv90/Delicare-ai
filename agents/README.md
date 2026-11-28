@@ -55,14 +55,35 @@ mcp_servers:
 | `<MÃ>/tools.txt` | Công cụ agent được gọi – **sinh từ `AgentToolRegistry`**, test `AgentConfigAi7Tests` bắt lệch. Sinh lại: `UPDATE_AGENT_TOOLS=1 dotnet test --filter AgentConfigAi7Tests` | Máy sinh |
 | `<MÃ>/eval.yaml` | Bộ câu nghiệm thu (5 agent đợt 1): câu hỏi · công cụ phải gọi · điều kiện đúng (mã HTTP, trường phải có, chuỗi có / không có, **số = màn web cùng quyền**) | Người |
 | `schedules.json` | Lịch chạy – MỘT nguồn cho màn Lịch chạy (`ai-schedule`) và cron Hermes | Người |
-| `hermes.config.example.yaml` | Mẫu `config.yaml` của Hermes: mô hình (Sonnet cho VIVI, Haiku cho việc theo lịch – qua biến môi trường), tắt terminal / file / code / browser / web, **mỗi agent một mục MCP + khóa riêng** trỏ `http://toolgateway:8080/mcp` | Người |
+| `hermes/<nhóm>.config.example.yaml` | AI-15: mẫu `config.yaml` của từng container (vivi / van-hanh / van-phong) – chỉ MCP của agent trong nhóm; `hermes/groups.json` = agent → nhóm (test `AgentDeployAi15Tests` bắt lệch với docker-compose.yml) | Người |
+| `hermes.config.example.yaml` | (đợt 1, 1 container – giữ tham khảo) Mẫu `config.yaml` của Hermes: mô hình (Sonnet cho VIVI, Haiku cho việc theo lịch – qua biến môi trường), tắt terminal / file / code / browser / web, **mỗi agent một mục MCP + khóa riêng** trỏ `http://toolgateway:8080/mcp` | Người |
 
-### Cách nạp vào Hermes (server)
+### Cách nạp vào Hermes (server) – 3 container (AI-15)
 
-1. Đặt khóa trong `.env` của server (không commit): `AGENT_KEY_VIVI`, `AGENT_KEY_WH`, `AGENT_KEY_KITCHEN`, `AGENT_KEY_QA`, `AGENT_KEY_KNOW` (chuỗi ngẫu nhiên ≥ 24 ký tự, mỗi agent một khóa – toolgateway và hermes cùng đọc), `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN_TRO_LY`.
-2. `docker compose --profile hermes run --rm hermes setup` → chép `/opt/delicare-agents/hermes.config.example.yaml` thành `/opt/data/config.yaml`; mỗi `SOUL.md` thành kỹ năng `skills/delicare-<mã>/SKILL.md` (VIVI là `SOUL.md` của profile).
-3. Lịch: `node tools/agent-eval/gen-cron.mjs > hermes-cron.sh` rồi chạy trong container (`sh hermes-cron.sh`). Chỉ lịch `enabled`; tắt agent trên màn Trung tâm agent thì ToolGateway từ chối ngay. Lệnh `hermes cron add` theo bản v0.23.1 – kiểm lại tên tham số khi nâng phiên bản.
-4. Ai được hỏi bot Trợ lý: người đã liên kết Telegram với DELI-CARE (`UserExternalIdentity`) **và** thuộc nhóm trong `Agent:AskingGroups` của API (đợt 1 đề xuất `CEO,CEO-PMO,COO,OPS-SCM-HEAD,SAL-HEAD`) – người chưa liên kết luôn bị ToolGateway từ chối, kể cả khi Hermes chuyển câu hỏi.
+| Container | Agent | Volume dữ liệu | Ghi chú |
+|---|---|---|---|
+| `hermes-vivi` | VIVI, KNOW | `hermes-data` (tên cũ – giữ lịch sử bot Trợ lý từ đợt 1) | Bot Telegram **Trợ lý**; chat web mặc định (`Agent:HermesApiUrl`) |
+| `hermes-van-hanh` | KITCHEN, QA, LOG, PKG, WH | `hermes-van-hanh-data` | Lịch vận hành (05:30 kho, 08:30 QA, 10:00 bếp…) |
+| `hermes-van-phong` | SALES, PLAN, PROC, HR, ACC, CSKH | `hermes-van-phong-data` | Lịch văn phòng (14:30 kế hoạch mua…) |
+
+Tách để lỗi / quá tải / nâng cấp một nhóm không kéo đổ nhóm khác, và mỗi container chỉ giữ khóa agent của mình. Mỗi container ĐÚNG 1 volume (SQLite của Hermes không dùng chung).
+
+1. `.env` của server (không commit): `AGENT_KEY_<MÃ>` cho từng agent đang bật (chuỗi ngẫu nhiên ≥ 24 ký tự, mỗi agent một khóa – api, toolgateway và container Hermes của nhóm cùng đọc), `HERMES_API_KEY` (khóa API server Hermes – api gửi Bearer, Hermes nhận qua `API_SERVER_KEY`), `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN_TRO_LY`.
+2. Mỗi container một lần: `docker compose --profile hermes run --rm hermes-<nhóm> setup` → chép `/opt/delicare-agents/hermes/<nhóm>.config.example.yaml` thành `/opt/data/config.yaml`; `SOUL.md` của agent trong nhóm thành kỹ năng `skills/delicare-<mã>/SKILL.md` (VIVI là `SOUL.md` của hermes-vivi). Tên khóa `api_server` trong mẫu theo tài liệu Hermes – kiểm lại với bản đang chạy.
+3. Lịch: `node tools/agent-eval/gen-cron.mjs --group <nhóm> > cron-<nhóm>.sh` rồi chạy trong đúng container (`sh cron-<nhóm>.sh`). Chỉ lịch `enabled` của agent trong nhóm; tắt agent trên màn Trung tâm agent thì ToolGateway từ chối ngay. Lệnh `hermes cron add` theo bản v0.23.1 – kiểm lại tên tham số khi nâng phiên bản.
+4. Chạy: `docker compose --profile hermes up -d` (3 container) · log: `docker compose logs -f hermes-van-hanh`.
+5. Ai được hỏi bot Trợ lý: người đã liên kết Telegram với DELI-CARE (`UserExternalIdentity`) **và** thuộc nhóm trong `Agent:AskingGroups` – người chưa liên kết luôn bị ToolGateway từ chối, kể cả khi Hermes chuyển câu hỏi.
+6. Nâng cấp từ 1 container (trước AI-15): `docker compose --profile hermes down` → pull bản mới → `up -d`; `hermes-vivi` dùng lại volume `hermes-data`, chỉ 2 container mới cần bước 2 – 3; xóa khỏi `hermes-data` các lịch của agent đã chuyển nhóm (`hermes cron list` / `remove`).
+
+### Chat trên web (AI-14) – hợp đồng với API server Hermes
+
+- api gọi `POST {Agent:HermesApiUrl}/chat/completions` (kiểu OpenAI; agent ngoài nhóm vivi → `Agent:HermesApiUrlByAgent:<MÃ>`, docker-compose đặt sẵn), `Authorization: Bearer $HERMES_API_KEY`, thân `{ model: "delicare-<mã>", messages: [...], user: "user:<id>", stream: false }`; đọc `choices[0].message.content`.
+- Header **`X-On-Behalf-Of: web:<userId>:<hạn unix>:<HMAC>`** = vé người hỏi (ký bằng khóa JWT của API, hạn 10 phút). Hermes phải **chuyển tiếp nguyên header này** vào lời gọi MCP tới ToolGateway (như Telegram user id ở bot); ToolGateway xác minh chữ ký + hạn rồi áp quyền agent ∩ người hỏi. Vé không nằm trong nội dung hội thoại (mô hình không thấy, không bỏ được). **Cần kiểm trên server thật** rằng bản Hermes đang chạy chuyển tiếp header (cửa đợt 2); không chuyển → lời gọi công cụ không có người hỏi.
+- Hermes trả lỗi / quá `Agent:ChatTimeoutSeconds` → web báo "đang bận / không phản hồi"; mỗi câu 1 dòng IntegrationLog `agent_chat` (không lưu nội dung câu hỏi).
+
+### Chi phí (AI-13)
+
+Sau mỗi lượt trả lời Hermes gọi công cụ `bao_chi_phi` (`mo_hinh, token_vao, token_ra, chi_phi, don_vi USD|VND, luot`) – cùng `luot` chỉ tính 1 lần. Ngân sách `Agent:MonthlyBudget`, cảnh báo `Agent:CostAlertPct` % và 100 %.
 
 ### Kiểm nghiệm thu
 

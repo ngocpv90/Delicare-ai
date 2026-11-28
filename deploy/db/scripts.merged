@@ -45,6 +45,7 @@ DB/scripts/CHECK_sidebar_fingerprint.sql    # công cụ so 2 DB – dấu vân 
 DB/scripts/UI624_close_completed_orders.sql # chỉ báo cáo – CHỈ LIỆT KÊ lệnh hoàn thành chưa đóng (không ghi)
 DB/scripts/REAL1_retire_demo.sql            # REAL-1 – quy trình tools/real1/run-all.mjs (D-130), không chạy tự động
 DB/scripts/REAL1_tag.sql                    # REAL-1 – quy trình tools/real1/run-all.mjs (D-130), không chạy tự động
+DB/scripts/AI15_gate_wave2_report.sql       # AI-15 (D-133) – báo cáo chỉ đọc số liệu cửa đợt 2 (duyệt không sửa, ghi không qua duyệt, chi phí), chạy tay
 #
 # ---- Seed dữ liệu demo (không chạy tự động) ----
 DB/seed/RetailProduct_demo_seed.sql         # RETAIL-1 – sản phẩm mẫu, chạy tay khi cần demo

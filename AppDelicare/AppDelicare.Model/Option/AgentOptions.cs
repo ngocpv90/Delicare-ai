@@ -34,5 +34,26 @@ namespace AppDelicare.Model.Option
 
         /// <summary>AI-6: tệp lịch chạy agent (một nguồn cho màn Lịch chạy + cron Hermes); tương đối = tìm từ ContentRoot lên 5 cấp (Docker: gắn thư mục agents).</summary>
         public string SchedulesFile { get; set; } = "agents/schedules.json";
+
+        /// <summary>AI-13 (D-133 PROPOSED – anh điền): ngân sách chi phí AI / tháng (VND); trống / 0 = không cảnh báo ngân sách.</summary>
+        public decimal? MonthlyBudget { get; set; }
+
+        /// <summary>AI-13: tỷ giá quy đổi chi phí Hermes báo bằng USD sang VND.</summary>
+        public decimal UsdToVnd { get; set; } = 25500m;
+
+        /// <summary>AI-13: ngưỡng % ngân sách tháng gửi cảnh báo CEO / FIN-IT (một lần / tháng; tới 100% gửi thêm một lần).</summary>
+        public decimal CostAlertPct { get; set; } = 80m;
+
+        /// <summary>AI-14: API server Hermes kiểu OpenAI cho chat trên web, gồm /v1 (vd http://hermes-vivi:8642/v1); trống = chat tắt, màn báo tiếng Việt.</summary>
+        public string? HermesApiUrl { get; set; }
+
+        /// <summary>AI-15: agent ở container Hermes khác → URL riêng theo mã (vd KITCHEN → http://hermes-van-hanh:8642/v1). Không có mục → HermesApiUrl.</summary>
+        public Dictionary<string, string> HermesApiUrlByAgent { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>AI-14: TÊN biến môi trường giữ khóa gọi API Hermes (không ghi khóa ở đây).</summary>
+        public string HermesApiKeyEnv { get; set; } = "HERMES_API_KEY";
+
+        /// <summary>AI-14: thời gian chờ Hermes trả lời 1 câu chat (giây).</summary>
+        public int ChatTimeoutSeconds { get; set; } = 60;
     }
 }

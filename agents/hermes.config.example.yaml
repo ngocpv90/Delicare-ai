@@ -1,4 +1,4 @@
-# AI-7 (D-133) – MẪU cấu hình Hermes Agent cho DELI-CARE (đợt 1: VIVI, WH, KITCHEN, QA, KNOW).
+# AI-7 (D-133) – MẪU cấu hình Hermes Agent cho DELI-CARE (đợt 1, 1 container). TỪ AI-15: dùng agents/hermes/<nhóm>.config.example.yaml (3 container: vivi / van-hanh / van-phong).
 # Chép vào HERMES_HOME (~/.hermes/config.yaml hoặc volume hermes-data:/opt/data/config.yaml) rồi chỉnh. KHÔNG ghi khóa thật vào tệp này:
 # mọi khóa đọc từ biến môi trường (${TÊN}) – đặt ở .env của server / docker compose, không commit.
 model:

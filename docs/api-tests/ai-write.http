@@ -1,0 +1,73 @@
+### AI đợt 2 (D-133: AI-9 … AI-15) – lệnh ghi 2 pha, cảnh báo, chi phí, chat web.
+### Biến: đặt trong http-client.env.json (KHÔNG ghi khóa thật vào tệp này).
+@gw = http://localhost:5130
+@api = http://localhost:5125/api
+@salesKey = {{AGENT_KEY_SALES}}
+@procKey = {{AGENT_KEY_PROC}}
+@viviKey = {{AGENT_KEY_VIVI}}
+@token = {{WEB_TOKEN}}
+
+### 1. Đề xuất ghi (AI-9 / AI-10) – agent CHỈ đề xuất, nghiệp vụ chưa đổi; trả requestNo + hạn xác nhận
+POST {{gw}}/tools/propose_order_change
+Content-Type: application/json
+X-Agent-Code: SALES
+X-Agent-Key: {{salesKey}}
+X-Correlation-Id: http-ai-write-1
+
+{ "so_don": "<số đơn đặt suất>", "dong": [{ "loai_suat": "TRUA", "so_suat": 120 }], "ly_do": "Khách báo tăng suất trưa" }
+
+### Đề xuất đơn mua ngoài kế hoạch
+POST {{gw}}/tools/propose_purchase_order
+Content-Type: application/json
+X-Agent-Code: PROC
+X-Agent-Key: {{procKey}}
+
+{ "ma_ncc": "<mã NCC>", "ngay_giao": "2026-11-30", "dong": [{ "ma_nl": "<mã NL>", "so_luong": 20 }], "ly_do": "Thiếu hụt 7 ngày" }
+
+### 2. Người duyệt: danh sách Lệnh của agent → Duyệt (chạy đúng thao tác web dưới tên người duyệt)
+GET {{api}}/ApprovalRequest/GetAll?Page=1&PageSize=20&BusinessType=AGENT_WRITE
+Authorization: Bearer {{token}}
+
+###
+POST {{api}}/ApprovalRequest/Decide
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+id=<id yêu cầu>&approve=true&note=Duyệt qua http-test
+
+### 3. Cảnh báo chủ động (AI-11) – mỗi khóa sự kiện gửi 1 lần
+POST {{gw}}/tools/gui_canh_bao
+Content-Type: application/json
+X-Agent-Code: PROC
+X-Agent-Key: {{procKey}}
+X-Correlation-Id: ALERT:http-test-1
+
+{ "man": "scm-requirement", "khoa_su_kien": "ALERT:http-test-1", "tieu_de": "Thiếu thịt vai 20 kg ngày mai", "nhan_xet": "Tồn 5 kg, nhu cầu 25 kg", "phuong_an": ["Đặt bù NCC A trước 15:00"], "muc_do": "CAO" }
+
+### 4. Chi phí (AI-13) – Hermes báo sau mỗi lượt; cùng "luot" chỉ tính 1 lần
+POST {{gw}}/tools/bao_chi_phi
+Content-Type: application/json
+X-Agent-Code: VIVI
+X-Agent-Key: {{viviKey}}
+
+{ "mo_hinh": "claude-sonnet-5-5", "token_vao": 1200, "token_ra": 300, "chi_phi": 0.02, "don_vi": "USD", "luot": "http-test-1" }
+
+### Thẻ chi phí tháng (quyền Xem Trung tâm agent / Nhật ký agent)
+GET {{api}}/Agent/GetCost
+Authorization: Bearer {{token}}
+
+### 5. Chat web (AI-14) – Hermes chưa cấu hình → thông báo tiếng Việt; có Hermes → { agent, reply, correlationId }
+POST {{api}}/Agent/Chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "agent": "VIVI", "message": "Hôm nay vận hành thế nào?", "history": [] }
+
+### Vé người hỏi sai / hết hạn → 403 "Phiên chat trên web hết hạn / không hợp lệ"
+POST {{gw}}/tools/bao_cao_dieu_hanh
+Content-Type: application/json
+X-Agent-Code: VIVI
+X-Agent-Key: {{viviKey}}
+X-On-Behalf-Of: web:00000000000000000000000000000000:1:00
+
+{}
