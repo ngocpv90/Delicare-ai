@@ -405,8 +405,8 @@
     Store.touched.clear();
     if (p.access === false) {
       el.innerHTML = APP.header(f, '', { noNote: true }) + (API_MODE()
-        ? `<div class="card panel empty">${I('key')}<h2 class="mt">Tài khoản chưa được cấp quyền truy cập màn hình này</h2><p class="muted">Quyền lấy từ <code>UserRole</code> (AllowAccess) × <code>ObjectMenu</code> (MetaLink = <code>#/${f.id}</code>) của nhóm người dùng. Liên hệ quản trị hệ thống để được cấp quyền.</p></div>`
-        : `<div class="card panel empty">${I('key')}<h2 class="mt">Vai trò "${esc(Store.user.group)}" không có quyền truy cập màn hình này</h2><p class="muted">Theo bảng <code>UserRole</code> (AllowAccess) × <code>ObjectMenu</code> (MetaLink = #/${f.id}).</p><button class="btn primary" data-role>Đổi vai trò</button></div>`);
+        ? `<div class="card panel empty">${I('key')}<h2 class="mt">Tài khoản chưa được cấp quyền truy cập màn hình này</h2><p class="muted">Nhóm quyền của anh/chị chưa được cấp mục «${esc(f.fn || f.name || f.id)}». Liên hệ quản trị hệ thống để được cấp quyền.</p></div>`
+        : `<div class="card panel empty">${I('key')}<h2 class="mt">Vai trò "${esc(Store.user.group)}" không có quyền truy cập màn hình này</h2><p class="muted">Theo ma trận quyền của nhóm (mục «${esc(f.fn || f.name || f.id)}»).</p><button class="btn primary" data-role>Đổi vai trò</button></div>`);
       screenTables = []; return finish(el);
     }
     prefetchTables(f.id); Store.touched.clear();   // touched chỉ ghi bảng màn hình thật sự đọc
