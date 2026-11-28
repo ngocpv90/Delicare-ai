@@ -10,7 +10,7 @@ questions:
     hien_thi:
       kieu: the
       tieu_de: "Tình hình hôm nay {ngay}"
-      tom_tat: "{tong.suat} suất · sản xuất {tong.me_xong}/{tong.me} mẻ · giao {tong.chuyen_xong}/{tong.chuyen} chuyến · {tong.canh_bao} cảnh báo đang mở"
+      tom_tat: "{tong.suat} suất · sản xuất {tong.sx_pct}% ({tong.me} mẻ) · giao {tong.chuyen_xong}/{tong.chuyen} chuyến · {tong.canh_bao} cảnh báo đang mở"
       cot: ["Đơn / suất", "Sản xuất", "Giao hàng", "Chất lượng", "Kho", "Cảnh báo chính"]
     mo_man: "#/dash-exec"
     phan_tich: "So với hôm qua và cùng thứ tuần trước; nêu 3 việc Ban GĐ nên chú ý."
@@ -82,7 +82,7 @@ questions:
     hien_thi:
       kieu: bieu_do
       tieu_de: "KPI 7 ngày gần nhất"
-      tom_tat: "Trung bình {tb.suat} suất / ngày · giao đúng giờ {tb.dung_gio}% · hao hụt {tb.hao_hut}%"
+      tom_tat: "giao đúng giờ {tb.dung_gio}% · hao hụt {tb.hao_hut}%"
       cot: ["Ngày", "Suất", "Giao đúng giờ %", "Hao hụt %", "Phản ánh"]
     mo_man: "#/dash-exec?tab=kpi"
     phan_tich: "Xu hướng, ngày bất thường và nguyên nhân có thể."

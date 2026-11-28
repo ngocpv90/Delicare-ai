@@ -11,9 +11,10 @@ namespace AppDelicare.WebApi.Controllers
     /// AI-6 (D-133) – Trợ lý AI: Trung tâm agent (<c>ai-agents</c>), Nhật ký agent (<c>ai-agent-log</c>), Lịch chạy (<c>ai-schedule</c>).
     /// Bật / tắt agent = Sửa Trung tâm agent (CEO / COO / FIN-IT) – đổi BotConfiguration.BotStatus, ToolGateway kiểm mỗi lời gọi nên có hiệu lực ngay.
     /// </summary>
-    public class AgentController(IAgentAdminService service, IAgentFlowService flows, AppDelicare.Services.Implement.Knowledge.IKnowledgeService knowledge, IAgentCostService cost, IAgentChatService chat, IAgentCenterService center) : BaseController
+    public class AgentController(IAgentAdminService service, IAgentFlowService flows, AppDelicare.Services.Implement.Knowledge.IKnowledgeService knowledge, IAgentCostService cost, IAgentChatService chat, IAgentCenterService center, AppDelicare.Services.Implement.Agent.IAgentQuickService quick) : BaseController
     {
         private readonly IAgentCenterService _center = center;
+        private readonly AppDelicare.Services.Implement.Agent.IAgentQuickService _quick = quick;
         private readonly IAgentChatService _chat = chat;
         private readonly IAgentCostService _cost = cost;
         private readonly AppDelicare.Services.Implement.Knowledge.IKnowledgeService _knowledge = knowledge;
@@ -82,6 +83,16 @@ namespace AppDelicare.WebApi.Controllers
         public Task<IActionResult> GetOverview() => Run(nameof(GetOverview), _center.GetOverview);
 
         /// <summary>AI-21 (D-138 f): danh sách agent cho tab Chat – ai vào được Trung tâm Agent (bất kỳ tab nào) đều xem.</summary>
+        /// <summary>AI-25.1 (D-143): câu hỏi nhanh người dùng được hỏi (quyền Xem màn của công cụ) – agent (trống = mọi agent), kênh web / VH / DH.</summary>
+        [HttpGet("GetQuick")]
+        [Security.SkipPermission]
+        public Task<IActionResult> GetQuick([FromQuery] string? agent, [FromQuery] string? kenh) => Run(nameof(GetQuick), () => _quick.GetQuick(agent, kenh));
+
+        /// <summary>AI-25.1: chạy 1 câu nhanh – KHÔNG qua AI (0 token), bằng quyền người hỏi; kết quả đã che / cắt dòng + tóm tắt theo mẫu.</summary>
+        [HttpPost("RunQuick")]
+        [Security.SkipPermission]
+        public Task<IActionResult> RunQuick([FromBody] AppDelicare.Services.Implement.Agent.QuickRunRequest request, [FromQuery] string? kenh) => Run(nameof(RunQuick), () => _quick.RunQuick(request ?? new AppDelicare.Services.Implement.Agent.QuickRunRequest(), kenh ?? "web"));
+
         [HttpGet("GetChatAgents")]
         [Security.Permission("ai-agents", PermissionAction.View, OrScreens = ["ai-tasks", "ai-flow", "ai-agent-log", "ai-schedule", "ai-cost"])]
         public Task<IActionResult> GetChatAgents() => Run(nameof(GetChatAgents), _center.GetChatAgents);

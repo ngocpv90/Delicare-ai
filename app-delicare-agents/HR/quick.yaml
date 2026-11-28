@@ -24,7 +24,7 @@ questions:
     hien_thi:
       kieu: the
       tieu_de: "Chấm công hôm nay"
-      tom_tat: "{dem.trang_thai=Đã vào} đã vào · {dem.trang_thai=Chưa vào ca} chưa vào · {dem.di_muon=true} đi muộn · {dem.trang_thai=Vắng} vắng"
+      tom_tat: "{tong.da_vao}/{tong.dinh_bien} đã vào ca · {tong.muon_phut} phút đi muộn · {tong.can_xu_ly} việc cần xử lý"
       cot: ["Ca", "Định biên", "Đã vào", "Chưa vào", "Đi muộn", "Vắng"]
     mo_man: "#/hr-attendance"
     kenh: ["web", "VH"]
@@ -47,7 +47,7 @@ questions:
     hien_thi:
       kieu: the
       tieu_de: "Chấm công hôm qua"
-      tom_tat: "{dem.trang_thai=Vắng} vắng · {dem.di_muon=true} đi muộn · {dem.ve_som=true} về sớm"
+      tom_tat: "{tong.da_vao}/{tong.dinh_bien} đã vào ca · {tong.muon_phut} phút đi muộn"
       cot: ["Ca", "Đã vào", "Vắng", "Đi muộn", "Về sớm"]
     mo_man: "#/hr-attendance"
     kenh: ["web"]

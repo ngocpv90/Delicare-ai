@@ -26,7 +26,7 @@ questions:
       tom_tat: "{dem.khop=true}/{so_dong} chỉ tiêu khớp"
       cot: ["Chỉ tiêu", "Delicare", "AMIS", "Chênh lệch"]
       sap_xep: "Lệch trước"
-    mo_man: "#/acc-reconcile"
+    mo_man: "#/acc-amis-recon"
     phan_tich: "Nguyên nhân chênh lệch hay gặp và việc cần kiểm."
     kenh: ["web"]
   - id: acc-lai-gop
@@ -48,7 +48,7 @@ questions:
       tom_tat: "{dem.vuot_nguong=true} khách vượt ngưỡng hợp đồng"
       cot: ["Khách", "Thất thoát", "Ngưỡng hợp đồng", "Phí dự kiến"]
       sap_xep: "Thất thoát % giảm dần"
-    mo_man: "#/log-container"
+    mo_man: "#/log-container-return"
     kenh: ["web"]
   - id: acc-cho-duyet
     hoi: "Tôi đang có gì chờ duyệt?"
