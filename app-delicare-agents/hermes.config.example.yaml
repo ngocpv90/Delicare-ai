@@ -1,5 +1,5 @@
-# AI-15 (D-133) – MẪU cấu hình container hermes-vivi (agent: VIVI, KNOW). Cùng nội dung agents/hermes.config.example.yaml, chỉ khác mcp_servers / platforms / api_server.
-# Chép vào HERMES_HOME (~/.hermes/config.yaml hoặc volume hermes-data:/opt/data/config.yaml của container hermes-vivi) rồi chỉnh. KHÔNG ghi khóa thật vào tệp này:
+# AI-7 (D-133) – MẪU cấu hình Hermes Agent cho DELI-CARE (đợt 1, 1 container). TỪ AI-15: dùng app-delicare-agents/hermes/<nhóm>.config.example.yaml (3 container: vivi / van-hanh / van-phong).
+# Chép vào HERMES_HOME (~/.hermes/config.yaml hoặc volume hermes-data:/opt/data/config.yaml) rồi chỉnh. KHÔNG ghi khóa thật vào tệp này:
 # mọi khóa đọc từ biến môi trường (${TÊN}) – đặt ở .env của server / docker compose, không commit.
 model:
   provider: anthropic
@@ -16,11 +16,29 @@ skills:
   write_approval: true
 
 # Mỗi agent MỘT mục MCP + khóa riêng (ToolGateway biết agent nào gọi, kiểm quyền agent ∩ người hỏi).
-# Hermes gắn thêm X-On-Behalf-Of = Telegram user id (bot Trợ lý) hoặc vé web:… (chat web AI-14, nhận ở trường onBehalfOf của POST /chat) – người chưa liên kết DELI-CARE bị ToolGateway từ chối.
+# Hermes gắn thêm X-On-Behalf-Of = Telegram user id của người hỏi (bot Trợ lý) – người chưa liên kết DELI-CARE bị ToolGateway từ chối.
 mcp_servers:
   delicare-vivi:
     url: http://toolgateway:8080/mcp
     headers: { X-Agent-Code: VIVI, X-Agent-Key: "${AGENT_KEY_VIVI}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-wh:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: WH, X-Agent-Key: "${AGENT_KEY_WH}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-kitchen:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: KITCHEN, X-Agent-Key: "${AGENT_KEY_KITCHEN}" }
+    timeout: 120
+    connect_timeout: 30
+    tools: { prompts: false, resources: false }
+  delicare-qa:
+    url: http://toolgateway:8080/mcp
+    headers: { X-Agent-Code: QA, X-Agent-Key: "${AGENT_KEY_QA}" }
     timeout: 120
     connect_timeout: 30
     tools: { prompts: false, resources: false }
@@ -38,11 +56,6 @@ platforms:
     enabled: true
     bot_token: ${TELEGRAM_BOT_TOKEN_TRO_LY}
 
-# API server (chat web AI-14): cổng 8642, khóa API_SERVER_KEY (biến môi trường của container).
-api_server:                     # tên khóa theo tài liệu Hermes bản đang chạy – kiểm lại khi cài thật (cửa đợt 2)
-  enabled: true
-  port: 8642
-  key: ${API_SERVER_KEY}
-# Kỹ năng: agents/<MÃ>/SOUL.md → skills/delicare-<mã>/SKILL.md cho VIVI, KNOW.
-# Lịch: node tools/agent-eval/gen-cron.mjs --group vivi (từ agents/schedules.json, chỉ agent của nhóm) – hạn chót nghiệp vụ vẫn do job lõi AppDelicare.Job.
+# Profile: đợt 1 một profile "vivi" – agent phòng ban là kỹ năng / trợ lý con (app-delicare-agents/<MÃ>/SOUL.md → skills/delicare-<mã>/SKILL.md).
+# Lịch: node tools/agent-eval/gen-cron.mjs (từ app-delicare-agents/schedules.json) – hạn chót nghiệp vụ vẫn do job lõi AppDelicare.Job.
 timezone: Asia/Ho_Chi_Minh

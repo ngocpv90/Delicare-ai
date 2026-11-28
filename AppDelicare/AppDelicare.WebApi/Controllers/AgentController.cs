@@ -53,7 +53,7 @@ namespace AppDelicare.WebApi.Controllers
         [Security.Permission("ai-flow", PermissionAction.View, OrScreens = ["ai-agents"])]
         public Task<IActionResult> GetFlows([FromQuery] DateTime? date) => Run(nameof(GetFlows), () => _flows.GetFlows(date));
 
-        /// <summary>AI-11: bật / tắt 1 việc theo lịch (ghi agents/schedules.json – Hermes đọc lại).</summary>
+        /// <summary>AI-11: bật / tắt 1 việc theo lịch (ghi app-delicare-agents/schedules.json – Hermes đọc lại).</summary>
         /// <summary>AI-12 (D-133): việc agent theo dõi (thư mục 98 kho tri thức) – theo quyền thư mục kho của người xem.</summary>
         /// <summary>AI-13 (D-133): chi phí Trợ lý AI theo agent / ngày của 1 tháng (yyyy-MM, trống = tháng này) + ngân sách.</summary>
         /// <summary>AI-14 (D-133): chat với agent trên web – mọi người đã đăng nhập; công cụ agent chạy với quyền giao nhau agent ∩ người hỏi (vé ký HMAC).</summary>

@@ -7,7 +7,7 @@ using FluentAssertions;
 namespace AppDelicare.Tests.Agent
 {
     /// <summary>
-    /// AI-15 (D-133) – triển khai 3 container Hermes: mỗi agent thuộc ĐÚNG 1 nhóm (agents/hermes/groups.json); container chỉ giữ khóa agent của nhóm mình,
+    /// AI-15 (D-133) – triển khai 3 container Hermes: mỗi agent thuộc ĐÚNG 1 nhóm (app-delicare-agents/hermes/groups.json); container chỉ giữ khóa agent của nhóm mình,
     /// mỗi container 1 volume dữ liệu riêng; api / toolgateway có đủ khóa 13 agent; chat web của agent ngoài nhóm vivi trỏ đúng container; mẫu config nhóm chỉ có MCP của nhóm.
     /// </summary>
     public class AgentDeployAi15Tests
@@ -37,7 +37,7 @@ namespace AppDelicare.Tests.Agent
         {
             string root = Repo();
             string compose = File.ReadAllText(Path.Combine(root, "docker-compose.yml")).Replace("\r\n", "\n");
-            var groups = JsonSerializer.Deserialize<Dictionary<string, string[]>>(JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "agents", "hermes", "groups.json"))).RootElement.GetProperty("groups").GetRawText())!;
+            var groups = JsonSerializer.Deserialize<Dictionary<string, string[]>>(JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "app-delicare-agents", "hermes", "groups.json"))).RootElement.GetProperty("groups").GetRawText())!;
             string[] all = [.. AgentCatalog.All.Select(a => a.Code)];
             groups.Values.SelectMany(v => v).Should().BeEquivalentTo(all, "13 agent, mỗi agent đúng 1 nhóm").And.OnlyHaveUniqueItems();
             Regex.IsMatch(compose, @"^  hermes:\n", RegexOptions.Multiline).Should().BeFalse("bỏ container hermes đơn");
@@ -53,7 +53,7 @@ namespace AppDelicare.Tests.Agent
                 volumes.Add(vol.Groups[1].Value);
                 (block.Contains("TELEGRAM_BOT_TOKEN_TRO_LY") == (g == "vivi")).Should().BeTrue("chỉ hermes-vivi chạy bot Trợ lý");
 
-                string cfg = File.ReadAllText(Path.Combine(root, "agents", "hermes", g + ".config.example.yaml"));
+                string cfg = File.ReadAllText(Path.Combine(root, "app-delicare-agents", "hermes", g + ".config.example.yaml"));
                 Regex.Matches(cfg, @"X-Agent-Code: ([A-Z]+)").Select(x => x.Groups[1].Value).Should().BeEquivalentTo(agents, $"mẫu config {g}: MCP đúng agent của nhóm");
                 Regex.IsMatch(cfg, @"(sk-ant|bot\d{6,}:|AGENT_KEY_[A-Z]+:\s*""?[A-Za-z0-9]{16,})").Should().BeFalse("mẫu không chứa khóa thật");
             }

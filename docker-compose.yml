@@ -49,7 +49,7 @@ services:
       # BOT-1.1 / 1.2 (D-62): khóa client messaging (SHA-256 hex) + khóa ký mã liên kết Telegram – trống = tắt.
       Clients__MESSAGING__KeyHash: ${MESSAGING_CLIENT_KEY_HASH:-}
       Messaging__LinkSigningKey: ${MESSAGING_LINK_SIGNING_KEY:-}
-      Agent__SchedulesFile: /app/agents/schedules.json
+      Agent__SchedulesFile: /app/app-delicare-agents/schedules.json
       # AI-19 (D-06): Zalo OA khách – token làm mới lần đầu + khóa ứng dụng (sau đó api tự làm mới, lưu mã hóa trong DB).
       Zalo__AppId: ${ZALO_APP_ID:-}
       Zalo__AppSecret: ${ZALO_APP_SECRET:-}
@@ -86,7 +86,7 @@ services:
       - api-import:/app/wwwroot/Import            # ảnh đại diện / tệp nhập Excel
       - api-docs:/app/App_Data/DocumentFiles      # tệp đính kèm (DocumentFile)
       - knowledge:/app/App_Data/Knowledge          # AI-1 (D-133): kho tri thức (AI-5)
-      - ./agents:/app/agents:ro                    # AI-6 / AI-7: agents/schedules.json (màn Lịch chạy) – chỉ đọc
+      - ./app-delicare-agents:/app/app-delicare-agents:ro                    # AI-6 / AI-7: app-delicare-agents/schedules.json (màn Lịch chạy) – chỉ đọc
     depends_on:
       db-sync:
         condition: service_completed_successfully
@@ -220,7 +220,7 @@ services:
   # CHỈ bật khi gọi profile "hermes" (lệnh "up" thường không đụng tới):
   #   1) Cấu hình 1 lần MỖI container (mô hình, khóa – lưu trong volume riêng, KHÔNG nằm trong repo / .env):
   #        docker compose --profile hermes run --rm hermes-vivi setup        (tương tự hermes-van-hanh, hermes-van-phong)
-  #      config.yaml chép từ agents/hermes/<nhóm>.config.example.yaml; lịch: node tools/agent-eval/gen-cron.mjs --group <nhóm>
+  #      config.yaml chép từ app-delicare-agents/hermes/<nhóm>.config.example.yaml; lịch: node tools/agent-eval/gen-cron.mjs --group <nhóm>
   #   2) Chạy nền:   docker compose --profile hermes up -d        Xem log:   docker compose logs -f hermes-vivi
   # Không chuỗi kết nối DB (D-62): Hermes chỉ gọi Tool Gateway qua mạng Docker. API server Hermes (8642) chỉ mạng nội bộ – api gọi để chat web (AI-14).
   # Dùng volume có tên (không gắn thư mục máy): Docker Desktop trên Windows gắn thư mục làm hỏng SQLite của Hermes. MỖI container ĐÚNG 1 volume, không dùng chung.
@@ -230,20 +230,20 @@ services:
     container_name: delicare-hermes-vivi
     environment:
       <<: *hermes-env
-      HERMES_GROUP: vivi                       # agents/hermes/vivi.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group vivi
+      HERMES_GROUP: vivi                       # app-delicare-agents/hermes/vivi.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group vivi
       TELEGRAM_BOT_TOKEN_TRO_LY: ${TELEGRAM_BOT_TOKEN_TRO_LY:-}
       AGENT_KEY_VIVI: ${AGENT_KEY_VIVI:-}
       AGENT_KEY_KNOW: ${AGENT_KEY_KNOW:-}
     volumes:
       - hermes-data:/opt/data                     # volume cũ (trước AI-15) – .env, config.yaml, SOUL, skills, sessions
-      - ./agents:/opt/delicare-agents:ro
+      - ./app-delicare-agents:/opt/app-delicare-agents:ro
 
   hermes-van-hanh:
     <<: *hermes
     container_name: delicare-hermes-van-hanh
     environment:
       <<: *hermes-env
-      HERMES_GROUP: van-hanh                       # agents/hermes/van-hanh.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-hanh
+      HERMES_GROUP: van-hanh                       # app-delicare-agents/hermes/van-hanh.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-hanh
       AGENT_KEY_KITCHEN: ${AGENT_KEY_KITCHEN:-}
       AGENT_KEY_QA: ${AGENT_KEY_QA:-}
       AGENT_KEY_LOG: ${AGENT_KEY_LOG:-}
@@ -251,14 +251,14 @@ services:
       AGENT_KEY_WH: ${AGENT_KEY_WH:-}
     volumes:
       - hermes-van-hanh-data:/opt/data                     # dữ liệu riêng nhóm vận hành
-      - ./agents:/opt/delicare-agents:ro
+      - ./app-delicare-agents:/opt/app-delicare-agents:ro
 
   hermes-van-phong:
     <<: *hermes
     container_name: delicare-hermes-van-phong
     environment:
       <<: *hermes-env
-      HERMES_GROUP: van-phong                       # agents/hermes/van-phong.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-phong
+      HERMES_GROUP: van-phong                       # app-delicare-agents/hermes/van-phong.config.example.yaml + node tools/agent-eval/gen-cron.mjs --group van-phong
       AGENT_KEY_SALES: ${AGENT_KEY_SALES:-}
       AGENT_KEY_PLAN: ${AGENT_KEY_PLAN:-}
       AGENT_KEY_PROC: ${AGENT_KEY_PROC:-}
@@ -267,7 +267,7 @@ services:
       AGENT_KEY_CSKH: ${AGENT_KEY_CSKH:-}
     volumes:
       - hermes-van-phong-data:/opt/data                     # dữ liệu riêng nhóm văn phòng
-      - ./agents:/opt/delicare-agents:ro
+      - ./app-delicare-agents:/opt/app-delicare-agents:ro
 
 volumes:
   api-import:

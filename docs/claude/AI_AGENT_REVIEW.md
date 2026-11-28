@@ -138,7 +138,7 @@ Lưu ý: `BOT_TELEGRAM.md:140` ghi "26 công cụ đọc" – lệch với 29 tr
 
 ## 14. Hermes Agent (máy anh – chỉ tham khảo, không đọc / in khóa)
 
-Chi tiết ở `agents/README.md`. Tóm tắt: **v0.23.1** (2026.9.24, cài git); cấu hình `~/.hermes/config.yaml` (model mặc định Sonnet 5.5, nén Haiku 5.5, đã tắt terminal / file / code / browser / web…, `skills.write_approval: true`); MCP hiện là **stdio** (`py delicare_mcp.py`) gọi Apps Script cũ – sẽ thay bằng MCP HTTP trỏ `toolgateway` (`url` + `headers`); API server mặc định cổng **8642** (OpenAI-compatible, khóa `API_SERVER_KEY`); cron `hermes cron add` (biểu thức 5 trường, múi giờ theo profile); profile `hermes -p <tên>`; 6 skill tiếng Việt trong `~/.hermes/skills/delicare/`.
+Chi tiết ở `app-delicare-agents/README.md`. Tóm tắt: **v0.23.1** (2026.9.24, cài git); cấu hình `~/.hermes/config.yaml` (model mặc định Sonnet 5.5, nén Haiku 5.5, đã tắt terminal / file / code / browser / web…, `skills.write_approval: true`); MCP hiện là **stdio** (`py delicare_mcp.py`) gọi Apps Script cũ – sẽ thay bằng MCP HTTP trỏ `toolgateway` (`url` + `headers`); API server mặc định cổng **8642** (OpenAI-compatible, khóa `API_SERVER_KEY`); cron `hermes cron add` (biểu thức 5 trường, múi giờ theo profile); profile `hermes -p <tên>`; 6 skill tiếng Việt trong `~/.hermes/skills/delicare/`.
 
 ## 15. Việc tài liệu (làm trong AI-0)
 

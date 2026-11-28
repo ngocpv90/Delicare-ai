@@ -9,7 +9,7 @@ Hermes là bộ não điều phối. Nó chỉ nói chuyện với lõi AppDelic
 
 | Câu hỏi | Trả lời ngắn | Chi tiết |
 |---|---|---|
-| Kiến trúc source code thế nào? | Thêm **1 project** `AppDelicare.ToolGateway` (MCP + REST). Thêm khoảng **6 file nghiệp vụ** vào Services, theo đúng khung cũ: `AgentWriteApprovalHandler` (handler thứ 17 cạnh 16 handler duyệt đang có), `KnowledgeService`, `AgentService`, exporter và job. Thêm **2 controller** `AgentController`, `KnowledgeController`. Thêm thư mục `agents/` chứa cấu hình Hermes. **Không thêm bảng hay cột nào.** | Mục 3 |
+| Kiến trúc source code thế nào? | Thêm **1 project** `AppDelicare.ToolGateway` (MCP + REST). Thêm khoảng **6 file nghiệp vụ** vào Services, theo đúng khung cũ: `AgentWriteApprovalHandler` (handler thứ 17 cạnh 16 handler duyệt đang có), `KnowledgeService`, `AgentService`, exporter và job. Thêm **2 controller** `AgentController`, `KnowledgeController`. Thêm thư mục `app-delicare-agents/` chứa cấu hình Hermes. **Không thêm bảng hay cột nào.** | Mục 3 |
 | Thêm bao nhiêu agent? | **13 agent**: 1 điều phối (Vivi), 11 agent phòng ban theo `AGENTS.md`, và 1 agent mới là **Thủ thư tri thức (KNOW)**. Lên dần trong 4 đợt, đợt đầu chỉ có 5 agent chỉ đọc. | Mục 4 |
 | Phát sinh bao nhiêu tính năng? | **23 tính năng** chia 5 nhóm: cổng công cụ (7), agent và Hermes (5), trung tâm agent trên web (5), kho tri thức (5), kênh khách Zalo (1). Kèm khoảng 40 công cụ đọc và 22 công cụ ghi dạng đề xuất. | Mục 6 |
 | Xây kho tri thức Obsidian ngay trong ứng dụng được không? | **Được, và nên làm.** Kho là thư mục markdown đúng chuẩn Obsidian, đặt trên một ổ dữ liệu dùng chung. Ứng dụng có màn "Kho tri thức" để đọc, tìm, soạn và duyệt ghi chú. Hermes đọc cùng thư mục đó. Ai thích Obsidian trên máy vẫn mở được bản đồng bộ. Không cần bảng mới. | Mục 7 |
@@ -147,7 +147,7 @@ Bên cạnh đó có thêm bot Trợ lý trên Telegram, sau này thêm Zalo cho
 | 5 | Cổng công cụ | Ghi 2 pha: 22 công cụ `propose_*` và `AgentWriteApprovalHandler` | Services + ToolGateway | 2 |
 | 6 | Cổng công cụ | Nhật ký mọi lệnh, giới hạn tần suất, công tắc tắt từng agent hoặc tắt hết, chế độ chỉ đọc toàn cục | ToolGateway | 1 |
 | 7 | Cổng công cụ | Nguồn sự kiện cho agent (`lay_su_kien`) | Services | 1 |
-| 8 | Agent & Hermes | 13 cấu hình agent (SOUL, kỹ năng, bộ câu nghiệm thu) | `agents/` | 1–4 |
+| 8 | Agent & Hermes | 13 cấu hình agent (SOUL, kỹ năng, bộ câu nghiệm thu) | `app-delicare-agents/` | 1–4 |
 | 9 | Agent & Hermes | Bot Trợ lý trên Telegram, chỉ cho tài khoản đã liên kết `UserExternalIdentity` | Hermes | 1 |
 | 10 | Agent & Hermes | Bản tin tự động: 07:00 (Ban GĐ), 17:00 (cuối ngày), sau khóa đơn và sau MRP | Hermes cron + VIVI | 1 |
 | 11 | Agent & Hermes | Hỏi đáp tự nhiên trên toàn bộ số liệu, theo đúng quyền người hỏi | Hermes + ToolGateway | 1 |
@@ -232,7 +232,7 @@ Kho chứa **tri thức**, không chứa số liệu giao dịch. Tri thức ở
 | 60 Kế toán | Quy trình đối soát, khóa kỳ, quy tắc khớp mã AMIS | Người viết | Kế toán trưởng |
 | 70 Nhân sự | Nội quy, quy định ca, nghỉ phép (không lương, không hồ sơ cá nhân) | Người viết | TP Nhân sự |
 | 80 Đào tạo | Tài liệu hướng dẫn theo vai trò, câu hỏi thường gặp | Người viết | TP Vận hành |
-| 95 Nguồn BOT | SOUL, kỹ năng, mẫu trả lời của agent (bản đọc, gốc nằm ở `agents/`) | Tự sinh | Admin |
+| 95 Nguồn BOT | SOUL, kỹ năng, mẫu trả lời của agent (bản đọc, gốc nằm ở `app-delicare-agents/`) | Tự sinh | Admin |
 | 96 Nhật ký | Nhật ký việc của từng agent theo ngày | Agent | KNOW |
 | 97 Tương tác | Quyết định, cam kết chốt trong hội thoại với agent | Agent | KNOW |
 | 98 Công việc | Việc agent đang theo dõi, bài học nháp chờ duyệt | Agent | KNOW |
@@ -371,7 +371,7 @@ Giữ nguyên `docker-compose.yml` hiện tại, chỉ thêm container `toolgate
 | `api` | Thêm `AgentController`, `KnowledgeController` | SQL Server, volume `knowledge` |
 | `job` | Thêm job xuất kho tri thức, job hết hạn đề xuất | SQL Server, volume `knowledge` |
 | `toolgateway` (mới) | MCP `/mcp`, REST `/tools/*`; chỉ mở trong mạng nội bộ | Services, volume `knowledge` |
-| `hermes` | Cấu hình từ `agents/`; MCP trỏ vào `toolgateway`; tắt terminal, file, code, browser, web | `toolgateway`, Telegram |
+| `hermes` | Cấu hình từ `app-delicare-agents/`; MCP trỏ vào `toolgateway`; tắt terminal, file, code, browser, web | `toolgateway`, Telegram |
 | `messaging` | Không đổi | `api` |
 
 **Bố trí Hermes:**

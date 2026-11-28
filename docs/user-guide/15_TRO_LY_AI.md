@@ -49,13 +49,13 @@ Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa
 1. **Trợ lý AI › Trung tâm agent** → công tắc trên thẻ agent.
 2. Tắt: hộp xác nhận → **Tắt agent**. Có hiệu lực **ngay** từ lời gọi sau (bot không trả lời bằng agent đó, lịch của agent dừng). Job lõi (khóa đơn, MRP, bản tin bot Điều hành…) vẫn chạy đúng giờ.
 3. Bật lại: gạt công tắc – không cần xác nhận.
-4. Thẻ ghi "máy chủ chưa có khóa agent": IT cần đặt biến môi trường `AGENT_KEY_<MÃ>` trên server (`agents/README.md`).
+4. Thẻ ghi "máy chủ chưa có khóa agent": IT cần đặt biến môi trường `AGENT_KEY_<MÃ>` trên server (`app-delicare-agents/README.md`).
 
 ## 4b. Cảnh báo chủ động và Luồng liên phòng (AI-11)
 
 - **Cảnh báo chủ động:** khi có sự kiện (sự cố, cảnh báo, job xong, phản ánh…), agent nhận xét và đưa phương án rồi gửi **1 tin bot** (bot Vận hành; VIVI gửi bot Điều hành) tới người **có quyền Thêm** trên màn liên quan (vd Mua hàng cho Kế hoạch mua). Mỗi sự kiện chỉ gửi 1 lần. Agent chỉ cảnh báo được màn mà chính agent được xem. Người chưa liên kết bot không nhận được tin.
 - **Trợ lý AI › Luồng liên phòng:** mỗi thẻ là một luồng nối các bước cùng mã tương quan: sự kiện → agent đọc dữ liệu → đề xuất → người duyệt → kết quả ghi nghiệp vụ → tin đã gửi. Chọn **Hôm nay / Hôm qua** hoặc ngày; 5 chỉ số: luồng, xong, chờ duyệt, lỗi / từ chối, tin đã gửi. Viền trái bước: xanh = xong, cam = chờ, đỏ = lỗi / từ chối. Quyền xem: như Nhật ký agent (CEO, COO, FIN-IT).
-- **Lịch chạy:** người có quyền Sửa màn Lịch chạy (CEO, COO, FIN-IT) bật / tắt từng việc bằng công tắc ở cột Trạng thái. Tệp lịch `agents/schedules.json` được ghi lại, Hermes đọc lại khi sinh cron. Việc chưa có công cụ (agent chưa bật) không bật được.
+- **Lịch chạy:** người có quyền Sửa màn Lịch chạy (CEO, COO, FIN-IT) bật / tắt từng việc bằng công tắc ở cột Trạng thái. Tệp lịch `app-delicare-agents/schedules.json` được ghi lại, Hermes đọc lại khi sinh cron. Việc chưa có công cụ (agent chưa bật) không bật được.
 - 4 luồng liên phòng (AGENTS §3): (1) chốt đơn → thiếu hụt → PROC đề xuất đơn mua → duyệt → WH chờ nhận; (4) sự cố ATTP: nhiệt độ lõi < 70°C / giao < 60°C → QA đề xuất giữ lô + cảnh báo, VIVI báo Ban GĐ. Luồng (2) khách báo thiếu suất và (3) hộp thất thoát cần agent CSKH / ACC – bật ở đợt 3.
 
 - **Việc agent theo dõi** (AI-12): xem ở Trợ lý AI › Việc agent theo dõi – chi tiết ở 16_KHO_TRI_THUC.md.
@@ -65,7 +65,7 @@ Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa
 - **Thẻ Chi phí Trợ lý AI tháng** (đầu màn Trung tâm agent): Đã dùng / ngân sách, Hôm nay, Ước cả tháng (theo bình quân ngày), Token vào / ra, cột chi phí từng ngày, chi phí theo agent. Mỗi lượt trả lời Hermes báo token + chi phí (USD quy VND theo `Agent:UsdToVnd`); cùng một lượt báo 2 lần chỉ tính 1.
 - **Ngân sách** `Agent:MonthlyBudget` (VND / tháng, IT đặt). Chạm **`Agent:CostAlertPct` % (mặc định 80 %)** và **100 %** → bot Điều hành gửi 1 tin "💰 Chi phí Trợ lý AI" tới người có quyền Thêm Trung tâm agent (CEO, FIN-IT) – mỗi ngưỡng mỗi tháng 1 lần. Chưa đặt ngân sách → thẻ ghi "Chưa đặt ngân sách", không cảnh báo.
 - **Chat trên web:** bấm **Trò chuyện** → ngăn bên phải (không che hết trang), chọn agent ở hàng tab, gõ câu hỏi (Enter gửi, Shift+Enter xuống dòng). Lịch sử hiển thị giữ trong phiên trình duyệt. Agent dùng **quyền của bạn ∩ quyền agent** như bot; đề xuất ghi vẫn chờ người có quyền xác nhận ở Phê duyệt › Lệnh của agent.
-- Máy chủ Hermes chạy 3 container (AI-15): **hermes-vivi** (VIVI, KNOW – bot Trợ lý), **hermes-van-hanh** (KITCHEN, QA, LOG, PKG, WH), **hermes-van-phong** (SALES, PLAN, PROC, HR, ACC, CSKH). Một nhóm lỗi không làm dừng nhóm khác; IT xem `agents/README.md`.
+- Máy chủ Hermes chạy 3 container (AI-15): **hermes-vivi** (VIVI, KNOW – bot Trợ lý), **hermes-van-hanh** (KITCHEN, QA, LOG, PKG, WH), **hermes-van-phong** (SALES, PLAN, PROC, HR, ACC, CSKH). Một nhóm lỗi không làm dừng nhóm khác; IT xem `app-delicare-agents/README.md`.
 
 ## 5. Đọc nhật ký agent
 
@@ -86,7 +86,7 @@ Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa
 |---|---|---|
 | Bot Trợ lý không trả lời số liệu | Tài khoản Telegram chưa liên kết / không thuộc nhóm được hỏi đợt này | Liên kết như bot Vận hành; hỏi IT danh sách nhóm `Agent:AskingGroups` |
 | Agent nói "không có quyền xem màn …" | Bạn hoặc agent chưa được cấp màn đó | Xin quyền Xem màn tương ứng |
-| Lịch chạy "chưa chạy" | Hermes chưa chạy / chưa nạp lịch | IT chạy `tools/agent-eval/gen-cron.mjs --group <nhóm>` trong từng container (agents/README.md) |
+| Lịch chạy "chưa chạy" | Hermes chưa chạy / chưa nạp lịch | IT chạy `tools/agent-eval/gen-cron.mjs --group <nhóm>` trong từng container (app-delicare-agents/README.md) |
 | Chat web báo "chưa kết nối máy chủ Hermes" | Chưa đặt `Agent:HermesApiUrl` | IT đặt URL API server Hermes (Docker đặt sẵn `http://hermes-vivi:8642/v1`) – trong lúc chờ vẫn hỏi được qua bot Trợ lý |
 | Chat web báo "đang bận / không phản hồi" | Container Hermes của agent đó dừng / quá `Agent:ChatTimeoutSeconds` | Thử lại sau ít phút; IT xem `docker compose logs hermes-<nhóm>` |
 | Agent trả lời "Phiên chat trên web hết hạn" | Vé người hỏi quá 10 phút (câu trả lời dài, gọi nhiều công cụ) | Đóng ngăn chat, mở lại rồi hỏi lại |
@@ -98,4 +98,4 @@ Người xác nhận lệnh đợt 3: tính lại kế hoạch – quyền Sửa
 - **Khách dùng bot (gõ số):** 1 đơn 7 ngày · 2 thực đơn theo đơn · 3 <số đơn> xác nhận (3 <số đơn> TRUA=120 đổi số suất) · 4 <số suất> báo thiếu đơn hôm nay · 5 <nội dung> phản ánh · 6 <số đơn> đổi món (chọn món → chọn món thay trong gợi ý). Câu hỏi tự do → Trợ lý CSKH trả lời theo đơn của khách (khi máy chủ Hermes đã cấu hình).
 - **Khách không tự ghi:** xác nhận / đổi số suất, thiếu suất, phản ánh vào **Phê duyệt › Lệnh của agent** (agent CSKH, hạn 12 giờ). Người xác nhận phải có quyền thao tác web tương ứng: đơn – Sửa Đơn hàng (KD); thiếu suất / phản ánh – Thêm Phản ánh (CSKH, điều phối điểm phát, QA). Xác nhận / từ chối → bot nhắn lại khách. Đổi món đi luồng đổi món như web (tự duyệt khi đủ 4 điều kiện, còn lại chờ duyệt).
 - Khách chỉ thấy dữ liệu **của chính mình** – số đơn của khách khác báo "không tìm thấy". Tài khoản khách (CUSTOMER) không đăng nhập web được.
-- Bật kênh: IT cấu hình Zalo OA (app id, app secret, OA secret key, token làm mới lần đầu ở .env – `agents/README.md`), bật kênh ZALO_OA + bot ZALO_KH ở Tích hợp › Kênh, `ZALO_ENABLED=true` cho messaging.
+- Bật kênh: IT cấu hình Zalo OA (app id, app secret, OA secret key, token làm mới lần đầu ở .env – `app-delicare-agents/README.md`), bật kênh ZALO_OA + bot ZALO_KH ở Tích hợp › Kênh, `ZALO_ENABLED=true` cho messaging.

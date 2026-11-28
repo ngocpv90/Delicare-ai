@@ -1,7 +1,7 @@
 /* AI-6 (D-133): nhóm "Trợ lý AI" + "Tri thức" theo mockup docs/frontend-handoff/assets/ai-agent/ (Main, AgentDetail, AgentLog, Schedule, Knowledge).
  * Trung tâm agent (#/ai-agents, chi tiết #/ai-agents?code=WH): thẻ 13 agent (icon img/agents/<MÃ>.svg, trạng thái, công cụ, lời gọi hôm nay), bật / tắt
  * (= BotStatus, có hiệu lực ngay ở ToolGateway – quyền Sửa). Nhật ký agent (#/ai-agent-log): mọi lời gọi công cụ (IntegrationLog kênh HERMES).
- * Lịch chạy (#/ai-schedule): đọc agents/schedules.json (một nguồn cho cron Hermes). Kho tri thức (#/knowledge, #/knowledge?folder=45&path=…): cây thư mục
+ * Lịch chạy (#/ai-schedule): đọc app-delicare-agents/schedules.json (một nguồn cho cron Hermes). Kho tri thức (#/knowledge, #/knowledge?folder=45&path=…): cây thư mục
  * theo quyền, đọc markdown, [[liên kết]], liên kết ngược, mã chứng từ thành link, tìm không dấu, soạn ghi chú (quyền Sửa thư mục, kiểm băm chống đè).
  * API: Agent/GetAll · GetById · SaveIsActive · GetActivity · GetSchedules; Knowledge/GetTree · GetNote · Search · GetHistory · Save. */
 (function () {
@@ -191,14 +191,14 @@
 
   APP.register('ai-schedule', (el, f) => {
     el.innerHTML = APP.header(f || FN['ai-schedule'], '', { noNote: true }) + nav('ai-schedule')
-      + `<div class="notice info mb">${I('help')}<div>Lịch lấy từ <code>agents/schedules.json</code> – cùng một tệp sinh cron cho Hermes. Job lõi (khóa đơn, MRP, bản tin…) vẫn chạy đúng giờ dù agent tắt; agent chỉ đọc kết quả và báo. Người có quyền Sửa Lịch chạy bật / tắt từng việc bằng công tắc ở cột Trạng thái – ghi lại tệp lịch, Hermes đọc lại.</div></div>
+      + `<div class="notice info mb">${I('help')}<div>Lịch lấy từ <code>app-delicare-agents/schedules.json</code> – cùng một tệp sinh cron cho Hermes. Job lõi (khóa đơn, MRP, bản tin…) vẫn chạy đúng giờ dù agent tắt; agent chỉ đọc kết quả và báo. Người có quyền Sửa Lịch chạy bật / tắt từng việc bằng công tắc ở cột Trạng thái – ghi lại tệp lịch, Hermes đọc lại.</div></div>
         <div class="card" id="scB">${loading}</div>`;
     Store.query('Agent/GetSchedules').then(x => {
       const b = el.querySelector('#scB'); if (!b) return;
       if (!x.ok) { b.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được lịch')}</div>`; return; }
       const list = x.list || [];
       b.innerHTML = list.length ? schedTable(list) : `<div class="muted">${esc((x.res && x.res.responseMessage) || 'Chưa có lịch')}</div>`;
-      // AI-11 (D-133): bật / tắt từng việc → agents/schedules.json (Hermes đọc lại khi sinh cron).
+      // AI-11 (D-133): bật / tắt từng việc → app-delicare-agents/schedules.json (Hermes đọc lại khi sinh cron).
       b.querySelectorAll('[data-sched]').forEach(cb => cb.onchange = () => Store.act('Agent/SaveSchedule', { form: { id: cb.dataset.sched, enabled: cb.checked } }).then(r => { if (r.ok) UI.toast(esc((r.res && r.res.responseMessage) || 'Đã lưu'), 'ok'); APP.refresh(); }));
     });
   });

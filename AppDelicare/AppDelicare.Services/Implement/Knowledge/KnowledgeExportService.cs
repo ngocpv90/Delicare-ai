@@ -179,7 +179,7 @@ namespace AppDelicare.Services.Implement.Knowledge
 
     /// <summary>
     /// AI-8 (D-133): bản tin 07:00 / 17:00 ghi kho thư mục 10 (ghi chú tự sinh, số liệu chụp lúc xuất) – chạy cùng giờ bản tin bot (MorningBrief / DailyReport)
-    /// và lịch VIVI (agents/schedules.json); Hermes tắt thì bản tin vẫn vào kho đúng giờ.
+    /// và lịch VIVI (app-delicare-agents/schedules.json); Hermes tắt thì bản tin vẫn vào kho đúng giờ.
     /// </summary>
     public sealed class KnowledgeBriefMorningJob(IKnowledgeExportService exporter) : IScheduledJob
     {
