@@ -1,7 +1,7 @@
 ---
 screens: []
 roles: []
-updated: 2026-11-28
+updated: 2026-11-29
 ---
 # 20 – Dùng bot Telegram (bot Vận hành, bot Điều hành)
 
@@ -76,6 +76,14 @@ Bàn phím dưới cố định (mọi người): **[⚡ Ca của tôi] [📂 Ch
 | ⏳ Phê duyệt | ⏳ Chờ tôi duyệt (`/cho`) | Người duyệt | `12_QUAN_LY_DUYET.md` §7 |
 
 **Thao tác nhanh (≤ 3 chạm, không gõ – BOT-UX-2):** ghi nhiệt độ lõi: **⭐ Mẻ cần làm → ME-… → 78°**; giao đủ 1 điểm: **⭐ Chuyến của tôi → điểm → ✅ Giao đủ N**; chấm công: **1 chạm phím 📍** (3 phím dưới vẫn giữ nguyên). Lý do hay gặp chỉnh trong cấu hình `Messaging:Reasons:<luồng>` của container messaging (IT).
+
+### 4b. 💬 Hỏi nhanh (bot Vận hành và Điều hành – không dùng AI)
+
+- Mở: 📂 Chức năng › **💬 Hỏi nhanh** hoặc gõ `/hoinhanh` (cần tài khoản web).
+- Có nhiều mảng (Kho, Bếp, ATTP, Nhân sự…) → bấm mảng; mỗi nút là 1 câu hỏi. Chỉ hiện câu thuộc màn bạn có quyền xem trên web.
+- Bấm câu → tin kết quả: tiêu đề, tóm tắt, tối đa 10 dòng ("… còn N dòng – xem đủ trên web"), nút **🌐 Mở trên web** (khi IT đã đặt địa chỉ web) và **⬅️ Câu khác**.
+- Câu cần số lô / tên nguyên liệu / từ khóa: bot hỏi "Gõ …" – **trả lời vào đúng tin đó** rồi bot gửi kết quả.
+- Muốn hỏi tự do hoặc cần phân tích → dùng bot **Trợ lý** hoặc tab Chat trên web (`15_TRO_LY_AI.md` mục 4e).
 
 ## 5. Bot Điều hành
 Xem `13_BAN_DIEU_HANH.md` §7: 📊 Tổng quan hôm nay, 🚨 Việc đang mở, 🎯 KPI 7 ngày, 📅 Chỉ số theo tháng, 📈 Tiến độ bếp, 🗺 Giao vận trực tiếp, 📦 Tồn & thiếu hụt, 🔍 Truy xuất.
