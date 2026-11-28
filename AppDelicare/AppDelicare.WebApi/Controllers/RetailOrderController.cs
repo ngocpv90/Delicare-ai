@@ -11,9 +11,14 @@ namespace AppDelicare.WebApi.Controllers
     /// RETAIL-1: đơn khách lẻ – màn "Bán lẻ › Đơn khách lẻ" (#/sal-retail-order, ScreenMap RetailOrder). Quyền theo tên action (PermissionConvention):
     /// Get* = Xem, Create = Thêm, UpdateLines / Transition / AssignRoute = Sửa, Export = Xuất. Không có Insert / Update / Delete chung (đơn đi theo máy trạng thái).
     /// </summary>
-    public class RetailOrderController(IRetailOrderService service) : BaseController
+    public class RetailOrderController(IRetailOrderService service, AppDelicare.Services.Implement.Retail.IRetailRevenueService revenue) : BaseController
     {
         private readonly IRetailOrderService _service = service;
+        private readonly AppDelicare.Services.Implement.Retail.IRetailRevenueService _revenue = revenue;
+
+        /// <summary>RETAIL-1 §8: báo cáo doanh thu bán lẻ (theo ngày nhận, món, bữa, kênh, thanh toán) – quyền Xem sal-retail-order.</summary>
+        [HttpGet("GetRevenue")]
+        public Task<IActionResult> GetRevenue(DateTime? from, DateTime? to) => Run(nameof(GetRevenue), () => _revenue.GetRevenue(from, to));
 
         [HttpGet("GetList")]
         public Task<IActionResult> GetList([FromQuery] RetailOrderListRequest request) => Run(nameof(GetList), () => _service.GetList(request ?? new()));

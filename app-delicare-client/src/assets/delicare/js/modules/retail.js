@@ -69,12 +69,13 @@
     f = f || FN['sal-retail-order'];
     if (!Store.isLive) { el.innerHTML = APP.header(f, '', { noNote: true }) + '<div class="card panel empty"><h2>Màn này chỉ chạy với dữ liệu thật.</h2></div>'; return; }
     const perm = Store.perm('sal-retail-order');
-    el.innerHTML = APP.header(f, `<button class="btn" id="roPrep">${I('file')} Tổng hợp cho bếp</button>${perm.exp !== false ? `<button class="btn" id="roExp">${I('export')} Xuất Excel</button>` : ''}${perm.add !== false ? `<button class="btn primary" id="roNew">${I('plus')} Lập đơn</button>` : ''}`, { noNote: true, sub: 'Đơn khách lẻ đặt trên trang web hoặc qua điện thoại / Zalo – tách riêng đơn suất ăn doanh nghiệp.' })
+    el.innerHTML = APP.header(f, `<button class="btn" id="roRev">${I('chart')} Doanh thu</button><button class="btn" id="roPrep">${I('file')} Tổng hợp cho bếp</button>${perm.exp !== false ? `<button class="btn" id="roExp">${I('export')} Xuất Excel</button>` : ''}${perm.add !== false ? `<button class="btn primary" id="roNew">${I('plus')} Lập đơn</button>` : ''}`, { noNote: true, sub: 'Đơn khách lẻ đặt trên trang web hoặc qua điện thoại / Zalo – tách riêng đơn suất ăn doanh nghiệp.' })
       + '<div id="roBody"><div class="card panel small muted">Đang tải…</div></div>';
     st.sel.clear();
     const re = () => draw(el);
     const nb = el.querySelector('#roNew'); if (nb) nb.onclick = () => orderForm(re);
     el.querySelector('#roPrep').onclick = () => prepSummary();
+    el.querySelector('#roRev').onclick = () => revenueReport();
     const eb = el.querySelector('#roExp'); if (eb) eb.onclick = () => st.apiMissing ? notReadyToast() : Store.download('RetailOrder/Export', params());
     (Store.loadRefLists ? Store.loadRefLists() : Promise.resolve()).then(re, re);
     if (p && p.id) openDetail(p.id, re);
@@ -358,6 +359,31 @@
 
   // ================= B. Sản phẩm bán lẻ =================
   const sp = { q: '', cat: '', status: 'Active' };
+  // ---------- RETAIL-1 §8: báo cáo doanh thu bán lẻ (RetailOrder/GetRevenue) ----------
+  const rv = { from: null, to: null };
+  function revenueReport() {
+    const t = today(); rv.to = rv.to || t; rv.from = rv.from || t.slice(0, 8) + '01';
+    UI.modal({ title: 'Doanh thu bán lẻ', size: 'lg', body: '<div id="rvBody"></div>', foot: '<button class="btn" data-close>Đóng</button>',
+      onMount: m => {
+        const box = m.querySelector('#rvBody');
+        const load = () => {
+          box.innerHTML = `<div class="row-flex mb" style="gap:8px;flex-wrap:wrap;align-items:flex-end"><label class="field"><span>Từ ngày nhận</span><input type="date" class="input" id="rvF" value="${esc(rv.from)}"></label><label class="field"><span>Đến ngày</span><input type="date" class="input" id="rvT" value="${esc(rv.to)}"></label><button class="btn primary" id="rvGo">Xem</button></div><div id="rvOut" class="muted small">Đang tải…</div>`;
+          box.querySelector('#rvGo').onclick = () => { rv.from = box.querySelector('#rvF').value; rv.to = box.querySelector('#rvT').value; load(); };
+          Store.query('RetailOrder/GetRevenue', { from: rv.from, to: rv.to }).then(x => {
+            const out = box.querySelector('#rvOut'); if (!out) return;
+            if (!x.ok || !x.data) { out.innerHTML = `<div class="notice warn">${esc(x.message || 'Không tải được')}</div>`; return; }
+            const d = x.data;
+            const tbl = (title, rows, qty) => rows.length ? `<div class="panel-title mt">${title}</div><div class="table-wrap"><table class="table dc-table"><thead><tr><th>${esc(title.replace('Theo ', '').replace(/^./, ch => ch.toUpperCase()))}</th><th class="num">Đơn</th>${qty ? '<th class="num">Số lượng</th>' : ''}<th class="num">Doanh thu (đã giao)</th><th class="num">Đang xử lý</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.label)}</td><td class="num">${U.num(r.orders)}</td>${qty ? `<td class="num">${U.num(r.quantity)}</td>` : ''}<td class="num"><b>${vnd(r.revenue)}</b></td><td class="num">${vnd(r.pipeline)}</td></tr>`).join('')}</tbody></table></div>` : '';
+            out.innerHTML = UI.kpis([UI.kpi('Doanh thu (đơn hoàn tất)', vnd(d.revenue), `${U.num(d.completed)} đơn · gồm phí giao ${vnd(d.shippingFee)}`, 'chart', 'green'), UI.kpi('Đang xử lý', vnd(d.pipeline), `${U.num(d.inProgress)} đơn chưa giao xong`, 'clock', 'blue'),
+                UI.kpi('Giá trị TB / đơn', d.avgOrder == null ? '–' : vnd(d.avgOrder), 'đơn hoàn tất', 'calc', 'blue'), UI.kpi('Đơn hủy', U.num(d.cancelled), d.cancelRatePct == null ? '' : U.num(d.cancelRatePct, 1) + '% số đơn', 'alert', d.cancelled ? 'orange' : 'green')])
+              + UI.chart({ type: 'bar', title: 'Doanh thu bán lẻ theo ngày', unit: 'đ', labels: d.listDay.map(r => r.label), series: [{ name: 'Đã giao', values: d.listDay.map(r => r.revenue), role: 'ok' }, { name: 'Đang xử lý', values: d.listDay.map(r => r.pipeline), role: 'plan' }], stacked: true, h: 220 })
+              + tbl('Theo món', d.listProduct, true) + tbl('Theo bữa', d.listMeal) + tbl('Theo kênh', d.listChannel) + tbl('Theo thanh toán', d.listPayment);
+          });
+        };
+        load();
+      } });
+  }
+
   APP.register('sal-retail-product', (el, f) => {
     f = f || FN['sal-retail-product'];
     if (!Store.isLive) { el.innerHTML = APP.header(f, '', { noNote: true }) + '<div class="card panel empty"><h2>Màn này chỉ chạy với dữ liệu thật.</h2></div>'; return; }
@@ -382,22 +408,37 @@
           <input class="input" type="search" id="rpQ" placeholder="Tìm mã, tên món" value="${esc(sp.q)}" style="width:220px">
           <select class="select" id="rpCat" style="width:auto"><option value="">Mọi nhóm</option>${CATS().map(c => `<option value="${esc(c.code)}" ${sp.cat === c.code ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></div></div>
         <div class="card panel">${rows.length ? `<div class="table-wrap"><table class="table dc-table"><thead><tr><th>Mã</th><th>Tên món</th><th>Nhóm</th><th>Đơn vị</th><th class="num">Giá bán</th><th>Bữa bán</th><th>Nhãn</th><th class="num">Thứ tự</th><th>Trạng thái</th><th></th></tr></thead><tbody>${rows.map((r, n) => `<tr>
-            <td>${esc(r.code || '')}</td><td><b>${esc(r.name || '')}</b>${r.description ? `<br><span class="small muted">${esc(r.description)}</span>` : ''}</td><td>${esc(catName(r.categoryCode))}</td><td>${esc(r.unit || '')}</td>
+            <td>${esc(r.code || '')}</td><td>${r.imageUrl ? `<img src="${esc(r.imageUrl)}" alt="" class="rp-thumb">` : ''}<b>${esc(r.name || '')}</b>${r.description ? `<br><span class="small muted">${esc(r.description)}</span>` : ''}</td><td>${esc(catName(r.categoryCode))}</td><td>${esc(r.unit || '')}</td>
             <td class="num"><b>${vnd(r.price)}</b></td><td class="small">${esc(mealsOf(r).join(', ') || 'Mọi bữa')}</td><td>${String(r.tags || '').split(';').filter(Boolean).map(t => UI.tag(t.trim(), 'orange')).join(' ')}</td><td class="num">${U.num(r.sortOrder || 0)}</td>
             <td>${r.status === 'Active' ? UI.tag('Đang bán', 'green') : UI.tag('Ngừng bán', '')}</td>
-            <td class="actions">${perm.edit !== false ? `<button class="btn xs" data-ed="${n}">Sửa</button> <button class="btn xs" data-tg="${n}">${r.status === 'Active' ? 'Ngừng bán' : 'Bán lại'}</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
+            <td class="actions">${perm.edit !== false ? `<button class="btn xs" data-img="${n}">${r.imageUrl ? 'Đổi ảnh' : 'Thêm ảnh'}</button> <button class="btn xs" data-ed="${n}">Sửa</button> <button class="btn xs" data-tg="${n}">${r.status === 'Active' ? 'Ngừng bán' : 'Bán lại'}</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
           : '<div class="empty">Chưa có sản phẩm nào khớp bộ lọc.</div>'}</div>`; });
       body.querySelectorAll('[data-ss]').forEach(b => b.onclick = () => { sp.status = b.dataset.ss; re(); });
       let tq; body.querySelector('#rpQ').oninput = e => { clearTimeout(tq); tq = setTimeout(() => { sp.q = e.target.value.trim(); re(); }, 400); };
       body.querySelector('#rpCat').onchange = e => { sp.cat = e.target.value; re(); };
       body.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => productForm(rows[+b.dataset.ed], re));
+      // RETAIL-1 §8: ảnh sản phẩm – tải jpg / png (tệp dùng chung, nhóm Ảnh) rồi đặt làm ảnh đại diện; trang khách hiện ảnh thay biểu tượng.
+      body.querySelectorAll('[data-img]').forEach(b => b.onclick = () => {
+        const r = rows[+b.dataset.img], inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = '.jpg,.jpeg,.png,image/jpeg,image/png';
+        inp.onchange = () => {
+          const file = inp.files[0]; if (!file) return;
+          if (file.size > 2 * 1024 * 1024) { UI.toast('Ảnh tối đa 2 MB', 'warn'); return; }
+          const fd = new FormData(); fd.append('File', file); fd.append('Resource', 'RetailProduct'); fd.append('RecordId', r.id); fd.append('Category', 'photo');
+          Store.act('DocumentFile/Upload', { json: fd }).then(x => {
+            if (!x.ok || !x.data) return;
+            Store.act('RetailProduct/SetImage', { form: { id: r.id, documentFileId: x.data.id } }).then(y => { if (y.ok) { UI.toast('Đã đặt ảnh sản phẩm', 'ok'); re(); } });
+          });
+        };
+        inp.click();
+      });
       body.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { const r = rows[+b.dataset.tg], to = r.status === 'Active' ? 'Inactive' : 'Active';
         UI.confirm(to === 'Inactive' ? `Ngừng bán <b>${esc(r.name)}</b>? Món ẩn khỏi trang khách lẻ, đơn đã đặt không đổi.` : `Bán lại <b>${esc(r.name)}</b>?`,
           () => act('RetailProduct/Update', { method: 'PUT', form: Object.assign(productFormData(r), { Status: to }) }).then(x => { if (x.ok) { UI.toast(to === 'Inactive' ? 'Đã ngừng bán' : 'Đã mở bán lại', 'ok'); re(); } }), { ok: to === 'Inactive' ? 'Ngừng bán' : 'Bán lại' }); });
     });
   }
   const mealsOf = r => (Array.isArray(r.mealTypes) ? r.mealTypes : String(r.mealTypes || '').split(';')).map(m => m.trim()).filter(Boolean);
-  const productFormData = r => ({ Id: r.id, Code: r.code || '', Name: r.name, CategoryCode: r.categoryCode, MealTypes: mealsOf(r).join(';'), Unit: r.unit, Price: r.price, Description: r.description || '', Tags: r.tags || '', Icon: r.icon || '', SortOrder: r.sortOrder || 0, Status: r.status || 'Active' });
+  const productFormData = r => ({ Id: r.id, Code: r.code || '', Name: r.name, CategoryCode: r.categoryCode, MealTypes: mealsOf(r).join(';'), Unit: r.unit, Price: r.price, Description: r.description || '', Tags: r.tags || '', Icon: r.icon || '', ImageUrl: r.imageUrl || '', SortOrder: r.sortOrder || 0, Status: r.status || 'Active' });
   /** Thêm / sửa sản phẩm: mã do máy chủ sinh (SPL-NNNNN, chỉ đọc); nhóm, biểu tượng chọn trong danh sách (§4.5.10). */
   function productForm(r, done) {
     const editing = !!(r && r.id), x = r || {};

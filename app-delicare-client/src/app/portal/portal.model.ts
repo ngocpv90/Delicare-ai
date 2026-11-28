@@ -37,6 +37,8 @@ export interface PortalProduct {
   description: string;
   tags: string[];
   icon: string;
+  /** Ảnh sản phẩm (có thì hiện thay biểu tượng). */
+  imageUrl?: string;
   tone: 'green' | 'orange';
   /** Bữa được bán (Sáng / Trưa / Tối); trống = mọi bữa. */
   meals?: string[];

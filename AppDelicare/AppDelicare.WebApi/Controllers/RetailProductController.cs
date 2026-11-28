@@ -10,9 +10,26 @@ using System.Net;
 
 namespace AppDelicare.WebApi.Controllers
 {
-    public class RetailProductController(IRetailProductService service) : BaseController
+    public class RetailProductController(IRetailProductService service, AppDelicare.Services.Implement.IRetailProductImageService image) : BaseController
     {
         private readonly IRetailProductService _service = service;
+        private readonly AppDelicare.Services.Implement.IRetailProductImageService _image = image;
+
+        /// <summary>RETAIL-1 §8: đặt ảnh sản phẩm từ tệp đã tải (DocumentFile/Upload, Resource RetailProduct, nhóm photo) – quyền Sửa sal-retail-product.</summary>
+        [HttpPost("SetImage")]
+        [Security.Permission("sal-retail-product", PermissionAction.Edit)]
+        public async Task<IActionResult> SetImage([FromForm] Guid id, [FromForm] Guid documentFileId)
+        {
+            try
+            {
+                return Ok(await _image.SetImage(id, documentFileId));
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(string.Concat("[", GetType().Name, "] SetImage: ", ex.ToString()));
+                return StatusCode(500, ConstantHelper.Message.InternalServer);
+            }
+        }
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] RetailProductSearchRequest request)
