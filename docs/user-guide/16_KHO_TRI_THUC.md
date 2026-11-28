@@ -72,3 +72,23 @@ Máy tự xuất (job **Xuất kho tri thức** 23:30, **Bản tin sáng / Báo 
 - **Một chiều** (mặc định, mọi thư mục): tệp trên máy chỉ đọc; sửa trên máy KHÔNG lên máy chủ – lần sau bản máy được chuyển vào `.delicare-conflict` và bản máy chủ ghi lại. Muốn sửa: sửa trên màn Kho tri thức.
 - **Hai chiều** chỉ thư mục **80 Đào tạo**, khi IT bật `Knowledge:SyncTwoWayTraining` và bạn có quyền Sửa thư mục 80: sửa / thêm tệp .md trên máy được đẩy lên (vẫn kiểm số điện thoại / CCCD / số tài khoản, khóa băm, lịch sử). Máy chủ cũng đã đổi cùng tệp → không ghi đè, bản máy giữ ở `.delicare-conflict`.
 - Mỗi lần đồng bộ ghi lịch sử (ai, bao nhiêu ghi chú, thư mục nào) – IT xem được.
+
+## AI-22.1 – Kho tài liệu doanh nghiệp: phân quyền theo từng vùng (28/11/2026)
+
+Kho lưu cả **tài liệu doanh nghiệp** (công văn, biên bản họp, hợp đồng, chứng từ gốc, hồ sơ nhân viên, hướng dẫn sử dụng) bên cạnh tri thức. **Mỗi vùng là một mục quyền riêng** (Quản trị › Nhóm quyền › Phân quyền, nhóm "Tri thức"); không được cấp → không thấy vùng, tìm không ra (kể cả tên tài liệu), mở đường dẫn trực tiếp báo "không có quyền".
+
+| Vùng | Mặc định ai xem | Ai sửa / tải lên |
+|---|---|---|
+| 80 › Hướng dẫn sử dụng · 80 Đào tạo · 70 Nhân sự (nội quy) | **Mọi tài khoản nội bộ** | Máy tự nhập · TP Vận hành · TP Nhân sự |
+| 05 Công văn đến / đi | Ban GĐ | Hành chính (CEO-PMO) |
+| 15 Họp & giao ban | Ban GĐ, trưởng bộ phận | Người lập biên bản |
+| 20 › Hợp đồng khách hàng | TP Kinh doanh, Ban GĐ, Kế toán | Kinh doanh |
+| 40 › Hợp đồng nhà cung cấp | Mua hàng, Ban GĐ, Kế toán | Trưởng mua hàng |
+| 60 › Chứng từ gốc | Kế toán, Ban GĐ | Kế toán |
+| 70 › Hồ sơ cá nhân | **Chỉ Nhân sự + CEO** | Nhân sự |
+| BOD Bảo mật | Người CEO cấp | CEO |
+
+- **Vùng con có quyền riêng**: được xem "20 Kinh doanh & Hợp đồng" **không** có nghĩa xem được "20 › Hợp đồng khách hàng".
+- **Quản trị IT (admin) không tự thấy** 70 › Hồ sơ cá nhân và BOD – phải được cấp đích danh.
+- **Agent**: chỉ đọc vùng mà cả agent lẫn người hỏi đều được xem; hồ sơ cá nhân chỉ agent Nhân sự khi người hỏi có quyền; BOD không agent nào đọc; việc agent tự chạy theo lịch không đọc hợp đồng / chứng từ / hồ sơ cá nhân / công văn / biên bản họp.
+- **Obsidian máy cá nhân** không bao giờ tải về hợp đồng, chứng từ gốc, hồ sơ cá nhân, BOD.

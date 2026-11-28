@@ -98,7 +98,8 @@ public static partial class Seeds
             "prod-line", "prod-workstation", "log-vehicle", "adm-reference", "adm-admin-unit", "kpi-definition",
         ]),
         // AI-6 (D-133): nhóm "Tri thức" – Kho tri thức + mục quyền từng thư mục (knowledge?folder=<mã>: Xem = đọc, Sửa = soạn; không lên sidebar – điều hướng trong màn).
-        new("#/group/13", "Tri thức", [], 980, "knowledge", ["knowledge", "knowledge?folder=10", "knowledge?folder=20", "knowledge?folder=30", "knowledge?folder=40", "knowledge?folder=45", "knowledge?folder=50", "knowledge?folder=55", "knowledge?folder=60", "knowledge?folder=70", "knowledge?folder=80", "knowledge?folder=95", "knowledge?folder=96", "knowledge?folder=97", "knowledge?folder=98", "knowledge?folder=99", "knowledge?folder=bod"]),
+        new("#/group/13", "Tri thức", [], 980, "knowledge", ["knowledge", "knowledge?folder=10", "knowledge?folder=20", "knowledge?folder=30", "knowledge?folder=40", "knowledge?folder=45", "knowledge?folder=50", "knowledge?folder=55", "knowledge?folder=60", "knowledge?folder=70", "knowledge?folder=80", "knowledge?folder=95", "knowledge?folder=96", "knowledge?folder=97", "knowledge?folder=98", "knowledge?folder=99", "knowledge?folder=bod",
+            "knowledge?folder=05", "knowledge?folder=15", "knowledge?folder=20-hd", "knowledge?folder=40-hd", "knowledge?folder=60-ct", "knowledge?folder=70-hs", "knowledge?folder=80-hdsd"]), // AI-22.1 (D-141, §7.9): vùng tài liệu doanh nghiệp
         new("#/group/10", "Quản trị hệ thống", [], 1000, "admin",
             ["adm-user", "adm-usergroup", "adm-permission", "adm-objectmenu", "sys-import", "adm-document"]),
         // bot-van-hanh / bot-dieu-hanh: mục "quyền vào bot" (D-62, seed Integration_Telegram) – chỉ sắp chỗ, quyền KHÔNG do ma trận này quản (FE không hiện trên sidebar).
@@ -138,7 +139,7 @@ public static partial class Seeds
         ("50", ["OPS-KIT", "OPS-PLAN", "QA"], ["OPS-KIT"]),
         ("55", ["OPS-LOG", "SAL-CS", "SAL-HEAD", "QA"], ["OPS-LOG"]),
         ("60", ["FIN-ACC", "OPS-SCM-HEAD"], ["FIN-ACC"]),
-        ("70", ["FIN-HR"], ["FIN-HR"]),
+        ("70", [], ["FIN-HR"]), // AI-22.1: Nội quy / quy định ca – mọi nhóm nội bộ xem (vòng StandardRoles)
         ("80", [], ["COO"]),
         ("95", ["FIN-IT"], ["FIN-IT"]),
         ("96", ["FIN-IT"], []),
@@ -146,6 +147,13 @@ public static partial class Seeds
         ("98", ["FIN-IT"], []),
         ("99", [], ["FIN-IT"]),
         ("bod", [], ["CEO"]),
+        // AI-22.1 (D-141, §7.9) – Ban GĐ (CEO / CEO-PMO / COO) xem ở vòng riêng; vùng cá nhân chỉ Nhân sự + CEO.
+        ("05", [], ["CEO-PMO"]),
+        ("15", ["SAL-HEAD", "OPS-SCM-HEAD", "OPS-KIT", "OPS-WH", "OPS-LOG", "QA", "FIN-ACC", "FIN-HR"], ["CEO", "COO", "SAL-HEAD", "OPS-SCM-HEAD", "OPS-KIT", "QA", "FIN-ACC", "FIN-HR"]),
+        ("20-hd", ["FIN-ACC"], ["SAL-HEAD", "SAL-CON"]),
+        ("40-hd", ["FIN-ACC", "OPS-SCM"], ["OPS-SCM-HEAD"]),
+        ("60-ct", [], ["FIN-ACC"]),
+        ("70-hs", ["CEO"], ["FIN-HR"]),
     ];
 
     /// <summary>Mục do seed / màn khác quản quyền – ma trận không đặt cờ (D-62 quyền vào bot).</summary>
@@ -203,6 +211,13 @@ public static partial class Seeds
         ["knowledge?folder=98"] = ("98 Công việc", "AI"),
         ["knowledge?folder=99"] = ("99 Mẫu", "AI"),
         ["knowledge?folder=bod"] = ("BOD Bảo mật", "AI"),
+        ["knowledge?folder=05"] = ("05 Công văn đến / đi", "AI"), // AI-22.1 (D-141)
+        ["knowledge?folder=15"] = ("15 Họp & giao ban", "AI"),
+        ["knowledge?folder=20-hd"] = ("20 › Hợp đồng khách hàng", "AI"),
+        ["knowledge?folder=40-hd"] = ("40 › Hợp đồng nhà cung cấp", "AI"),
+        ["knowledge?folder=60-ct"] = ("60 › Chứng từ gốc", "AI"),
+        ["knowledge?folder=70-hs"] = ("70 › Hồ sơ cá nhân", "AI"),
+        ["knowledge?folder=80-hdsd"] = ("80 › Hướng dẫn sử dụng", "AI"),
     };
 
     /// <summary>Đổi tên MENU-5 (mục duyệt rõ cấp): link → (tên seed cũ – có thể nhiều biến thể, tên mới). Chỉ đổi khi DB đang mang tên cũ.</summary>
@@ -400,11 +415,11 @@ public static partial class Seeds
         static string K(string folder) => "knowledge?folder=" + folder;
         foreach (string role in StandardRoles)
         {
-            G(role, ViewR, ["knowledge", K("80"), K("99")]);
+            G(role, ViewR, ["knowledge", K("80"), K("99"), K("70"), K("80-hdsd")]); // AI-22.1: HDSD + Đào tạo + Nội quy – mọi nhóm nội bộ
         }
         foreach (string role in new[] { "CEO", "CEO-PMO", "COO" })
         {
-            G(role, ViewR, [.. new[] { "10", "20", "30", "40", "45", "50", "55", "60", "70", "95", "96", "97", "98", "bod" }.Select(K)]);
+            G(role, ViewR, [.. new[] { "10", "20", "30", "40", "45", "50", "55", "60", "70", "95", "96", "97", "98", "bod", "05", "15", "20-hd", "40-hd", "60-ct" }.Select(K)]); // AI-22.1: không gồm 70-hs (chỉ CEO – dòng riêng)
         }
         foreach (var (folder, viewers, owners) in KnowledgeFolderRights)
         {

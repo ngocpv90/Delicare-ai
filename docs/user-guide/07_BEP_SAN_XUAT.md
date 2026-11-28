@@ -44,8 +44,11 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 30 Thực đơn & Công thức | `knowledge?folder=30` | S | — |
 | Tri thức › 45 ATTP | `knowledge?folder=45` | X | — |
 | Tri thức › 50 Sản xuất | `knowledge?folder=50` | S | — |
+| Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | S | — |
+| Tri thức › 80 › Hướng dẫn sử dụng | `knowledge?folder=80-hdsd` | X | X |
 <!-- MENU5:END -->
 
 ## 3. Việc trong ca

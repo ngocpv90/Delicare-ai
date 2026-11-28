@@ -41,8 +41,12 @@ Quyền theo ma trận D-79 (đủ 19 nhóm: `docs/claude/MENU5_MATRIX.md`).
 | Tri thức › 20 Kinh doanh & Hợp đồng | `knowledge?folder=20` | X | X | S | X |
 | Tri thức › 30 Thực đơn & Công thức | `knowledge?folder=30` | — | — | X | — |
 | Tri thức › 55 Giao vận | `knowledge?folder=55` | — | — | X | X |
+| Tri thức › 70 Nhân sự | `knowledge?folder=70` | X | X | X | X |
 | Tri thức › 80 Đào tạo | `knowledge?folder=80` | X | X | X | X |
 | Tri thức › 99 Mẫu | `knowledge?folder=99` | X | X | X | X |
+| Tri thức › 15 Họp & giao ban | `knowledge?folder=15` | — | — | S | — |
+| Tri thức › 20 › Hợp đồng khách hàng | `knowledge?folder=20-hd` | — | S | S | — |
+| Tri thức › 80 › Hướng dẫn sử dụng | `knowledge?folder=80-hdsd` | X | X | X | X |
 <!-- MENU5:END -->
 
 Mặc định nhóm KD **không có quyền duyệt** (lệch suất, sửa đơn sau giờ chốt, hợp đồng do Ban điều hành duyệt – xem `12_QUAN_LY_DUYET.md`).

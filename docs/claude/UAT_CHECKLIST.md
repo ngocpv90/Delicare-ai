@@ -637,6 +637,16 @@ Chạy trên DB thử với tài khoản `uat.<vai trò>` (mỗi bước đăng 
 | 4 | KD trưởng | Đơn khách lẻ → Doanh thu, khoảng tháng | Doanh thu = đơn hoàn tất; đơn đang xử lý tách riêng; đơn hủy chỉ đếm; bảng theo món / bữa / kênh / thanh toán |
 | 5 | Kế toán | Doanh thu, khoảng > 92 ngày | Báo lỗi khoảng ngày |
 
+## AI-22.1 – Kho tài liệu: phân quyền theo vùng (28/11/2026)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi |
+|---|---|---|---|
+| 1 | Kinh doanh (uat.sal-sales) | Tri thức › Kho tri thức | Thấy 20, 70, 80, 80 › Hướng dẫn sử dụng, 99; KHÔNG thấy 20 › Hợp đồng khách hàng, 60 › Chứng từ, 70 › Hồ sơ cá nhân |
+| 2 | Kinh doanh | Tìm tên một hợp đồng khách | Không ra kết quả (không lộ tên) |
+| 3 | Nhân sự (uat.fin-hr) | Mở 70 › Hồ sơ cá nhân | Xem / sửa được |
+| 4 | Kế toán (uat.fin-acc) | Cây thư mục | Có 20 › Hợp đồng, 40 › Hợp đồng, 60 › Chứng từ (sửa); không có 70 › Hồ sơ cá nhân |
+| 5 | Admin IT | Cây thư mục | Không có 70 › Hồ sơ cá nhân, BOD (chưa cấp đích danh) |
+
 ## RPT-1.5 – Đối chiếu số liệu KQKD + ROA / ROE quy năm (28/11/2026)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi |

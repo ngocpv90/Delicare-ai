@@ -173,14 +173,33 @@ namespace AppDelicare.Services.Implement.Knowledge
             {
                 string code = agent.ToUpperInvariant();
                 string[]? scope = KnowledgeVault.AgentScope(code);
-                bool Read(string folder) => folder != KnowledgeVault.Bod
-                    && (scope == null || scope.Contains(folder) || folder is "96" or "97" or "98")
-                    && (asking == null || permissions.IsAllowed(asking, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.View));
+                // AI-22.1 (§7.9 luật 3): quyền agent ∩ người hỏi; BOD chặn trừ khi Knowledge:AgentCanReadBod (và người hỏi được cấp đích danh);
+                // vùng cá nhân chỉ agent HR khi người hỏi được cấp đích danh; không người hỏi (việc theo lịch) → chỉ mục công khai nội bộ + nhật ký agent.
+                bool AskExplicit(string folder) => asking != null && asking.Menus.TryGetValue("#/" + KnowledgeVault.FolderByCode(folder)!.Screen, out var am) && am.Access;
+                bool Read(string folder)
+                {
+                    if (folder == KnowledgeVault.Bod)
+                    {
+                        return _o.AgentCanReadBod && AskExplicit(folder);
+                    }
+                    if (folder == KnowledgeVault.Personal)
+                    {
+                        return code == "HR" && AskExplicit(folder);
+                    }
+                    bool inScope = scope == null || scope.Contains(folder) || folder is "96" or "97" or "98" || folder == KnowledgeVault.UserGuide;
+                    return inScope && (asking == null
+                        ? !KnowledgeVault.NoAskerBlocked.Contains(folder)
+                        : permissions.IsAllowed(asking, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.View));
+                }
                 bool Visible(Note n)
                 {
-                    if (n.IsBod || !Read(n.Folder))
+                    if ((n.IsBod && !Read(KnowledgeVault.Bod)) || !Read(n.Folder))
                     {
                         return false;
+                    }
+                    if (asking == null && n.Confidentiality == "han-che")
+                    {
+                        return false; // AI-22.1: việc theo lịch không đọc ghi chú hạn chế
                     }
                     if (code == "CSKH" && n.Confidentiality != "cong-khai")
                     {
@@ -196,10 +215,11 @@ namespace AppDelicare.Services.Implement.Knowledge
                 return new Rights(Read, _ => false, Visible);
             }
             var me = c.UserId is { } id ? await permissions.GetAsync(id) : UserPermissions.None;
-            // BOD: chỉ người được cấp RÕ mục "knowledge?folder=bod" (Ban GĐ) – quyền admin KHÔNG tự mở BOD (§7.2).
+            // BOD + vùng cá nhân (AI-22.1, §7.9 luật 1): chỉ người được cấp RÕ mục – quyền admin KHÔNG tự mở (§7.2; PROPOSED – BA/PO CONFIRM).
             bool Explicit(string folder, bool edit) => me.Menus.TryGetValue("#/" + KnowledgeVault.FolderByCode(folder)!.Screen, out var m) && m.Access && (!edit || m.Edit);
-            bool R(string folder) => folder == KnowledgeVault.Bod ? Explicit(folder, false) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.View);
-            bool E(string folder) => folder == KnowledgeVault.Bod ? Explicit(folder, true) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.Edit);
+            static bool Named(string folder) => folder == KnowledgeVault.Bod || folder == KnowledgeVault.Personal;
+            bool R(string folder) => Named(folder) ? Explicit(folder, false) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.View);
+            bool E(string folder) => Named(folder) ? Explicit(folder, true) : permissions.IsAllowed(me, KnowledgeVault.FolderByCode(folder)!.Screen, PermissionAction.Edit);
             return new Rights(R, E, n => n.Folder.Length > 0 && R(n.Folder) && (n.Confidentiality != "bod" || R(KnowledgeVault.Bod)));
         }
 
@@ -255,7 +275,7 @@ namespace AppDelicare.Services.Implement.Knowledge
         {
             var rights = await RightsAsync(WebCaller());
             var notes = All();
-            var list = KnowledgeVault.Folders.Where(f => rights.CanRead(f.Code)).Select(f =>
+            var list = KnowledgeVault.Folders.Where(f => rights.CanRead(f.Code)).OrderBy(f => f.Dir, StringComparer.Ordinal).Select(f => // AI-22.1: vùng con ngay sau thư mục cha
             {
                 var items = notes.Where(n => n.Folder == f.Code && rights.NoteVisible(n)).OrderBy(n => n.Path, StringComparer.OrdinalIgnoreCase).Select(n => Head(n)).ToList();
                 return new KnowledgeFolderModel { Code = f.Code, Name = f.Dir, Owner = f.Owner, CanEdit = rights.CanEdit(f.Code) && !f.AgentWritable, NoteCount = items.Count, ListNote = items };

@@ -8,6 +8,8 @@
 (function () {
   const U = UTIL, I = U.icon, esc = U.esc;
   const FN = APP.FN || {};
+  // AI-22.1: vùng con "20 Kinh doanh & Hợp đồng/Hợp đồng khách hàng" → "20 › Hợp đồng khách hàng" (quyền riêng từng vùng).
+  const kfName = nm => String(nm || '').replace(/^(\d+)[^/]*\//, '$1 › ');
   const def = (id, name, grp) => { if (!FN[id]) FN[id] = { extra: true, ph: 'AI', grp, fn: name, id, name, types: ['LS'], table: null, rel: [], st: 'MAPPED', note: '' }; };
   def('ai-agents', 'Trung tâm Agent', 'Điều hành'); def('knowledge', 'Kho tri thức', 'Tri thức');
   ['ai-agent-log', 'ai-flow', 'ai-tasks', 'ai-schedule', 'ai-cost'].forEach(id => def(id, id, 'Điều hành'));
@@ -412,7 +414,7 @@
     const main = el.querySelector('#knMain');
     const tree = () => {
       el.querySelector('#knTree').innerHTML = st.tree.length ? st.tree.map(fd => `<div class="kn-folder ${fd.code === st.folder ? 'open' : ''}">
-          <button class="kn-fold" data-folder="${esc(fd.code)}">${I('chevron')} ${esc(fd.name)} <span class="muted small">${U.num(fd.noteCount)}</span></button>
+          <button class="kn-fold" data-folder="${esc(fd.code)}">${I('chevron')} ${esc(kfName(fd.name))} <span class="muted small">${U.num(fd.noteCount)}</span></button>
           ${fd.code === st.folder ? `<div class="kn-notes">${(fd.listNote || []).slice(0, 300).map(n => `<a href="#/knowledge?folder=${esc(fd.code)}&path=${encodeURIComponent(n.path)}" class="kn-note ${n.path === st.path ? 'active' : ''}">${esc(n.title)}${n.readOnly ? ' <span class="muted small">· tự sinh</span>' : ''}</a>`).join('') || '<div class="muted small">Chưa có ghi chú</div>'}${fd.noteCount > 300 ? `<div class="muted small">… và ${U.num(fd.noteCount - 300)} ghi chú khác – dùng ô tìm</div>` : ''}</div>` : ''}</div>`).join('')
         : '<div class="muted small">Anh/chị chưa được cấp thư mục nào của kho tri thức.</div>';
       el.querySelectorAll('.kn-fold').forEach(b => b.onclick = () => { st.folder = st.folder === b.dataset.folder ? '' : b.dataset.folder; tree(); if (!st.path) folderView(); });
@@ -420,7 +422,7 @@
     const folderView = () => {
       const fd = st.tree.find(x => x.code === st.folder);
       if (!fd) { main.innerHTML = `<h2>Kho tri thức</h2><p class="muted">Chọn thư mục bên trái hoặc tìm theo từ khóa.</p>${UI.kpis(st.tree.slice(0, 4).map(x => UI.kpi(x.name, U.num(x.noteCount), x.owner, 'file', 'blue')))}`; return; }
-      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(fd.name)}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px"><button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
+      main.innerHTML = `<div class="spread"><h2 style="margin:0">${esc(kfName(fd.name))}</h2>${fd.canEdit ? `<div class="row-flex" style="gap:6px"><button class="btn sm" id="knImp">${I('up')} Nhập Word</button><button class="btn primary sm" id="knNew">${I('plus')} Ghi chú mới</button></div>` : ''}</div><div class="muted small">Chủ thư mục: ${esc(fd.owner)} · ${U.num(fd.noteCount)} ghi chú</div>
         <div class="table-wrap mt"><table class="table dc-table"><thead><tr><th>Ghi chú</th><th>Loại</th><th>Trạng thái</th><th>Hiệu lực từ</th><th>Nguồn</th></tr></thead><tbody>
         ${(fd.listNote || []).slice(0, 200).map(n => `<tr><td><a href="#/knowledge?folder=${esc(fd.code)}&path=${encodeURIComponent(n.path)}">${esc(n.title)}</a>${n.needsReview ? ' ' + chip('cần rà soát', 'orange') : ''}</td><td>${esc(typeName(n.type))}</td><td>${esc(n.status || '')}</td><td>${esc(U.date(n.validFrom))}</td><td class="small">${esc(n.source || '')}</td></tr>`).join('')}</tbody></table></div>`;
       const nb = main.querySelector('#knNew'); if (nb) nb.onclick = () => editor(fd, null);
